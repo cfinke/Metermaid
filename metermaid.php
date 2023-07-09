@@ -7,6 +7,9 @@ Version: 1.0
 Author: Christopher Finke
 */
 
+require_once __DIR__ . '/classes/class.meter.php';
+require_once __DIR__ . '/classes/class.reading.php';
+
 class METERMAID {
 	public static function sql() {
 		global $wpdb;
@@ -37,10 +40,10 @@ class METERMAID {
 				metermaid_reading_id bigint(20) NOT NULL AUTO_INCREMENT,
 				meter_id bigint(20) NOT NULL,
 				reading varchar(20) NOT NULL,
-				timestamp date NOT NULL,
+				reading_date date NOT NULL,
 				PRIMARY KEY (metermaid_reading_id),
 				INDEX meter_id (meter_id),
-				UNIQUE KEY timestamp (timestamp)
+				UNIQUE KEY reading_date (reading_date, meter_id)
 			) ENGINE=InnoDB DEFAULT CHARSET=utf8"
 		);
 	}
@@ -81,6 +84,10 @@ class METERMAID {
 
 	public static function admin_page() {
 		global $wpdb;
+
+		if ( isset( $_GET['meter'] ) ) {
+			return self::meter_detail_page( $_GET['meter'] );
+		}
 
 		if ( isset( $_POST['metermaid_action'] ) ) {
 			if ( 'add_meter' == $_POST['metermaid_action'] ) {
@@ -128,16 +135,18 @@ class METERMAID {
 					wp_die();
 				}
 
+				$reading_int = str_replace( ',', '', $_POST['metermaid_reading'] );
+
 				$wpdb->query( $wpdb->prepare(
-					"INSERT INTO " . $wpdb->prefix . "metermaid_readings SET meter_id=%s, reading=%s, timestamp=%s",
+					"INSERT INTO " . $wpdb->prefix . "metermaid_readings SET meter_id=%s, reading=%s, reading_date=%s ON DUPLICATE KEY UPDATE reading=VALUES(reading)",
 					$_POST['metermaid_meter_id'],
-					$_POST['metermaid_reading'],
-					$_POST['metermaid_timestamp']
+					$reading_int,
+					$_POST['metermaid_reading_date']
 				) );
 
 				?>
 				<div class="updated">
-					<p>The meter has been added.</p>
+					<p>The reading has been added.</p>
 				</div>
 				<?php
 			} else if ( 'delete_meter' == $_POST['metermaid_action'] ) {
@@ -225,13 +234,13 @@ class METERMAID {
 					<p>
 						<label>
 							Date
-							<input type="date" name="metermaid_timestamp" value="<?php echo esc_html( date( 'Y-m-d' ) ); ?>" />
+							<input type="date" name="metermaid_reading_date" value="<?php echo esc_html( date( 'Y-m-d' ) ); ?>" />
 						</label>
 					</p>
 					<p>
 						<label>
 							Reading
-							<input type="number" name="metermaid_reading" value="" />
+							<input type="text" name="metermaid_reading" value="" />
 						</label>
 					</p>
 					<input type="submit" value="Add Reading" />
@@ -245,11 +254,12 @@ class METERMAID {
 					<th>Location</th>
 					<th>Last Reading</th>
 					<th>Last Reading Date</th>
+					<th>gpd All Time</th>
 				</thead>
 				<tbody>
 					<?php $last_was_parent = false; ?>
-					<?php foreach ( $all_meters as $meter ) { ?>
-						<?php
+					<?php foreach ( $all_meters as $meter ) {
+						$meter = new METERMAID_METER( $meter );
 
 						if ( $meter->is_parent ) {
 							$last_was_parent = true;
@@ -259,8 +269,8 @@ class METERMAID {
 						}
 
 						$readings = $wpdb->get_results( $wpdb->prepare(
-							"SELECT * FROM " . $wpdb->prefix . "metermaid_readings WHERE meter_id=%s ORDER BY timestamp DESC",
-							$meter->metermaid_meter_id
+							"SELECT * FROM " . $wpdb->prefix . "metermaid_readings WHERE meter_id=%s ORDER BY reading_date DESC",
+							$meter->id
 						) );
 
 						?>
@@ -273,7 +283,7 @@ class METERMAID {
 									<input type="submit" value="Delete" />
 								</form>
 							</td>
-							<td><?php echo esc_html( $meter->name ); ?></td>
+							<td><a href="<?php echo esc_url( add_query_arg( 'meter', $meter->id ) ); ?>"><?php echo esc_html( $meter->name ); ?></a></td>
 							<td><?php echo esc_html( $meter->location ); ?></td>
 							<td>
 								<?php if ( ! empty( $readings ) ) { ?>
@@ -282,13 +292,157 @@ class METERMAID {
 							</td>
 							<td>
 								<?php if ( ! empty( $readings ) ) { ?>
-									<?php echo esc_html( $readings[0]->timestamp ); ?>
+									<?php echo esc_html( $readings[0]->reading_date ); ?>
+								<?php } ?>
+							</td>
+							<td>
+								<?php if ( count( $readings ) > 1 ) { ?>
+									<?php echo esc_html( round(
+										( $readings[0]->reading - $readings[ count( $readings ) - 1 ]->reading ) // total gallons
+										/
+										(
+											(
+												  strtotime( $readings[0]->reading_date )
+												- strtotime( $readings[ count( $readings ) - 1 ]->reading_date )
+											)
+											/ ( 24 * 60 * 60 )
+										) // total days between first and last readings
+									) ); ?>
 								<?php } ?>
 							</td>
 						</tr>
 					<?php } ?>
 				</tbody>
 			</table>
+		</div>
+		<?php
+	}
+
+	public static function meter_detail_page( $meter_id ) {
+		global $wpdb;
+
+		$meter = new METERMAID_METER( $meter_id );
+
+		?>
+		<div class="wrap">
+			<?php
+
+			if ( isset( $_POST['metermaid_action'] ) ) {
+				if ( 'delete_reading' == $_POST['metermaid_action'] ) {
+					if ( ! wp_verify_nonce( $_POST['nonce'], 'metermaid-delete-reading' ) ) {
+						echo 'You are not authorized to delete a reading.';
+						wp_die();
+					}
+
+					$wpdb->query( $wpdb->prepare(
+						"DELETE FROM " . $wpdb->prefix . "metermaid_readings WHERE metermaid_reading_id=%s LIMIT 1",
+						$_POST['reading_id'],
+					) );
+
+					?>
+					<div class="updated">
+						<p>The reading has been deleted.</p>
+					</div>
+					<?php
+				} else if ( 'add_reading' == $_POST['metermaid_action'] ) {
+					if ( ! wp_verify_nonce( $_POST['nonce'], 'metermaid-add-reading' ) ) {
+						echo 'You are not authorized to add a reading.';
+						wp_die();
+					}
+
+					$reading_int = str_replace( ',', '', $_POST['metermaid_reading'] );
+
+					$wpdb->query( $wpdb->prepare(
+						"INSERT INTO " . $wpdb->prefix . "metermaid_readings SET meter_id=%s, reading=%s, reading_date=%s ON DUPLICATE KEY UPDATE reading=VALUES(reading)",
+						$_POST['metermaid_meter_id'],
+						$reading_int,
+						$_POST['metermaid_reading_date']
+					) );
+
+					?>
+					<div class="updated">
+						<p>The reading has been added.</p>
+					</div>
+					<?php
+				}
+			}
+
+			if ( empty( $meter ) ) {
+				?><h1>Meter Not Found</h1><?php
+			} else {
+				?>
+				<h1>Meter Details: <?php echo esc_html( $meter->display_name() ); ?></h1>
+
+				<form method="post" action="">
+					<h3>Add Reading</h3>
+					<input type="hidden" name="metermaid_action" value="add_reading" />
+					<input type="hidden" name="metermaid_meter_id" value="<?php echo esc_attr( $meter->id ); ?>" />
+					<input type="hidden" name="nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-add-reading' ) ); ?>" />
+
+					<p>
+						<label>
+							Date
+							<input type="date" name="metermaid_reading_date" value="<?php echo esc_html( date( 'Y-m-d' ) ); ?>" />
+						</label>
+					</p>
+					<p>
+						<label>
+							Reading
+							<input type="text" name="metermaid_reading" value="" />
+						</label>
+					</p>
+					<input type="submit" value="Add Reading" />
+				</form>
+
+				<table class="wp-list-table widefat striped">
+					<thead>
+						<th></th>
+						<th>Date</th>
+						<th>Reading</th>
+						<th>gpd Since Last</th>
+					</thead>
+					<tbody>
+						<?php
+
+						foreach ( $meter->readings as $idx => $reading ) {
+							?>
+							<tr>
+								<td>
+									<form method="post" action="" onsubmit="if ( prompt( 'Are you sure you want to delete this reading? Type DELETE to confirm.' ) !== 'DELETE' ) { return false; } else { return true; }">
+										<input type="hidden" name="metermaid_action" value="delete_reading" />
+										<input type="hidden" name="nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-delete-reading' ) ); ?>" />
+										<input type="hidden" name="reading_id" value="<?php echo esc_attr( $reading->id ); ?>" />
+										<input type="submit" value="Delete" />
+									</form>
+								</td>
+								<td><?php echo esc_html( $reading->reading_date ); ?></td>
+								<td><?php echo esc_html( number_format( $reading->reading, 0 ) ); ?></td>
+								<td>
+									<?php if ( count( $meter->readings ) > $idx + 1 ) { ?>
+										<?php echo esc_html( round(
+												( $reading->reading - $meter->readings[ $idx + 1 ]->reading ) // total gallons
+												/
+												(
+													(
+														  strtotime( $reading->reading_date )
+														- strtotime( $meter->readings[ $idx + 1 ]->reading_date )
+													)
+													/ ( 24 * 60 * 60 )
+												) // total days between readings
+										) ); ?>
+									<?php } ?>
+								</td>
+							</tr>
+							<?php
+						}
+
+						?>
+					</tbody>
+				</table>
+				<?php
+			}
+
+			?>
 		</div>
 		<?php
 	}
