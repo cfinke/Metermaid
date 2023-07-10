@@ -11,6 +11,18 @@ require_once __DIR__ . '/classes/class.meter.php';
 require_once __DIR__ . '/classes/class.reading.php';
 
 class METERMAID {
+	public static function init() {
+		add_action( 'admin_menu', array( __CLASS__, 'add_options_menu' ) );
+
+		if ( isset( $_GET['page'] ) && 'metermaid' == $_GET['page'] ) {
+			add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_scripts' ) );
+		}
+	}
+
+	public static function db_setup() {
+		METERMAID::sql();
+	}
+
 	public static function sql() {
 		global $wpdb;
 
@@ -48,15 +60,6 @@ class METERMAID {
 		);
 	}
 
-	public static function db_setup() {
-		METERMAID::sql();
-	}
-
-
-	public static function init() {
-		add_action( 'admin_menu', array( __CLASS__, 'add_options_menu' ) );
-	}
-
 	public static function add_options_menu() {
 		add_menu_page(
 			'Metermaid',
@@ -82,8 +85,14 @@ class METERMAID {
 		*/
 	}
 
+	public static function enqueue_scripts() {
+		wp_enqueue_script( 'metermaid-google-charts', 'https://www.gstatic.com/charts/loader.js' );
+
+	}
+
 	public static function admin_page() {
 		global $wpdb;
+
 
 		if ( isset( $_GET['meter'] ) ) {
 			return self::meter_detail_page( $_GET['meter'] );
@@ -105,7 +114,7 @@ class METERMAID {
 				$meter_id = $wpdb->insert_id;
 
 				if ( ! empty( $_POST['metermaid_parent_meters'] ) ) {
-					foreach ( $_POST['metermaid_parent_meters'] as $parent_meter_id ) {
+					foreach ( array_filter( $_POST['metermaid_parent_meters'] ) as $parent_meter_id ) {
 						$wpdb->query( $wpdb->prepare(
 							"INSERT INTO ".$wpdb->prefix."metermaid_relationships SET parent_meter_id=%s, child_meter_id=%s ON DUPLICATE KEY UPDATE parent_meter_id=VALUES(parent_meter_id)",
 							$parent_meter_id,
@@ -115,7 +124,7 @@ class METERMAID {
 				}
 
 				if ( ! empty( $_POST['metermaid_child_meters'] ) ) {
-					foreach ( $_POST['metermaid_child_meters'] as $child_meter_id ) {
+					foreach ( array_filter( $_POST['metermaid_child_meters'] ) as $child_meter_id ) {
 						$wpdb->query( $wpdb->prepare(
 							"INSERT INTO ".$wpdb->prefix."metermaid_relationships SET child_meter_id=%s, parent_meter_id=%s ON DUPLICATE KEY UPDATE child_meter_id=VALUES(child_meter_id)",
 							$child_meter_id,
@@ -135,10 +144,10 @@ class METERMAID {
 					wp_die();
 				}
 
-				$reading_int = str_replace( ',', '', $_POST['metermaid_reading'] );
+				$reading_int = intval( str_replace( ',', '', $_POST['metermaid_reading'] ) );
 
 				$wpdb->query( $wpdb->prepare(
-					"INSERT INTO " . $wpdb->prefix . "metermaid_readings SET meter_id=%s, reading=%s, reading_date=%s ON DUPLICATE KEY UPDATE reading=VALUES(reading)",
+					"INSERT INTO " . $wpdb->prefix . "metermaid_readings SET meter_id=%s, reading=%d, reading_date=%s ON DUPLICATE KEY UPDATE reading=VALUES(reading)",
 					$_POST['metermaid_meter_id'],
 					$reading_int,
 					$_POST['metermaid_reading_date']
@@ -179,9 +188,7 @@ class METERMAID {
 			}
 		}
 
-		$all_meters = $wpdb->get_results(
-			"SELECT m.*, r.parent_meter_id AS is_parent FROM " . $wpdb->prefix . "metermaid_meters m LEFT JOIN " . $wpdb->prefix . "metermaid_relationships r ON m.metermaid_meter_id=r.parent_meter_id GROUP BY m.metermaid_meter_id ORDER BY is_parent DESC, m.name ASC"
-		);
+		$all_meters = self::meters();
 
 		?>
 		<div class="wrap">
@@ -191,60 +198,51 @@ class METERMAID {
 				<input type="hidden" name="metermaid_action" value="add_meter" />
 				<input type="hidden" name="nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-add-meter' ) ); ?>" />
 
-				<p>
-					<label>
-						Name
-						<input type="text" name="metermaid_meter_name" />
-					</label>
-				</p>
-				<p>
-					<label>
-						Location
-						<input type="text" name="metermaid_meter_location" />
-					</label>
-				</p>
-				<?php if ( ! empty( $all_meters ) ) { ?>
-					<p>
-						<label>
-							Parent Meters
-							<?php METERMAID::meter_list_selection( 'metermaid_parent_meters', true ); ?>
-						</label>
-					</p>
-					<p>
-						<label>
-							Child Meters
-							<?php METERMAID::meter_list_selection( 'metermaid_child_meters', true ); ?>
-						</label>
-					</p>
+				<table class="form-table">
+					<tr>
+						<th scope="row">
+							Name
+						</th>
+						<td>
+							<input type="text" name="metermaid_meter_name" />
+						</td>
+					</tr>
+					<tr>
+						<th scope="row">
+							Location
+						</th>
+						<td>
+							<input type="text" name="metermaid_meter_location" />
+						</td>
+					</tr>
+					<?php if ( ! empty( $all_meters ) ) { ?>
+						<tr>
+							<th scope="row">
+								Parent Meters
+							</th>
+							<td>
+								<?php METERMAID::meter_list_selection( 'metermaid_parent_meters', true ); ?>
+							</td>
+						</tr>
+						<tr>
+							<th scope="row">
+								Child Meters
+							</th>
+							<td>
+								<?php METERMAID::meter_list_selection( 'metermaid_child_meters', true ); ?>
+							</td>
+						</tr>
 					<?php } ?>
-				<input type="submit" value="Add Meter" />
+					<tr>
+						<th scope="row"></th>
+						<td>
+							<input class="button button-primary" type="submit" value="Add Meter" />
+						</td>
+					</tr>
+				</table>
 			</form>
 			<?php if ( ! empty( $all_meters ) ) { ?>
-				<form method="post" action="">
-					<h3>Add Reading</h3>
-					<input type="hidden" name="metermaid_action" value="add_reading" />
-					<input type="hidden" name="nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-add-reading' ) ); ?>" />
-
-					<p>
-						<label>
-							Meter
-							<?php METERMAID::meter_list_selection( 'metermaid_meter_id' ); ?>
-						</label>
-					</p>
-					<p>
-						<label>
-							Date
-							<input type="date" name="metermaid_reading_date" value="<?php echo esc_html( date( 'Y-m-d' ) ); ?>" />
-						</label>
-					</p>
-					<p>
-						<label>
-							Reading
-							<input type="text" name="metermaid_reading" value="" />
-						</label>
-					</p>
-					<input type="submit" value="Add Reading" />
-				</form>
+				<?php self::add_reading_form(); ?>
 			<?php } ?>
 			<h2>All Meters</h2>
 			<table class="wp-list-table widefat striped">
@@ -259,9 +257,7 @@ class METERMAID {
 				<tbody>
 					<?php $last_was_parent = false; ?>
 					<?php foreach ( $all_meters as $meter ) {
-						$meter = new METERMAID_METER( $meter );
-
-						if ( $meter->is_parent ) {
+						if ( $meter->is_parent() ) {
 							$last_was_parent = true;
 						} else if ( $last_was_parent ) {
 							?><tr><td colspan="100"><hr /></td></tr><?php
@@ -279,7 +275,7 @@ class METERMAID {
 								<form method="post" action="" onsubmit="if ( prompt( 'Are you sure you want to delete this entry? Type DELETE to confirm.' ) !== 'DELETE' ) { return false; } else { return true; }">
 									<input type="hidden" name="metermaid_action" value="delete_meter" />
 									<input type="hidden" name="nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-delete-meter' ) ); ?>" />
-									<input type="hidden" name="meter_id" value="<?php echo esc_attr( $meter->metermaid_meter_id ); ?>" />
+									<input type="hidden" name="meter_id" value="<?php echo esc_attr( $meter->id ); ?>" />
 									<input type="submit" value="Delete" />
 								</form>
 							</td>
@@ -350,10 +346,10 @@ class METERMAID {
 						wp_die();
 					}
 
-					$reading_int = str_replace( ',', '', $_POST['metermaid_reading'] );
+					$reading_int = intval( str_replace( ',', '', $_POST['metermaid_reading'] ) );
 
 					$wpdb->query( $wpdb->prepare(
-						"INSERT INTO " . $wpdb->prefix . "metermaid_readings SET meter_id=%s, reading=%s, reading_date=%s ON DUPLICATE KEY UPDATE reading=VALUES(reading)",
+						"INSERT INTO " . $wpdb->prefix . "metermaid_readings SET meter_id=%s, reading=%d, reading_date=%s ON DUPLICATE KEY UPDATE reading=VALUES(reading)",
 						$_POST['metermaid_meter_id'],
 						$reading_int,
 						$_POST['metermaid_reading_date']
@@ -373,26 +369,11 @@ class METERMAID {
 				?>
 				<h1>Meter Details: <?php echo esc_html( $meter->display_name() ); ?></h1>
 
-				<form method="post" action="">
-					<h3>Add Reading</h3>
-					<input type="hidden" name="metermaid_action" value="add_reading" />
-					<input type="hidden" name="metermaid_meter_id" value="<?php echo esc_attr( $meter->id ); ?>" />
-					<input type="hidden" name="nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-add-reading' ) ); ?>" />
+				<?php self::add_reading_form( $meter->id ); ?>
 
-					<p>
-						<label>
-							Date
-							<input type="date" name="metermaid_reading_date" value="<?php echo esc_html( date( 'Y-m-d' ) ); ?>" />
-						</label>
-					</p>
-					<p>
-						<label>
-							Reading
-							<input type="text" name="metermaid_reading" value="" />
-						</label>
-					</p>
-					<input type="submit" value="Add Reading" />
-				</form>
+				<?php $meter->year_chart(); ?>
+
+					<?php $meter->children_chart(); ?>
 
 				<table class="wp-list-table widefat striped">
 					<thead>
@@ -450,9 +431,15 @@ class METERMAID {
 	public static function meters() {
 		global $wpdb;
 
-		$all_meters = $wpdb->get_results(
+		$meter_rows = $wpdb->get_results(
 			"SELECT m.*, r.parent_meter_id AS is_parent FROM " . $wpdb->prefix . "metermaid_meters m LEFT JOIN " . $wpdb->prefix . "metermaid_relationships r ON m.metermaid_meter_id=r.parent_meter_id GROUP BY m.metermaid_meter_id ORDER BY is_parent DESC, m.name ASC"
 		);
+
+		$all_meters = array();
+
+		foreach ( $meter_rows as $meter_row ) {
+			$all_meters[] = new METERMAID_METER( $meter_row );
+		}
 
 		return $all_meters;
 	}
@@ -472,7 +459,7 @@ class METERMAID {
 			<?php
 
 			foreach ( $all_meters as $meter ) {
-				if ( $meter->is_parent ) {
+				if ( $meter->is_parent() ) {
 					$last_was_parent = true;
 				} else if ( $last_was_parent ) {
 					?><option value="">--</option><?php
@@ -480,9 +467,60 @@ class METERMAID {
 				}
 
 				?>
-				<option value="<?php echo esc_attr( $meter->metermaid_meter_id ); ?>"><?php echo esc_html( $meter->name ); ?><?php if ( $meter->location ) { ?> (<?php echo esc_html( $meter->location ); ?>)<?php } ?></option>
+				<option value="<?php echo esc_attr( $meter->id ); ?>"><?php echo esc_html( $meter->display_name() ); ?></option>
 			<?php } ?>
 		</select>
+		<?php
+	}
+
+	public static function add_reading_form( $meter_id = null ) {
+		?>
+		<form method="post" action="">
+			<h2>Add Reading</h2>
+
+			<input type="hidden" name="metermaid_action" value="add_reading" />
+			<input type="hidden" name="nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-add-reading' ) ); ?>" />
+
+			<?php if ( $meter_id ) { ?>
+				<input type="hidden" name="metermaid_meter_id" value="<?php echo esc_attr( $meter_id ); ?>" />
+			<?php } ?>
+
+
+			<table class="form-table">
+				<?php if ( ! $meter_id ) { ?>
+					<tr>
+						<th scope="row">
+							Meter
+						</th>
+						<td>
+							<?php METERMAID::meter_list_selection( 'metermaid_meter_id' ); ?>
+						</td>
+					</tr>
+				<?php } ?>
+				<tr>
+					<th scope="row">
+						Date
+					</th>
+					<td>
+						<input type="date" name="metermaid_reading_date" value="<?php echo esc_html( date( 'Y-m-d' ) ); ?>" />
+					</td>
+				</tr>
+				<tr>
+					<th scope="row">
+						Reading
+					</th>
+					<td>
+						<input type="text" name="metermaid_reading" value="" />
+					</td>
+				</tr>
+				<tr>
+					<th scope="row"></th>
+					<td>
+						<input class="button button-primary" type="submit" value="Add Reading" />
+					</td>
+				</tr>
+			</table>
+		</form>
 		<?php
 	}
 }
