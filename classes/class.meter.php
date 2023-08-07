@@ -134,7 +134,7 @@ class METERMAID_METER {
 			$data[ $date_label ] = $data_row;
 		}
 
-		$trailing_average_duration = 30; // Number of days minimum to calculate gpd average.
+		$trailing_average_duration = 14; // Number of days minimum to calculate gpd average.
 
 		foreach ( $readings as $idx => $reading ) {
 			if ( $idx == 0 ) {
@@ -200,31 +200,60 @@ class METERMAID_METER {
 
 		$header_row = array( "Date" );
 		$header_row[] = $this->name;
+		$header_row[] = "Children";
 
 		$child_objects = array();
 
 		foreach ( $this->children as $child_id ) {
 			$meter = new METERMAID_METER( $child_id );
 			$child_objects[] = $meter;
-			$header_row[] = $meter->name;
 		}
 
 		$data[] = $header_row;
 
-		for ( $i = 365; $i >= 0; $i-- ) {
+		for ( $i = 364; $i >= 0; $i-- ) {
 			$date_label = date( "F j", strtotime( "-" . $i . " days" ) );
 			$data_row = array_fill( 0, count( $header_row ), null );
 			$data_row[0] = $date_label;
 			$data[ $date_label ] = $data_row;
 		}
 
-		$trailing_average_duration = 7; // Number of days minimum to calculate gpd average.
+		$trailing_average_duration = 160; // Number of days minimum to calculate gpd average.
 
 		$meters_to_chart = array();
 		$meters_to_chart[] = $this;
-		$meters_to_chart = array_merge( $meters_to_chart, $child_objects );
 
-		foreach ( $meters_to_chart as $col_key_minus_one => $meter ) {
+		$readings = array_reverse( $this->readings );
+
+		foreach ( $readings as $idx => $reading ) {
+			if ( $idx == 0 ) {
+				continue;
+			}
+
+			if ( $reading->reading_date < date( "Y-m-d", strtotime( "-364 days" ) ) ) {
+				continue;
+			}
+
+			$previous_reading = $reading;
+			$previous_idx = $idx - 1;
+
+			do {
+				$previous_reading = $readings[ $previous_idx ];
+				$days_since_previous_reading = ( strtotime( $reading->reading_date ) - strtotime( $previous_reading->reading_date ) ) / ( 24 * 60 * 60 );
+
+				$previous_idx--;
+			} while ( $previous_idx >= 0 && $days_since_previous_reading < $trailing_average_duration );
+
+			$gallons = $reading->reading - $previous_reading->reading;
+			$gpd = round( $gallons / $days_since_previous_reading );
+
+			$row_key = date( "F j", strtotime( $reading->reading_date ) );
+			$data[ $row_key ][1] += $gpd;
+		}
+
+		$child_readings = array();
+
+		foreach ( $child_objects as $idx => $meter ) {
 			$readings = array_reverse( $meter->readings );
 
 			foreach ( $readings as $idx => $reading ) {
@@ -232,7 +261,7 @@ class METERMAID_METER {
 					continue;
 				}
 
-				if ( $reading->reading_date < date( "Y-m-d", strtotime( "-365 days" ) ) ) {
+				if ( $reading->reading_date < date( "Y-m-d", strtotime( "-364 days" ) ) ) {
 					continue;
 				}
 
@@ -251,7 +280,17 @@ class METERMAID_METER {
 
 				$row_key = date( "F j", strtotime( $reading->reading_date ) );
 
-				$data[ $row_key ][ $col_key_minus_one + 1 ] = $gpd;
+				if ( ! isset( $child_readings[ $row_key ] ) ) {
+					$child_readings[ $row_key ] = array();
+				}
+
+				$child_readings[ $row_key ][] = $gpd;
+			}
+		}
+
+		foreach ( $child_readings as $row_key => $reading_values ) {
+			if ( count( $reading_values ) == count( $child_objects ) ) {
+				$data[ $row_key ][2] = array_sum( $reading_values );
 			}
 		}
 
@@ -267,7 +306,6 @@ class METERMAID_METER {
 				var options = {
 					title: 'Gallons Per Day (Children)',
 					legend: { position: 'bottom' },
-					interpolateNulls : true,
 					vAxis : {
 						viewWindow : {
 							min: 0

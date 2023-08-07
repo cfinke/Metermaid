@@ -386,14 +386,16 @@ class METERMAID {
 
 				<?php $meter->year_chart(); ?>
 
+				<?php if ( $meter->is_parent() ) { ?>
 					<?php $meter->children_chart(); ?>
+				<?php } ?>
 
 				<table class="wp-list-table widefat striped">
 					<thead>
 						<th></th>
 						<th>Date</th>
 						<th>Reading</th>
-						<th>gpd Since Last</th>
+						<th>gpd Since Last (At least 7 days)</th>
 					</thead>
 					<tbody>
 						<?php
