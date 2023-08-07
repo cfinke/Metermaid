@@ -412,19 +412,7 @@ class METERMAID {
 								<td><?php echo esc_html( $reading->reading_date ); ?></td>
 								<td><?php echo esc_html( number_format( $reading->reading, 0 ) ); ?></td>
 								<td>
-									<?php if ( count( $meter->readings ) > $idx + 1 ) { ?>
-										<?php echo esc_html( round(
-												( $reading->reading - $meter->readings[ $idx + 1 ]->reading ) // total gallons
-												/
-												(
-													(
-														  strtotime( $reading->reading_date )
-														- strtotime( $meter->readings[ $idx + 1 ]->reading_date )
-													)
-													/ ( 24 * 60 * 60 )
-												) // total days between readings
-										) ); ?>
-									<?php } ?>
+									<?php echo esc_html( self::gpd( $reading, $meter->readings, 7 ) ); ?>
 								</td>
 							</tr>
 							<?php
@@ -535,6 +523,40 @@ class METERMAID {
 			</table>
 		</form>
 		<?php
+	}
+
+	// Sort readings in reverse descending order.
+	public static function readings_sort( $a, $b ) {
+		if ( $a->reading_date < $b->reading_date ) {
+			return 1;
+		} else if ( $a->reading_date > $b->reading_date ) {
+			return -1;
+		}
+
+		return 0;
+	}
+
+	public static function gpd( $reading, $readings, $minimum_days = 1 ) {
+		usort( $readings, array( __CLASS__, 'readings_sort' ) );
+
+		foreach ( $readings as $_reading ) {
+			if ( $_reading->reading_date >= date( "Y-m-d", strtotime( $reading->reading_date ) - ( 24 * 60 * 60 * $minimum_days ) ) ) {
+				continue;
+			}
+
+			return round(
+				( $reading->reading - $_reading->reading ) /
+					(
+					(
+						  strtotime( $reading->reading_date )
+						- strtotime( $_reading->reading_date )
+					)
+					/ ( 24 * 60 * 60 )
+				)
+			);
+		}
+
+		return '';
 	}
 }
 
