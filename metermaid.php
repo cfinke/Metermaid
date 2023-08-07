@@ -96,6 +96,8 @@ class METERMAID {
 
 		if ( isset( $_GET['meter'] ) ) {
 			return self::meter_detail_page( $_GET['meter'] );
+		} else if ( isset( $_GET['metermaid_add_meter'] ) ) {
+			return self::add_meter_page();
 		}
 
 		if ( isset( $_POST['metermaid_action'] ) ) {
@@ -192,55 +194,7 @@ class METERMAID {
 
 		?>
 		<div class="wrap">
-			<h2>Metermaid</h2>
-			<form method="post" action="">
-				<h3>Add Meter</h3>
-				<input type="hidden" name="metermaid_action" value="add_meter" />
-				<input type="hidden" name="nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-add-meter' ) ); ?>" />
-
-				<table class="form-table">
-					<tr>
-						<th scope="row">
-							Name
-						</th>
-						<td>
-							<input type="text" name="metermaid_meter_name" />
-						</td>
-					</tr>
-					<tr>
-						<th scope="row">
-							Location
-						</th>
-						<td>
-							<input type="text" name="metermaid_meter_location" />
-						</td>
-					</tr>
-					<?php if ( ! empty( $all_meters ) ) { ?>
-						<tr>
-							<th scope="row">
-								Parent Meters
-							</th>
-							<td>
-								<?php METERMAID::meter_list_selection( 'metermaid_parent_meters', true ); ?>
-							</td>
-						</tr>
-						<tr>
-							<th scope="row">
-								Child Meters
-							</th>
-							<td>
-								<?php METERMAID::meter_list_selection( 'metermaid_child_meters', true ); ?>
-							</td>
-						</tr>
-					<?php } ?>
-					<tr>
-						<th scope="row"></th>
-						<td>
-							<input class="button button-primary" type="submit" value="Add Meter" />
-						</td>
-					</tr>
-				</table>
-			</form>
+			<h2>Metermaid <span>(<a href="<?php echo esc_url( add_query_arg( 'metermaid_add_meter', '1' ) ); ?>">Add Meter</a>)</span></h2>
 			<?php if ( ! empty( $all_meters ) ) { ?>
 				<?php self::add_reading_form(); ?>
 			<?php } ?>
@@ -310,6 +264,65 @@ class METERMAID {
 					<?php } ?>
 				</tbody>
 			</table>
+		</div>
+		<?php
+	}
+
+	public static function add_meter_page() {
+		global $wpdb;
+
+		$all_meters = METERMAID::meters();
+
+		?>
+		<div class="wrap">
+			<form method="post" action="">
+				<h1>Add Meter <span>(<a href="?page=metermaid">Back to main</a>)</span></h1>
+				<input type="hidden" name="metermaid_action" value="add_meter" />
+				<input type="hidden" name="nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-add-meter' ) ); ?>" />
+
+				<table class="form-table">
+					<tr>
+						<th scope="row">
+							Name
+						</th>
+						<td>
+							<input type="text" name="metermaid_meter_name" />
+						</td>
+					</tr>
+					<tr>
+						<th scope="row">
+							Location
+						</th>
+						<td>
+							<input type="text" name="metermaid_meter_location" />
+						</td>
+					</tr>
+					<?php if ( ! empty( $all_meters ) ) { ?>
+						<tr>
+							<th scope="row">
+								Parent Meters
+							</th>
+							<td>
+								<?php METERMAID::meter_list_selection( 'metermaid_parent_meters', true ); ?>
+							</td>
+						</tr>
+						<tr>
+							<th scope="row">
+								Child Meters
+							</th>
+							<td>
+								<?php METERMAID::meter_list_selection( 'metermaid_child_meters', true ); ?>
+							</td>
+						</tr>
+					<?php } ?>
+					<tr>
+						<th scope="row"></th>
+						<td>
+							<input class="button button-primary" type="submit" value="Add Meter" />
+						</td>
+					</tr>
+				</table>
+			</form>
 		</div>
 		<?php
 	}
