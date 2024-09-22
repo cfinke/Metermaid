@@ -1,0 +1,16 @@
+.metermaid-surplus, .metermaid-deficit, .metermaid-balanced {
+	margin-left: 1ex;
+}
+
+.metermaid-surplus, .metermaid-deficit {
+	text-decoration:underline;
+	text-decoration-style: dotted;
+}
+
+.metermaid-surplus {
+	color: green;
+}
+
+.metermaid-deficit {
+	color: red;
+}

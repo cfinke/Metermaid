@@ -17,6 +17,26 @@ class METERMAID {
 		if ( isset( $_GET['page'] ) && 'metermaid' == $_GET['page'] ) {
 			add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_scripts' ) );
 		}
+
+		add_action( 'admin_title', array( __CLASS__, 'edit_page_title' ) );
+	}
+
+	public static function edit_page_title() {
+		global $title;
+
+		if ( isset( $_GET['page'] ) && 'metermaid' == $_GET['page'] ) {
+			if ( isset( $_GET['meter'] ) ) {
+				$meter = new METERMAID_METER( $_GET['meter'] );
+
+				if ( $meter ) {
+					$title = 'Metermaid :: ' . $meter->display_name();
+				}
+			} else {
+				$title = 'Metermaid';
+			}
+		}
+
+		return $title;
 	}
 
 	public static function db_setup() {
@@ -51,11 +71,25 @@ class METERMAID {
 			(
 				metermaid_reading_id bigint(20) NOT NULL AUTO_INCREMENT,
 				meter_id bigint(20) NOT NULL,
-				reading varchar(20) NOT NULL,
+				reading int(11) NOT NULL,
+				real_reading int(11) NOT NULL,
 				reading_date date NOT NULL,
 				PRIMARY KEY (metermaid_reading_id),
 				INDEX meter_id (meter_id),
 				UNIQUE KEY reading_date (reading_date, meter_id)
+			) ENGINE=InnoDB DEFAULT CHARSET=utf8"
+		);
+
+		$wpdb->query( "CREATE TABLE IF NOT EXISTS ".$wpdb->prefix."metermaid_supplements
+			(
+				metermaid_supplement_id bigint(20) NOT NULL AUTO_INCREMENT,
+				meter_id bigint(20) NOT NULL,
+				amount int(11) NOT NULL,
+				supplement_date date NOT NULL,
+				note TEXT,
+				PRIMARY KEY (metermaid_supplement_id),
+				INDEX meter_id (meter_id),
+				UNIQUE KEY supplement_date (supplement_date, meter_id)
 			) ENGINE=InnoDB DEFAULT CHARSET=utf8"
 		);
 	}
@@ -88,20 +122,35 @@ class METERMAID {
 	public static function enqueue_scripts() {
 		wp_enqueue_script( 'metermaid-google-charts', 'https://www.gstatic.com/charts/loader.js' );
 
+		wp_register_style( 'metermaid-css', plugin_dir_url( __FILE__ ) . '/css/metermaid.css', array(), time() );
+		wp_enqueue_style( 'metermaid-css' );
+
 	}
 
 	public static function admin_page() {
 		global $wpdb;
 
-
-		if ( isset( $_GET['meter'] ) ) {
-			return self::meter_detail_page( $_GET['meter'] );
-		} else if ( isset( $_GET['metermaid_add_meter'] ) ) {
-			return self::add_meter_page();
-		}
-
 		if ( isset( $_POST['metermaid_action'] ) ) {
-			if ( 'add_meter' == $_POST['metermaid_action'] ) {
+			if ( 'update_settings' == $_POST['metermaid_action'] ) {
+				if ( ! wp_verify_nonce( $_POST['nonce'], 'metermaid-update-settings' ) ) {
+					echo 'You are not authorized to update settings.';
+					wp_die();
+				}
+
+				if ( isset( METERMAID::$units_of_measurement[ $_POST['metermaid_unit_of_measurement'] ] ) ) {
+					update_option( 'metermaid_unit_of_measurement', $_POST['metermaid_unit_of_measurement'] );
+				}
+
+				$rate_interval = max( 1, intval( $_POST['metermaid_minimum_rate_interval'] ) );
+
+				update_option( 'metermaid_minimum_rate_interval', $rate_interval );
+
+				?>
+				<div class="updated">
+					<p>Settings updated.</p>
+				</div>
+				<?php
+			} else if ( 'add_meter' == $_POST['metermaid_action'] ) {
 				if ( ! wp_verify_nonce( $_POST['nonce'], 'metermaid-add-meter' ) ) {
 					echo 'You are not authorized to add a meter.';
 					wp_die();
@@ -155,6 +204,9 @@ class METERMAID {
 					$_POST['metermaid_reading_date']
 				) );
 
+				$meter = new METERMAID_METER( $_POST['metermaid_meter_id'] );
+				$meter->recalculate_real_readings();
+
 				?>
 				<div class="updated">
 					<p>The reading has been added.</p>
@@ -190,6 +242,12 @@ class METERMAID {
 			}
 		}
 
+		if ( isset( $_GET['meter'] ) ) {
+			return self::meter_detail_page( $_GET['meter'] );
+		} else if ( isset( $_GET['metermaid_add_meter'] ) ) {
+			return self::add_meter_page();
+		}
+
 		$all_meters = self::meters();
 
 		?>
@@ -198,6 +256,7 @@ class METERMAID {
 			<?php if ( ! empty( $all_meters ) ) { ?>
 				<?php self::add_reading_form(); ?>
 			<?php } ?>
+			<?php self::add_settings_form(); ?>
 			<h2>All Meters</h2>
 			<table class="wp-list-table widefat striped">
 				<thead>
@@ -248,7 +307,7 @@ class METERMAID {
 							<td>
 								<?php if ( count( $readings ) > 1 ) { ?>
 									<?php echo esc_html( round(
-										( $readings[0]->reading - $readings[ count( $readings ) - 1 ]->reading ) // total gallons
+										( $readings[0]->real_reading - $readings[ count( $readings ) - 1 ]->real_reading ) // total gallons
 										/
 										(
 											(
@@ -332,6 +391,10 @@ class METERMAID {
 
 		$meter = new METERMAID_METER( $meter_id );
 
+		if ( isset( $_GET['recalculate'] ) ) {
+			$meter->recalculate_real_readings();
+		}
+
 		?>
 		<div class="wrap">
 			<?php
@@ -348,29 +411,49 @@ class METERMAID {
 						$_POST['reading_id'],
 					) );
 
+					$meter = new METERMAID_METER( $_GET['meter'] );
+					$meter->recalculate_real_readings();
+
 					?>
 					<div class="updated">
 						<p>The reading has been deleted.</p>
 					</div>
 					<?php
-				} else if ( 'add_reading' == $_POST['metermaid_action'] ) {
-					if ( ! wp_verify_nonce( $_POST['nonce'], 'metermaid-add-reading' ) ) {
-						echo 'You are not authorized to add a reading.';
+				} else if ( 'delete_supplement' == $_POST['metermaid_action'] ) {
+					if ( ! wp_verify_nonce( $_POST['nonce'], 'metermaid-delete-supplement' ) ) {
+						echo 'You are not authorized to delete a supplement.';
 						wp_die();
 					}
 
-					$reading_int = intval( str_replace( ',', '', $_POST['metermaid_reading'] ) );
-
 					$wpdb->query( $wpdb->prepare(
-						"INSERT INTO " . $wpdb->prefix . "metermaid_readings SET meter_id=%s, reading=%d, reading_date=%s ON DUPLICATE KEY UPDATE reading=VALUES(reading)",
-						$_POST['metermaid_meter_id'],
-						$reading_int,
-						$_POST['metermaid_reading_date']
+						"DELETE FROM " . $wpdb->prefix . "metermaid_supplements WHERE metermaid_supplement_id=%s LIMIT 1",
+						$_POST['supplement_id'],
 					) );
 
 					?>
 					<div class="updated">
-						<p>The reading has been added.</p>
+						<p>The supplement has been deleted.</p>
+					</div>
+					<?php
+				} else if ( 'add_supplement' == $_POST['metermaid_action'] ) {
+					if ( ! wp_verify_nonce( $_POST['nonce'], 'metermaid-add-supplement' ) ) {
+						echo 'You are not authorized to add a supplement.';
+						wp_die();
+					}
+
+					$amount_int = intval( str_replace( ',', '', $_POST['metermaid_supplement_amount'] ) );
+
+					$wpdb->query( $wpdb->prepare(
+						"INSERT INTO " . $wpdb->prefix . "metermaid_supplements SET meter_id=%s, amount=%d, supplement_date=%s, note=%s ON DUPLICATE KEY UPDATE amount=VALUES(amount)",
+						$_POST['metermaid_meter_id'],
+						$amount_int,
+						$_POST['metermaid_supplement_date'],
+						$_POST['metermaid_supplement_note']
+					) );
+
+					?>
+					<div class="updated">
+						<p>The supplement has been added.</p>
 					</div>
 					<?php
 				}
@@ -380,41 +463,131 @@ class METERMAID {
 				?><h1>Meter Not Found</h1><?php
 			} else {
 				?>
-				<h1>Meter Details: <?php echo esc_html( $meter->display_name() ); ?></h1>
+				<h1>Meter Details: <?php echo esc_html( $meter->display_name() ); ?> <span>(<a href="<?php echo esc_url( remove_query_arg( 'meter' ) ); ?>">Back to all meters</a>)</span></h1>
 
 				<?php self::add_reading_form( $meter->id ); ?>
 
+				<?php self::add_supplement_form( $meter->id ); ?>
+
 				<?php $meter->year_chart(); ?>
+				<?php $meter->ytd_chart(); ?>
 
 				<?php if ( $meter->is_parent() ) { ?>
 					<?php $meter->children_chart(); ?>
 				<?php } ?>
 
+				<?php
+
+				$supplements = $wpdb->get_results( $wpdb->prepare(
+					"SELECT * FROM " . $wpdb->prefix . "metermaid_supplements WHERE meter_id=%d ORDER BY supplement_date DESC",
+					$meter->id
+				) );
+				$children_readings = $meter->children_readings();
+				$meter_readings = $meter->readings();
+
+				?>
 				<table class="wp-list-table widefat striped">
 					<thead>
 						<th></th>
 						<th>Date</th>
 						<th>Reading</th>
-						<th>gpd Since Last (At least 7 days)</th>
+						<th>Real Reading</th>
+						<?php if ( $meter->is_parent() ) { ?>
+							<th>Children Reading</th>
+						<?php } ?>
+						<th>gpd Since Last (At least <?php echo esc_html( METERMAID::get_option( 'minimum_rate_interval' ) ); ?> days)</th>
+						<th>Gallons Since Last</th>
 					</thead>
 					<tbody>
 						<?php
 
-						foreach ( $meter->readings as $idx => $reading ) {
+						foreach ( $meter_readings as $idx => $reading ) {
 							?>
 							<tr>
 								<td>
-									<form method="post" action="" onsubmit="if ( prompt( 'Are you sure you want to delete this reading? Type DELETE to confirm.' ) !== 'DELETE' ) { return false; } else { return true; }">
-										<input type="hidden" name="metermaid_action" value="delete_reading" />
-										<input type="hidden" name="nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-delete-reading' ) ); ?>" />
-										<input type="hidden" name="reading_id" value="<?php echo esc_attr( $reading->id ); ?>" />
-										<input type="submit" value="Delete" />
-									</form>
+									<?php if ( $reading->id ) { ?>
+										<form method="post" action="" onsubmit="return confirm( 'Are you sure you want to delete this reading?' );">
+											<input type="hidden" name="metermaid_action" value="delete_reading" />
+											<input type="hidden" name="nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-delete-reading' ) ); ?>" />
+											<input type="hidden" name="reading_id" value="<?php echo esc_attr( $reading->id ); ?>" />
+											<input type="submit" value="Delete" />
+										</form>
+									<?php } ?>
 								</td>
 								<td><?php echo esc_html( $reading->reading_date ); ?></td>
 								<td><?php echo esc_html( number_format( $reading->reading, 0 ) ); ?></td>
+								<td><?php echo esc_html( number_format( $reading->real_reading, 0 ) ); ?></td>
+								<?php if ( $meter->is_parent() ) { ?>
+									<td>
+										<?php
+
+										if ( isset( $children_readings[ $reading->reading_date ] ) ) {
+											echo esc_html( number_format( $children_readings[ $reading->reading_date ] ), 0 );
+
+											// Now, figure out the difference between this reading and the next child reading, and then compare that difference to the diff between today's master reading and the reading from the date of the child reading.
+
+											$found = false;
+
+											foreach ( $children_readings as $date => $children_reading ) {
+												if ( $date == $reading->reading_date ) {
+													$found = true;
+												} else if ( $found ) {
+													$total_gallons = $children_readings[ $reading->reading_date ] - $children_reading;
+
+													foreach ( $meter_readings as $_reading ) {
+														if ( $date == $_reading->reading_date ) {
+															$includes_supplements = false;
+
+															$master_total_gallons = $reading->real_reading - $_reading->real_reading;
+															$difference = $total_gallons - $master_total_gallons;
+
+															// Now, add any supplementary water to the difference.
+															foreach ( $supplements as $supplement ) {
+																if ( $supplement->supplement_date < $reading->reading_date && $supplement->supplement_date >= $_reading->reading_date ) {
+																	$difference -= $supplement->amount;
+																	$includes_supplements = true;
+																}
+															}
+
+															$difference_per_day = round( $difference / ( ( strtotime( $reading->reading_date ) - strtotime( $_reading->reading_date ) ) / 60 / 60 / 24 ) );
+
+															$difference_percent = round( $difference / $total_gallons * 100, 1 );
+
+															if ( $difference > 0 ) {
+																echo '<span title="The child meters of this meter read higher than expected. Either they are overreporting, or this meter is underreporting." class="metermaid-surplus">(+' . esc_html( number_format( $difference, 0 ) ) . ' / ' . esc_html( $difference_percent ) . '%; ' . number_format( $difference_per_day, 0 ) . ' gpd)</span>';
+															} else if ( $difference < 0 ) {
+																echo '<span title="The child meters of this meter read lower than expected. Either they are underreporting, or this meter is overreporting." class="metermaid-deficit">(' . esc_html( number_format( $difference, 0 ) ) . ' / ' . esc_html( $difference_percent ) . '%; ' . number_format( $difference_per_day, 0 ) . ' gpd)</span>';
+															} else {
+																echo '<span title="" class="metermaid-balanced">(0%)</span>';
+															}
+
+															if ( $includes_supplements ) {
+																echo '<abbr title="Includes supplementary water">*</abbr>';
+															}
+
+															break;
+														}
+													}
+
+													break;
+												}
+											}
+										}
+
+										?>
+									</td>
+								<?php } ?>
 								<td>
-									<?php echo esc_html( self::gpd( $reading, $meter->readings, 7 ) ); ?>
+									<?php echo esc_html( self::gpd( $reading, $meter->readings(), METERMAID::get_option( 'minimum_rate_interval' ) ) ); ?>
+								</td>
+								<td>
+									<?php
+
+									if ( isset( $meter_readings[ $idx + 1 ] ) ) {
+										echo esc_html( number_format( $reading->real_reading - $meter_readings[ $idx + 1 ]->real_reading, 0 ) );
+									}
+
+									?>
 								</td>
 							</tr>
 							<?php
@@ -423,7 +596,51 @@ class METERMAID {
 						?>
 					</tbody>
 				</table>
+				<h2>Supplemented Water</h2>
+				<table class="wp-list-table widefat striped">
+					<thead>
+						<tr>
+							<th></th>
+							<th>Date</th>
+							<th>Supplement</th>
+							<th>Note</th>
+						</tr>
+					</thead>
+					<tbody>
+						<?php foreach ( $supplements as $supplement ) { ?>
+							<tr>
+								<td>
+									<form method="post" action="" onsubmit="return confirm( 'Are you sure you want to delete this supplement?' );">
+										<input type="hidden" name="metermaid_action" value="delete_supplement" />
+										<input type="hidden" name="nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-delete-supplement' ) ); ?>" />
+										<input type="hidden" name="supplement_id" value="<?php echo esc_attr( $supplement->metermaid_supplement_id ); ?>" />
+										<input type="submit" value="Delete" />
+									</form>
+								</td>
+								<td><?php echo esc_html( $supplement->supplement_date ); ?></td>
+								<td><?php echo number_format( $supplement->amount, 0 ); ?></td>
+								<td><?php echo esc_html( $supplement->note ); ?></td>
+							</tr>
+						<?php } ?>
+					</tbody>
+				</table>
 				<?php
+
+				if ( $meter->is_parent() ) {
+					echo '<h2>Child Meters</h2>';
+					echo '<table class="widefat striped wp-list-table">';
+					echo '<thead><tr><th></th><th>Child Meter</th></td></thead>';
+					echo '<tbody>';
+					$children = $meter->children;
+
+					foreach ( $children as $child_id ) {
+						$child = new METERMAID_METER( $child_id );
+
+						echo '<tr><td></td><td><a href="' . add_query_arg( 'meter', $child->id ) . '">' . esc_html( $child->display_name() ) . '</a></td></tr>';
+					}
+
+					echo '</tbody></table>';
+				}
 			}
 
 			?>
@@ -505,7 +722,7 @@ class METERMAID {
 						Date
 					</th>
 					<td>
-						<input type="date" name="metermaid_reading_date" value="<?php echo esc_html( date( 'Y-m-d' ) ); ?>" />
+						<input type="date" name="metermaid_reading_date" value="<?php echo esc_html( current_datetime()->format( 'Y-m-d' ) ); ?>" />
 					</td>
 				</tr>
 				<tr>
@@ -542,12 +759,12 @@ class METERMAID {
 		usort( $readings, array( __CLASS__, 'readings_sort' ) );
 
 		foreach ( $readings as $_reading ) {
-			if ( $_reading->reading_date >= date( "Y-m-d", strtotime( $reading->reading_date ) - ( 24 * 60 * 60 * $minimum_days ) ) ) {
+			if ( $_reading->reading_date > date( "Y-m-d", strtotime( $reading->reading_date ) - ( 24 * 60 * 60 * ( $minimum_days ) ) ) ) {
 				continue;
 			}
 
-			return round(
-				( $reading->reading - $_reading->reading ) /
+			return number_format( round(
+				( $reading->real_reading - $_reading->real_reading ) /
 					(
 					(
 						  strtotime( $reading->reading_date )
@@ -555,10 +772,115 @@ class METERMAID {
 					)
 					/ ( 24 * 60 * 60 )
 				)
-			);
+			), 0 );
 		}
 
 		return '';
+	}
+
+	public static function add_settings_form() {
+		?>
+		<form method="post" action="">
+			<h2>Settings</h2>
+
+			<input type="hidden" name="metermaid_action" value="update_settings" />
+			<input type="hidden" name="nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-update-settings' ) ); ?>" />
+
+			<table class="form-table">
+				<tr>
+					<th scope="row">
+						Unit of measurement
+					</th>
+					<td>
+						<select name="metermaid_unit_of_measurement">
+							<?php foreach ( METERMAID::$units_of_measurement as $unit => $unit_meta ) { ?>
+								<option value="<?php echo esc_attr( $unit ); ?>" <?php if ( $unit == METERMAID::get_option( 'unit_of_measurement' ) ) { ?> selected="selected"<?php } ?>><?php echo esc_html( $unit_meta['plural'] ); ?></option>
+							<?php } ?>
+						</select>
+					</td>
+				</tr>
+				<tr>
+					<th scope="row">
+						Minimum rate interval (in days)
+					</th>
+					<td>
+						<input type="number" name="metermaid_minimum_rate_interval" value="<?php echo esc_attr( METERMAID::get_option( 'minimum_rate_interval' ) ); ?>" />
+					</td>
+				</tr>
+				<tr>
+					<th scope="row"></th>
+					<td>
+						<input class="button button-primary" type="submit" value="Update Settings" />
+					</td>
+				</tr>
+			</table>
+		</form>
+		<?php
+	}
+
+	public static $units_of_measurement = array(
+		'gallon' => array(
+			'singular' => 'Gallon',
+			'plural' => 'Gallons',
+			'rate_abbreviation' => 'gpd',
+		)
+	);
+
+	public static $defaults = array(
+		'unit_of_measurement' => 'gallon',
+		'minimum_rate_interval' => 7,
+	);
+
+	public static function get_option( $option_name ) {
+		$default_value = METERMAID::$defaults[ $option_name ] ?? '';
+
+		return get_option( 'metermaid_' . $option_name, $default_value );
+	}
+
+	public static function add_supplement_form( $meter_id ) {
+		?>
+		<form method="post" action="">
+			<h2>Add Supplement</h2>
+
+			<input type="hidden" name="metermaid_action" value="add_supplement" />
+			<input type="hidden" name="nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-add-supplement' ) ); ?>" />
+			<input type="hidden" name="metermaid_meter_id" value="<?php echo esc_attr( $meter_id ); ?>" />
+
+
+			<table class="form-table">
+				<tr>
+					<th scope="row">
+						Date
+					</th>
+					<td>
+						<input type="date" name="metermaid_supplement_date" value="<?php echo esc_html( current_datetime()->format( 'Y-m-d' ) ); ?>" />
+					</td>
+				</tr>
+				<tr>
+					<th scope="row">
+						Amount
+					</th>
+					<td>
+						<input type="text" name="metermaid_supplement_amount" value="" />
+					</td>
+				</tr>
+				<tr>
+					<th scope="row">
+						Note
+					</th>
+					<td>
+						<textarea name="metermaid_supplement_note"></textarea>
+					</td>
+				</tr>
+				<tr>
+					<th scope="row"></th>
+					<td>
+						<input class="button button-primary" type="submit" value="Add Supplement" />
+					</td>
+				</tr>
+			</table>
+		</form>
+		<?php
 	}
 }
 
