@@ -486,7 +486,7 @@ class METERMAID {
 				$meter_readings = $meter->readings();
 
 				?>
-				<table class="wp-list-table widefat striped">
+				<table class="wp-list-table widefat striped" style="margin-top: 20px;">
 					<thead>
 						<th></th>
 						<th>Date</th>
