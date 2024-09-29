@@ -40,6 +40,6 @@ Imagine you have a well, and a pump pumps water from the well into a holding tan
 
 What is the difference between a reading and a "real reading"?
 --------------------------------------------------------------
-Imagine you have a water meter that reads "999999". The next day, you check the meter, and it reads "000001". Even though the meter shows a single gallon, its real reading is actually 1,000,001 gallons. Metermaid automatically calculates what the true reading of a meter is based on previous readings.
+Imagine you have a water meter that reads `999999`. The next day, you check the meter, and it reads `000001`. Even though the meter shows a single gallon, its real reading is actually 1,000,001 gallons. Metermaid automatically calculates what the true reading of a meter is based on previous readings.
 
 Contact me with any questions: cfinke@gmail.com.
