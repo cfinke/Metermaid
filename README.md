@@ -42,4 +42,8 @@ What is the difference between a reading and a "real reading"?
 --------------------------------------------------------------
 Imagine you have a water meter that reads `999999`. The next day, you check the meter, and it reads `000001`. Even though the meter shows a single gallon, its real reading is actually 1,000,001 gallons. Metermaid automatically calculates what the true reading of a meter is based on previous readings.
 
+Real readings are recalculated any time you add or delete a reading, so adding historical meter data will only make them more accurate.
+
+It is possible for the real reading to be wrong due to lack of data. If you read a 6-wheel meter on January 1 and it reads `500000` and then you check it again on February 1, and it reads `600000`, there's no way to know whether it measured 100,000 gallons or 1,100,000, and Metermaid will assume 100,000. If you added a reading from January 15 of `900000`, then Metermaid would correctly update the read reading to `1600000`.
+
 Contact me with any questions: cfinke@gmail.com.
