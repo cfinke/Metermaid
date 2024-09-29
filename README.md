@@ -4,11 +4,17 @@ Metermaid is a WordPress plugin that creates a dashboard for tracking water mete
 
 Install it, then open the "Metermaid" menu item and add your various meters.
 
+![The two main forms on the Metermaid dashboard: "Add reading" and "Settings"](screenshots/dashboard.png)
+
 Once you enter meter readings, you will see charts showing gallons per day compared across years and gallons YTD compared across years.
 
 ![A chart showing gallons per day compared across the years 2007-2024](screenshots/gpd.png)
 
 ![A chart showing YTD water usage compared across the years 2007-2024](screenshots/ytd.png)
+
+Scroll down, and you'll see all previous readings.
+
+![A table of meter readings, showing date, reading, real reading, gallons per day since last (with a minimum time period), and gallons since last reading](screenshots/readings.png)
 
 What are child meters and parent meters?
 ----------------------------------------
