@@ -26,7 +26,11 @@ A child meter is a meter that only counts usage that is already counted by a met
 
 Imagine you have a well. At the well, there is a pump, and the pump pushes water to three houses. Directly after the pump, there is a meter that counts all gallons that the pump outputs. This is the parent meter. The three house meters are child meters. Their combined readings should equal the reading of the parent meter.
 
-When you set up child and parent meters and then enter readings for all meters in a system on the same days, Metermaid will calculate how much water might be getting lost in the system, either through leaks or unmetered usage.
+When you set up child and parent meters and then enter readings for all meters in a system on the same days, Metermaid will calculate how much water might be getting lost in the system, either through leaks or unmetered usage. For example, this real-world example shows a parent meter that measured 6.3% higher than the sum of its children meters across a six-month period.
+
+![A table showing that a parent meter measured 6.3% higher than the sum of its child meters across a 6-month period.](screenshots/children-difference.png)
+
+This discrepancy could be due to unmetered water usage, inaccurate meters, or a leak in the distribution system.
 
 What is a supplement?
 ---------------------
