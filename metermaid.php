@@ -96,27 +96,37 @@ class METERMAID {
 
 	public static function add_options_menu() {
 		add_menu_page(
-			'Metermaid',
-			'Metermaid',
-			'publish_posts',
-			'metermaid',
-			array( 'METERMAID', 'admin_page' ),
-			'dashicons-welcome-write-blog',
-			4
+			'Metermaid',                        // Page title
+			'Metermaid',                        // Menu title
+			'publish_posts',                    // capability
+			'metermaid',	                    // menu slug
+			array( 'METERMAID', 'admin_page' ), // Callback
+			'dashicons-welcome-write-blog',     // Icon
+			4                                   // Position
 		);
-		/*
+
 		add_submenu_page(
 			'metermaid',
-			'Metermaid',
-			'Metermaid',
+			'All meters',
+			'All meters',
 			'publish_posts',
-			'metermaid',
+			'metermaid-all-meters',
 			array( 'METERMAID', 'admin_page' ),
 			1
 		);
 
-		remove_submenu_page( 'metermaid','metermaid' );
-		*/
+		add_submenu_page(
+			'metermaid',
+			'Add Meter',
+			'Add Meter',
+			'publish_posts',
+			'metermaid-add-meter',
+			array( 'METERMAID', 'add_meter_page' ),
+			2
+		);
+
+		// Remove the auto-generated "Metermaid" submenu item.
+		remove_submenu_page( 'metermaid', 'metermaid' );
 	}
 
 	public static function enqueue_scripts() {
