@@ -4,6 +4,7 @@ class METERMAID_METER {
 	public $id;
 	public $name;
 	public $location;
+	public $inactive;
 
 	private $_readings = null;
 	private $_children = null;
@@ -24,6 +25,7 @@ class METERMAID_METER {
 		$this->name = $meter_id_or_row->name;
 		$this->location = $meter_id_or_row->location;
 		$this->id = $meter_id_or_row->metermaid_meter_id;
+		$this->inactive = $meter_id_or_row->inactive;
 	}
 
 	/**
@@ -36,7 +38,7 @@ class METERMAID_METER {
 	/**
 	 * A list of meter readings for this meter.
 	 */
-	public function readings() {
+	public function readings( $include_projected = false ) {
 		global $wpdb;
 
 		if ( ! is_null( $this->_readings ) ) {
@@ -48,14 +50,27 @@ class METERMAID_METER {
 			$this->id
 		) );
 
-		// If there are any two identical readings on non-adjacent days, fill in the days between with that reading too.
+		if ( ! empty( $readings ) ) {
+			if ( $this->inactive ) {
+				// For inactive meters, set the current reading to the last known reading.
+				$current_reading = clone $readings[0];
+				$current_reading->reading_date = date( "Y-m-d" );
+				$current_reading->metermaid_reading_id = null;
+
+				array_unshift( $readings, $current_reading );
+			}
+		}
+
+		// If there are any two identical readings on non-adjacent days, fill in the days between with that reading too,
+		// if we requested $include_projected. Sometimes, like with a very inactive meter, this can result in hundreds
+		// of identical readings in a reading table, which is overkill.
 		$last_reading = INF;
 		$last_reading_date = date( "Y-m-d", strtotime( "tomorrow" ) );
 
 		$readings_to_add = array();
 
 		foreach ( $readings as $reading ) {
-			if ( $reading->real_reading == $last_reading ) {
+			if ( $include_projected && ( $reading->real_reading == $last_reading ) ) {
 				do {
 					$new_reading_date = date( "Y-m-d", strtotime( $last_reading_date ) - ( 24 * 60 * 60 ) );
 
@@ -111,7 +126,7 @@ class METERMAID_METER {
 			if ( 'children' == $key && ! is_null( $this->_children ) ) {
 				return $this->_children;
 			} else if ( 'parents' == $key && ! is_null( $this->_parents ) ) {
-				return $this->parents;
+				return $this->_parents;
 			}
 
 			$relationships = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM " . $wpdb->prefix . "metermaid_relationships WHERE parent_meter_id=%s OR child_meter_id=%s", $this->id, $this->id ) );
@@ -377,7 +392,7 @@ class METERMAID_METER {
 
 				foreach ( $children as $child_id ) {
 					$meter = new METERMAID_METER( $child_id );
-					$readings = $meter->readings();
+					$readings = $meter->readings( true );
 
 					foreach ( $readings as $reading ) {
 						// We only care about dates on which we read the master meter too.

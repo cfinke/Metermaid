@@ -132,7 +132,7 @@ class METERMAID {
 
 		if ( isset( $_POST['metermaid_action'] ) ) {
 			if ( 'update_settings' == $_POST['metermaid_action'] ) {
-				if ( ! wp_verify_nonce( $_POST['nonce'], 'metermaid-update-settings' ) ) {
+				if ( ! wp_verify_nonce( $_POST['metermaid_nonce'], 'metermaid-update-settings' ) ) {
 					echo 'You are not authorized to update settings.';
 					wp_die();
 				}
@@ -151,7 +151,7 @@ class METERMAID {
 				</div>
 				<?php
 			} else if ( 'add_meter' == $_POST['metermaid_action'] ) {
-				if ( ! wp_verify_nonce( $_POST['nonce'], 'metermaid-add-meter' ) ) {
+				if ( ! wp_verify_nonce( $_POST['metermaid_nonce'], 'metermaid-add-meter' ) ) {
 					echo 'You are not authorized to add a meter.';
 					wp_die();
 				}
@@ -189,8 +189,53 @@ class METERMAID {
 					<p>The meter has been added.</p>
 				</div>
 				<?php
+			} else if ( 'edit_meter' == $_POST['metermaid_action'] ) {
+				if ( ! wp_verify_nonce( $_POST['metermaid_nonce'], 'metermaid-edit-meter' ) ) {
+					echo 'You are not authorized to edit a meter.';
+					wp_die();
+				}
+
+				$wpdb->query( $wpdb->prepare(
+					"UPDATE " . $wpdb->prefix . "metermaid_meters SET name=%s, location=%s, inactive=%d WHERE metermaid_meter_id=%d LIMIT 1",
+					$_POST['metermaid_meter_name'],
+					$_POST['metermaid_meter_location'],
+					( isset( $_POST['metermaid_meter_inactive'] ) && ! empty( $_POST['metermaid_meter_inactive'] ) ) ? 1 : 0,
+					$_POST['metermaid_meter_id']
+				) );
+
+				$wpdb->query( $wpdb->prepare(
+					"DELETE FROM ".$wpdb->prefix."metermaid_relationships WHERE parent_meter_id=%d OR parent_meter_id=%d",
+					$_POST['metermaid_meter_id'],
+					$_POST['metermaid_meter_id']
+				) );
+
+				if ( ! empty( $_POST['metermaid_parent_meters'] ) ) {
+					foreach ( array_filter( $_POST['metermaid_parent_meters'] ) as $parent_meter_id ) {
+						$wpdb->query( $wpdb->prepare(
+							"INSERT INTO ".$wpdb->prefix."metermaid_relationships SET parent_meter_id=%s, child_meter_id=%s ON DUPLICATE KEY UPDATE parent_meter_id=VALUES(parent_meter_id)",
+							$parent_meter_id,
+							$_POST['metermaid_meter_id']
+						) );
+					}
+				}
+
+				if ( ! empty( $_POST['metermaid_child_meters'] ) ) {
+					foreach ( array_filter( $_POST['metermaid_child_meters'] ) as $child_meter_id ) {
+						$wpdb->query( $wpdb->prepare(
+							"INSERT INTO ".$wpdb->prefix."metermaid_relationships SET child_meter_id=%s, parent_meter_id=%s ON DUPLICATE KEY UPDATE child_meter_id=VALUES(child_meter_id)",
+							$child_meter_id,
+							$_POST['metermaid_meter_id']
+						) );
+					}
+				}
+
+				?>
+				<div class="updated">
+					<p>The meter has been edited.</p>
+				</div>
+				<?php
 			} else if ( 'add_reading' == $_POST['metermaid_action'] ) {
-				if ( ! wp_verify_nonce( $_POST['nonce'], 'metermaid-add-reading' ) ) {
+				if ( ! wp_verify_nonce( $_POST['metermaid_nonce'], 'metermaid-add-reading' ) ) {
 					echo 'You are not authorized to add a reading.';
 					wp_die();
 				}
@@ -213,7 +258,7 @@ class METERMAID {
 				</div>
 				<?php
 			} else if ( 'delete_meter' == $_POST['metermaid_action'] ) {
-				if ( ! wp_verify_nonce( $_POST['nonce'], 'metermaid-delete-meter' ) ) {
+				if ( ! wp_verify_nonce( $_POST['metermaid_nonce'], 'metermaid-delete-meter' ) ) {
 					echo 'You are not authorized to delete a meter.';
 					wp_die();
 				}
@@ -287,7 +332,7 @@ class METERMAID {
 							<td>
 								<form method="post" action="" onsubmit="if ( prompt( 'Are you sure you want to delete this entry? Type DELETE to confirm.' ) !== 'DELETE' ) { return false; } else { return true; }">
 									<input type="hidden" name="metermaid_action" value="delete_meter" />
-									<input type="hidden" name="nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-delete-meter' ) ); ?>" />
+									<input type="hidden" name="metermaid_nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-delete-meter' ) ); ?>" />
 									<input type="hidden" name="meter_id" value="<?php echo esc_attr( $meter->id ); ?>" />
 									<input type="submit" value="Delete" />
 								</form>
@@ -337,7 +382,7 @@ class METERMAID {
 			<form method="post" action="">
 				<h1>Add Meter <span>(<a href="?page=metermaid">Back to main</a>)</span></h1>
 				<input type="hidden" name="metermaid_action" value="add_meter" />
-				<input type="hidden" name="nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-add-meter' ) ); ?>" />
+				<input type="hidden" name="metermaid_nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-add-meter' ) ); ?>" />
 
 				<table class="form-table">
 					<tr>
@@ -401,7 +446,7 @@ class METERMAID {
 
 			if ( isset( $_POST['metermaid_action'] ) ) {
 				if ( 'delete_reading' == $_POST['metermaid_action'] ) {
-					if ( ! wp_verify_nonce( $_POST['nonce'], 'metermaid-delete-reading' ) ) {
+					if ( ! wp_verify_nonce( $_POST['metermaid_nonce'], 'metermaid-delete-reading' ) ) {
 						echo 'You are not authorized to delete a reading.';
 						wp_die();
 					}
@@ -420,7 +465,7 @@ class METERMAID {
 					</div>
 					<?php
 				} else if ( 'delete_supplement' == $_POST['metermaid_action'] ) {
-					if ( ! wp_verify_nonce( $_POST['nonce'], 'metermaid-delete-supplement' ) ) {
+					if ( ! wp_verify_nonce( $_POST['metermaid_nonce'], 'metermaid-delete-supplement' ) ) {
 						echo 'You are not authorized to delete a supplement.';
 						wp_die();
 					}
@@ -436,7 +481,7 @@ class METERMAID {
 					</div>
 					<?php
 				} else if ( 'add_supplement' == $_POST['metermaid_action'] ) {
-					if ( ! wp_verify_nonce( $_POST['nonce'], 'metermaid-add-supplement' ) ) {
+					if ( ! wp_verify_nonce( $_POST['metermaid_nonce'], 'metermaid-add-supplement' ) ) {
 						echo 'You are not authorized to add a supplement.';
 						wp_die();
 					}
@@ -468,6 +513,8 @@ class METERMAID {
 				<?php self::add_reading_form( $meter->id ); ?>
 
 				<?php self::add_supplement_form( $meter->id ); ?>
+
+				<?php self::edit_meter_form( $meter->id ); ?>
 
 				<?php $meter->year_chart(); ?>
 				<?php $meter->ytd_chart(); ?>
@@ -508,7 +555,7 @@ class METERMAID {
 									<?php if ( $reading->id ) { ?>
 										<form method="post" action="" onsubmit="return confirm( 'Are you sure you want to delete this reading?' );">
 											<input type="hidden" name="metermaid_action" value="delete_reading" />
-											<input type="hidden" name="nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-delete-reading' ) ); ?>" />
+											<input type="hidden" name="metermaid_nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-delete-reading' ) ); ?>" />
 											<input type="hidden" name="reading_id" value="<?php echo esc_attr( $reading->id ); ?>" />
 											<input type="submit" value="Delete" />
 										</form>
@@ -612,7 +659,7 @@ class METERMAID {
 								<td>
 									<form method="post" action="" onsubmit="return confirm( 'Are you sure you want to delete this supplement?' );">
 										<input type="hidden" name="metermaid_action" value="delete_supplement" />
-										<input type="hidden" name="nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-delete-supplement' ) ); ?>" />
+										<input type="hidden" name="metermaid_nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-delete-supplement' ) ); ?>" />
 										<input type="hidden" name="supplement_id" value="<?php echo esc_attr( $supplement->metermaid_supplement_id ); ?>" />
 										<input type="submit" value="Delete" />
 									</form>
@@ -664,12 +711,16 @@ class METERMAID {
 		return $all_meters;
 	}
 
-	public static function meter_list_selection( $field_name, $multiple = false ) {
+	public static function meter_list_selection( $field_name, $multiple = false, $selected = array() ) {
 		global $wpdb;
 
 		$all_meters = METERMAID::meters();
 
 		$last_was_parent = false;
+
+		if ( ! is_array( $selected ) ) {
+			$selected = array( $selected );
+		}
 
 		?>
 		<select name="<?php echo esc_attr( $field_name ); ?><?php if ( $multiple ) { ?>[]<?php } ?>"<?php if ( $multiple ) { ?> multiple<?php } ?>>
@@ -687,7 +738,7 @@ class METERMAID {
 				}
 
 				?>
-				<option value="<?php echo esc_attr( $meter->id ); ?>"><?php echo esc_html( $meter->display_name() ); ?></option>
+				<option value="<?php echo esc_attr( $meter->id ); ?>"<?php if ( in_array( $meter->id, $selected ) ) { ?> selected="selected"<?php } ?>><?php echo esc_html( $meter->display_name() ); ?></option>
 			<?php } ?>
 		</select>
 		<?php
@@ -699,7 +750,7 @@ class METERMAID {
 			<h2>Add Reading</h2>
 
 			<input type="hidden" name="metermaid_action" value="add_reading" />
-			<input type="hidden" name="nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-add-reading' ) ); ?>" />
+			<input type="hidden" name="metermaid_nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-add-reading' ) ); ?>" />
 
 			<?php if ( $meter_id ) { ?>
 				<input type="hidden" name="metermaid_meter_id" value="<?php echo esc_attr( $meter_id ); ?>" />
@@ -784,7 +835,7 @@ class METERMAID {
 			<h2>Settings</h2>
 
 			<input type="hidden" name="metermaid_action" value="update_settings" />
-			<input type="hidden" name="nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-update-settings' ) ); ?>" />
+			<input type="hidden" name="metermaid_nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-update-settings' ) ); ?>" />
 
 			<table class="form-table">
 				<tr>
@@ -843,7 +894,7 @@ class METERMAID {
 			<h2>Add Supplement</h2>
 
 			<input type="hidden" name="metermaid_action" value="add_supplement" />
-			<input type="hidden" name="nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-add-supplement' ) ); ?>" />
+			<input type="hidden" name="metermaid_nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-add-supplement' ) ); ?>" />
 			<input type="hidden" name="metermaid_meter_id" value="<?php echo esc_attr( $meter_id ); ?>" />
 
 
@@ -876,6 +927,68 @@ class METERMAID {
 					<th scope="row"></th>
 					<td>
 						<input class="button button-primary" type="submit" value="Add Supplement" />
+					</td>
+				</tr>
+			</table>
+		</form>
+		<?php
+	}
+
+	public static function edit_meter_form( $meter_id ) {
+		$meter = new METERMAID_METER( $meter_id );
+
+		?>
+		<form method="post" action="">
+			<h1>Edit Meter</h1>
+			<input type="hidden" name="metermaid_action" value="edit_meter" />
+			<input type="hidden" name="metermaid_meter_id" value="<?php echo esc_attr( $meter_id ); ?>" />
+			<input type="hidden" name="metermaid_nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-edit-meter' ) ); ?>" />
+
+			<table class="form-table">
+				<tr>
+					<th scope="row">
+						Name
+					</th>
+					<td>
+						<input type="text" name="metermaid_meter_name" value="<?php echo esc_attr( $meter->name ); ?>" />
+					</td>
+				</tr>
+				<tr>
+					<th scope="row">
+						Location
+					</th>
+					<td>
+						<input type="text" name="metermaid_meter_location" value="<?php echo esc_attr( $meter->location ); ?>" />
+					</td>
+				</tr>
+				<tr>
+					<th scope="row">
+						Inactive
+					</th>
+					<td>
+						<input type="checkbox" name="metermaid_meter_inactive" <?php if ( $meter->inactive ) { ?> checked="checked"<?php } ?> />
+					</td>
+				</tr>
+				<tr>
+					<th scope="row">
+						Parent Meters
+					</th>
+					<td>
+						<?php METERMAID::meter_list_selection( 'metermaid_parent_meters', true, $meter->parents ); ?>
+					</td>
+				</tr>
+				<tr>
+					<th scope="row">
+						Child Meters
+					</th>
+					<td>
+						<?php METERMAID::meter_list_selection( 'metermaid_child_meters', true, $meter->children ); ?>
+					</td>
+				</tr>
+				<tr>
+					<th scope="row"></th>
+					<td>
+						<input class="button button-primary" type="submit" value="Update Meter" />
 					</td>
 				</tr>
 			</table>
