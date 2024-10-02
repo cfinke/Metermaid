@@ -12,6 +12,10 @@ require_once __DIR__ . '/classes/class.reading.php';
 
 class METERMAID {
 	public static function init() {
+		add_filter( 'not_a_blog_default_page', function ( $url ) {
+			return 'wp-admin/admin.php?page=metermaid';
+		} );
+
 		add_action( 'admin_menu', array( __CLASS__, 'add_options_menu' ) );
 
 		if ( isset( $_GET['page'] ) && strpos( $_GET['page'], 'metermaid' ) !== false ) {
