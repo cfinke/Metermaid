@@ -367,7 +367,7 @@ class METERMAID {
 							</td>
 							<td>
 								<?php if ( ! empty( $readings ) ) { ?>
-									<?php echo esc_html( $readings[0]->reading_date ); ?>
+									<?php echo esc_html( date( get_option( 'date_format' ), strtotime( $readings[0]->reading_date ) ) ); ?>
 								<?php } ?>
 							</td>
 							<td>
@@ -587,7 +587,7 @@ class METERMAID {
 										</form>
 									<?php } ?>
 								</td>
-								<td><?php echo esc_html( $reading->reading_date ); ?></td>
+								<td><?php echo esc_html( date( get_option( 'date_format' ), strtotime( $reading->reading_date ) ) ); ?></td>
 								<td><?php echo esc_html( number_format( $reading->reading, 0 ) ); ?></td>
 								<td><?php echo esc_html( number_format( $reading->real_reading, 0 ) ); ?></td>
 								<?php if ( $meter->is_parent() ) { ?>
@@ -690,7 +690,7 @@ class METERMAID {
 										<input type="submit" value="Delete" />
 									</form>
 								</td>
-								<td><?php echo esc_html( $supplement->supplement_date ); ?></td>
+								<td><?php echo esc_html( date( get_option( 'date_format' ), strtotime( $supplement->supplement_date ) ) ); ?></td>
 								<td><?php echo number_format( $supplement->amount, 0 ); ?></td>
 								<td><?php echo esc_html( $supplement->note ); ?></td>
 							</tr>
