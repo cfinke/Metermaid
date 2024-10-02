@@ -134,7 +134,18 @@ class METERMAID {
 
 		wp_register_style( 'metermaid-css', plugin_dir_url( __FILE__ ) . '/css/metermaid.css', array(), time() );
 		wp_enqueue_style( 'metermaid-css' );
+	}
 
+	public static function measurement() {
+		$default_measurement = 'gallon';
+
+		$chosen_measurement = get_option( 'metermaid_unit_of_measurement', $default_measurement );
+
+		if ( ! isset( METERMAID::$units_of_measurement[ $chosen_measurement ] ) ) {
+			$chosen_measurement = $default_measurement;
+		}
+
+		return METERMAID::$units_of_measurement[ $chosen_measurement ];
 	}
 
 	public static function admin_page() {
@@ -320,7 +331,7 @@ class METERMAID {
 					<th>Location</th>
 					<th>Last Reading</th>
 					<th>Last Reading Date</th>
-					<th>gpd All Time</th>
+					<th><?php echo strtoupper( esc_html( METERMAID::measurement()['rate_abbreviation'] ) ); ?> All Time</th>
 				</thead>
 				<tbody>
 					<?php $last_was_parent = false; ?>
@@ -552,8 +563,8 @@ class METERMAID {
 						<?php if ( $meter->is_parent() ) { ?>
 							<th>Children Reading</th>
 						<?php } ?>
-						<th>gpd Since Last (At least <?php echo esc_html( METERMAID::get_option( 'minimum_rate_interval' ) ); ?> days)</th>
-						<th>Gallons Since Last</th>
+						<th><?php echo esc_html( strtoupper( METERMAID::measurement()['rate_abbreviation'] ) ); ?>  Since Last (At least <?php echo esc_html( METERMAID::get_option( 'minimum_rate_interval' ) ); ?> days)</th>
+						<th><?php echo esc_html( METERMAID::measurement()['plural'] ); ?> Since Last</th>
 					</thead>
 					<tbody>
 						<?php
@@ -611,9 +622,9 @@ class METERMAID {
 															$difference_percent = round( $difference / $total_gallons * 100, 1 );
 
 															if ( $difference > 0 ) {
-																echo '<span title="The child meters of this meter read higher than expected. Either they are overreporting, or this meter is underreporting." class="metermaid-surplus">(+' . esc_html( number_format( $difference, 0 ) ) . ' / ' . esc_html( $difference_percent ) . '%; ' . number_format( $difference_per_day, 0 ) . ' gpd)</span>';
+																echo '<span title="The child meters of this meter read higher than expected. Either they are overreporting, or this meter is underreporting." class="metermaid-surplus">(+' . esc_html( number_format( $difference, 0 ) ) . ' / ' . esc_html( $difference_percent ) . '%; ' . number_format( $difference_per_day, 0 ) . ' ' . esc_html( METERMAID::measurement()['rate_abbreviation'] ) . ')</span>';
 															} else if ( $difference < 0 ) {
-																echo '<span title="The child meters of this meter read lower than expected. Either they are underreporting, or this meter is overreporting." class="metermaid-deficit">(' . esc_html( number_format( $difference, 0 ) ) . ' / ' . esc_html( $difference_percent ) . '%; ' . number_format( $difference_per_day, 0 ) . ' gpd)</span>';
+																echo '<span title="The child meters of this meter read lower than expected. Either they are underreporting, or this meter is overreporting." class="metermaid-deficit">(' . esc_html( number_format( $difference, 0 ) ) . ' / ' . esc_html( $difference_percent ) . '%; ' . number_format( $difference_per_day, 0 ) . ' ' . esc_html( METERMAID::measurement()['rate_abbreviation'] ) . ')</span>';
 															} else {
 																echo '<span title="" class="metermaid-balanced">(0%)</span>';
 															}
@@ -884,7 +895,12 @@ class METERMAID {
 			'singular' => 'Gallon',
 			'plural' => 'Gallons',
 			'rate_abbreviation' => 'gpd',
-		)
+		),
+		'cubic-foot' => array(
+			'singular' => 'Cubic Foot',
+			'plural' => 'Cubic Feet',
+			'rate_abbreviation' => 'cfd',
+		),
 	);
 
 	public static $defaults = array(

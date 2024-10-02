@@ -229,7 +229,7 @@ class METERMAID_METER {
 				var data = google.visualization.arrayToDataTable( <?php echo json_encode( array_values( $data ) ); ?> );
 
 				var options = {
-					title: 'Gallons Per Day (over at least <?php echo intval( METERMAID::get_option( 'minimum_rate_interval' ) ); ?> days)',
+					title: <?php echo json_encode( METERMAID::measurement()['plural'] . ' Per Day (over at least ' . METERMAID::get_option( 'minimum_rate_interval' ) . ' days)' ); ?>,
 					legend: { position: 'bottom' },
 					interpolateNulls : true,
 					vAxis : {
@@ -358,7 +358,7 @@ class METERMAID_METER {
 				var data = google.visualization.arrayToDataTable( <?php echo json_encode( array_values( $data ) ); ?> );
 
 				var options = {
-					title: 'Gallons Per Day (Children, over at least <?php echo intval( METERMAID::get_option( 'minimum_rate_interval' ) ); ?> days)',
+					title: <?php echo json_encode( METERMAID::measurement()['plural'] . ' Per Day (Children, over at least ' . intval( METERMAID::get_option( 'minimum_rate_interval' ) ) . '> days)' ); ?>,
 					legend: { position: 'bottom' },
 					vAxis : {
 						viewWindow : {
@@ -508,7 +508,7 @@ class METERMAID_METER {
 				var data = google.visualization.arrayToDataTable( <?php echo json_encode( array_values( $data ) ); ?> );
 
 				var options = {
-					title: 'Gallons YTD',
+					title: <?php echo json_encode( METERMAID::measurement()['plural'] . ' YTD' ); ?>,
 					legend: { position: 'bottom' },
 					interpolateNulls : true,
 					vAxis : {
