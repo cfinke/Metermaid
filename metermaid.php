@@ -14,7 +14,7 @@ class METERMAID {
 	public static function init() {
 		add_action( 'admin_menu', array( __CLASS__, 'add_options_menu' ) );
 
-		if ( isset( $_GET['page'] ) && 'metermaid' == $_GET['page'] ) {
+		if ( isset( $_GET['page'] ) && strpos( $_GET['page'], 'metermaid' ) !== false ) {
 			add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_scripts' ) );
 		}
 
@@ -24,7 +24,7 @@ class METERMAID {
 	public static function edit_page_title() {
 		global $title;
 
-		if ( isset( $_GET['page'] ) && 'metermaid' == $_GET['page'] ) {
+		if ( isset( $_GET['page'] ) && strpos( $_GET['page'], 'metermaid' ) !== false ) {
 			if ( isset( $_GET['meter'] ) ) {
 				$meter = new METERMAID_METER( $_GET['meter'] );
 
