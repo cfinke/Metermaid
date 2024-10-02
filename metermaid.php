@@ -168,7 +168,7 @@ class METERMAID {
 
 				?>
 				<div class="updated">
-					<p>Settings updated.</p>
+					<p><?php echo esc_html( __( 'Settings updated.', 'metermaid' ) ); ?></p>
 				</div>
 				<?php
 			} else if ( 'add_meter' == $_POST['metermaid_action'] ) {
@@ -207,7 +207,7 @@ class METERMAID {
 
 				?>
 				<div class="updated">
-					<p>The meter has been added.</p>
+					<p><?php echo esc_html( __( 'The meter has been added.', 'metermaid' ) ); ?></p>
 				</div>
 				<?php
 			} else if ( 'edit_meter' == $_POST['metermaid_action'] ) {
@@ -252,7 +252,7 @@ class METERMAID {
 
 				?>
 				<div class="updated">
-					<p>The meter has been edited.</p>
+					<p><?php echo esc_html( __( 'The meter has been edited.', 'metermaid' ) ); ?></p>
 				</div>
 				<?php
 			} else if ( 'add_reading' == $_POST['metermaid_action'] ) {
@@ -275,7 +275,7 @@ class METERMAID {
 
 				?>
 				<div class="updated">
-					<p>The reading has been added.</p>
+					<p><?php echo esc_html( __( 'The reading has been added.', 'metermaid' ) ); ?></p>
 				</div>
 				<?php
 			} else if ( 'delete_meter' == $_POST['metermaid_action'] ) {
@@ -302,7 +302,7 @@ class METERMAID {
 
 				?>
 				<div class="updated">
-					<p>The meter has been deleted.</p>
+					<p><?php echo esc_html( __( 'The meter has been deleted.', 'metermaid' ) ); ?></p>
 				</div>
 				<?php
 			}
@@ -318,20 +318,22 @@ class METERMAID {
 
 		?>
 		<div class="wrap">
-			<h2>Metermaid <span>(<a href="<?php echo esc_url( add_query_arg( 'metermaid_add_meter', '1' ) ); ?>">Add Meter</a>)</span></h2>
+			<h2><?php echo esc_html( __( 'Metermaid', 'metermaid' ) ); ?> <span>(<a href="<?php echo esc_url( add_query_arg( 'metermaid_add_meter', '1' ) ); ?>"><?php echo esc_html( __( 'Add Meter', 'metermaid' ) ); ?></a>)</span></h2>
 			<?php if ( ! empty( $all_meters ) ) { ?>
 				<?php self::add_reading_form(); ?>
 			<?php } ?>
 			<?php self::add_settings_form(); ?>
-			<h2>All Meters</h2>
+			<h2><?php echo esc_html( __( 'All Meters', 'metermaid' ) ); ?></h2>
 			<table class="wp-list-table widefat striped">
 				<thead>
 					<th></th>
-					<th>Name</th>
-					<th>Location</th>
-					<th>Last Reading</th>
-					<th>Last Reading Date</th>
-					<th><?php echo strtoupper( esc_html( METERMAID::measurement()['rate_abbreviation'] ) ); ?> All Time</th>
+					<th><?php echo esc_html( __( 'Name', 'metermaid' ) ); ?></th>
+					<th><?php echo esc_html( __( 'Location', 'metermaid' ) ); ?></th>
+					<th><?php echo esc_html( __( 'Last Reading', 'metermaid' ) ); ?></th>
+					<th><?php echo esc_html( __( 'Last Reading Date', 'metermaid' ) ); ?></th>
+					<th>
+						<?php echo esc_html( sprintf( __( '%s All Time', 'metermaid' ), strtoupper( METERMAID::measurement()['rate_abbreviation'] ) ) ); ?>
+					</th>
 				</thead>
 				<tbody>
 					<?php $last_was_parent = false; ?>
@@ -351,11 +353,11 @@ class METERMAID {
 						?>
 						<tr>
 							<td>
-								<form method="post" action="" onsubmit="if ( prompt( 'Are you sure you want to delete this entry? Type DELETE to confirm.' ) !== 'DELETE' ) { return false; } else { return true; }">
+								<form method="post" action="" onsubmit="return confirm( <?php echo json_encode( __( 'Are you sure you want to delete this meter?', 'metermaid' ) ); ?> );">
 									<input type="hidden" name="metermaid_action" value="delete_meter" />
 									<input type="hidden" name="metermaid_nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-delete-meter' ) ); ?>" />
 									<input type="hidden" name="meter_id" value="<?php echo esc_attr( $meter->id ); ?>" />
-									<input type="submit" value="Delete" />
+									<input type="submit" value="<?php echo esc_attr( __( 'Delete Meter', 'metermaid' ) ); ?>" />
 								</form>
 							</td>
 							<td><a href="<?php echo esc_url( add_query_arg( 'meter', $meter->id ) ); ?>"><?php echo esc_html( $meter->name ); ?></a></td>
