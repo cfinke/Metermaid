@@ -372,17 +372,22 @@ class METERMAID {
 							</td>
 							<td>
 								<?php if ( count( $readings ) > 1 ) { ?>
-									<?php echo esc_html( round(
-										( $readings[0]->real_reading - $readings[ count( $readings ) - 1 ]->real_reading ) // total gallons
-										/
-										(
-											(
-												  strtotime( $readings[0]->reading_date )
-												- strtotime( $readings[ count( $readings ) - 1 ]->reading_date )
-											)
-											/ ( 24 * 60 * 60 )
-										) // total days between first and last readings
-									) ); ?>
+									<?php echo esc_html(
+										number_format(
+											round(
+												( $readings[0]->real_reading - $readings[ count( $readings ) - 1 ]->real_reading ) // total gallons
+												/
+												(
+													(
+														  strtotime( $readings[0]->reading_date )
+														- strtotime( $readings[ count( $readings ) - 1 ]->reading_date )
+													)
+													/ ( 24 * 60 * 60 )
+												) // total days between first and last readings
+											),
+											0
+										)
+									); ?>
 								<?php } ?>
 							</td>
 						</tr>
