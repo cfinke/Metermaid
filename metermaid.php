@@ -906,6 +906,11 @@ class METERMAID {
 			'plural' => 'Cubic Feet',
 			'rate_abbreviation' => 'cfd',
 		),
+		'cubic-meter' => array(
+			'singular' => 'Cubic Meter',
+			'plural' => 'Cubic Meters',
+			'rate_abbreviation' => 'cmd',
+		),
 	);
 
 	public static $defaults = array(
