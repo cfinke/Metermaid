@@ -358,7 +358,7 @@ class METERMAID_METER {
 				var data = google.visualization.arrayToDataTable( <?php echo json_encode( array_values( $data ) ); ?> );
 
 				var options = {
-					title: <?php echo json_encode( METERMAID::measurement()['plural'] . ' Per Day (Children, over at least ' . intval( METERMAID::get_option( 'minimum_rate_interval' ) ) . '> days)' ); ?>,
+					title: <?php echo json_encode( METERMAID::measurement()['plural'] . ' Per Day (Children, over at least ' . intval( METERMAID::get_option( 'minimum_rate_interval' ) ) . ' days)' ); ?>,
 					legend: { position: 'bottom' },
 					vAxis : {
 						viewWindow : {
