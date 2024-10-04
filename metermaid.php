@@ -33,7 +33,7 @@ class METERMAID {
 				$meter = new METERMAID_METER( $_GET['meter'] );
 
 				if ( $meter ) {
-					$title = 'Metermaid :: ' . $meter->display_name();
+					$title = 'Metermaid &raquo; ' . $meter->display_name();
 				}
 			} else {
 				$title = 'Metermaid';
@@ -325,12 +325,33 @@ class METERMAID {
 
 		?>
 		<div class="wrap">
-			<h2><?php echo esc_html( __( 'Metermaid', 'metermaid' ) ); ?> <span>(<a href="<?php echo esc_url( add_query_arg( 'metermaid_add_meter', '1' ) ); ?>"><?php echo esc_html( __( 'Add Meter', 'metermaid' ) ); ?></a>)</span></h2>
-			<?php if ( ! empty( $all_meters ) ) { ?>
-				<?php self::add_reading_form(); ?>
-			<?php } ?>
-			<?php self::add_settings_form(); ?>
-			<h2><?php echo esc_html( __( 'All Meters', 'metermaid' ) ); ?></h2>
+			<h1 class="wp-heading-inline"><?php echo esc_html( __( 'Metermaid', 'metermaid' ) ); ?></h1>
+
+			<div class="metermaid-tabbed-content-container">
+				<nav class="nav-tab-wrapper">
+					<a href="#tab-reading" class="nav-tab" data-metermaid-tab="reading">Add Reading</a>
+					<a href="#tab-add-meter" class="nav-tab" data-metermaid-tab="add-meter">Add Meter</a>
+					<a href="#tab-settings" class="nav-tab" data-metermaid-tab="settings">Settings</a>
+				</nav>
+				<div class="metermaid-tabbed-content card">
+					<div data-metermaid-tab="reading">
+						<?php if ( ! empty( $all_meters ) ) { ?>
+							<?php self::add_reading_form(); ?>
+						<?php } else { ?>
+							<p>You must <a href="#add-meter">add a meter</a> before you can add a reading.</p>
+						<?php } ?>
+					</div>
+					<div data-metermaid-tab="add-meter">
+						<?php self::add_meter_form(); ?>
+					</div>
+					<div data-metermaid-tab="settings">
+						<?php self::add_settings_form(); ?>
+					</div>
+				</div>
+			</div>
+
+			<h2 class="wp-heading-inline"><?php echo esc_html( __( 'All Meters', 'metermaid' ) ); ?></h2>
+
 			<table class="wp-list-table widefat striped">
 				<thead>
 					<th></th>
@@ -414,8 +435,10 @@ class METERMAID {
 
 		?>
 		<div class="wrap">
+			<h1 class="wp-heading-inline">Add Meter</h1>
+			<a href="?page=metermaid" class="page-title-action">Back to main</a>
+
 			<form method="post" action="">
-				<h1>Add Meter <span>(<a href="?page=metermaid">Back to main</a>)</span></h1>
 				<input type="hidden" name="metermaid_action" value="add_meter" />
 				<input type="hidden" name="metermaid_nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-add-meter' ) ); ?>" />
 
@@ -543,7 +566,11 @@ class METERMAID {
 				?><h1>Meter Not Found</h1><?php
 			} else {
 				?>
-				<h1>Meter Details: <?php echo esc_html( $meter->display_name() ); ?> <span>(<a href="<?php echo esc_url( remove_query_arg( 'meter' ) ); ?>">Back to all meters</a>)</span></h1>
+				<h1 class="wp-heading-inline">
+					<a href="<?php echo esc_url( remove_query_arg( 'meter' ) ); ?>">Metermaid</a>
+					&raquo;
+					Meter Details: <?php echo esc_html( $meter->display_name() ); ?>
+				</h1>
 
 				<div class="metermaid-tabbed-content-container">
 					<nav class="nav-tab-wrapper">
@@ -854,6 +881,58 @@ class METERMAID {
 					<th scope="row"></th>
 					<td>
 						<input class="button button-primary" type="submit" value="Add Reading" />
+					</td>
+				</tr>
+			</table>
+		</form>
+		<?php
+	}
+
+	public static function add_meter_form() {
+		?>
+		<form method="post" action="">
+			<input type="hidden" name="metermaid_action" value="add_meter" />
+			<input type="hidden" name="metermaid_nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-add-meter' ) ); ?>" />
+
+			<table class="form-table">
+				<tr>
+					<th scope="row">
+						Name
+					</th>
+					<td>
+						<input type="text" name="metermaid_meter_name" />
+					</td>
+				</tr>
+				<tr>
+					<th scope="row">
+						Location
+					</th>
+					<td>
+						<input type="text" name="metermaid_meter_location" />
+					</td>
+				</tr>
+				<?php if ( ! empty( $all_meters ) ) { ?>
+					<tr>
+						<th scope="row">
+							Parent Meters
+						</th>
+						<td>
+							<?php METERMAID::meter_list_selection( 'metermaid_parent_meters', true ); ?>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row">
+							Child Meters
+						</th>
+						<td>
+							<?php METERMAID::meter_list_selection( 'metermaid_child_meters', true ); ?>
+						</td>
+					</tr>
+				<?php } ?>
+				<tr>
+					<th scope="row"></th>
+					<td>
+						<input class="button button-primary" type="submit" value="Add Meter" />
 					</td>
 				</tr>
 			</table>
