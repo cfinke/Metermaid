@@ -223,6 +223,7 @@ class METERMAID_METER {
 		<script type="text/javascript">
 			google.charts.load( 'current', { 'packages' : [ 'corechart' ] } );
 			google.charts.setOnLoadCallback( drawChart );
+			metermaid.registerTabBlocker( 'year_chart' );
 
 			function drawChart() {
 				// Create the data table.
@@ -247,6 +248,8 @@ class METERMAID_METER {
 
 				var chart = new google.visualization.LineChart( document.getElementById( <?php echo json_encode( $chart_id ); ?> ) );
 				chart.draw( data, options );
+
+				metermaid.clearTabBlocker( 'year_chart' );
 			  }
 		</script>
 		<div id="<?php echo esc_attr( $chart_id ); ?>" style="height: 500px;"></div>
@@ -358,6 +361,7 @@ class METERMAID_METER {
 		<script type="text/javascript">
 			google.charts.load( 'current', { 'packages' : [ 'corechart' ] } );
 			google.charts.setOnLoadCallback( drawChart );
+			metermaid.registerTabBlocker( 'children_chart' );
 
 			function drawChart() {
 				// Create the data table.
@@ -381,6 +385,9 @@ class METERMAID_METER {
 
 				var chart = new google.visualization.LineChart( document.getElementById( <?php echo json_encode( $chart_id ); ?> ) );
 				chart.draw( data, options );
+
+				metermaid.clearTabBlocker( 'children_chart' );
+
 			  }
 		</script>
 		<div id="<?php echo esc_attr( $chart_id ); ?>" style="height: 500px;"></div>
@@ -514,6 +521,7 @@ class METERMAID_METER {
 		<script type="text/javascript">
 			google.charts.load( 'current', { 'packages' : [ 'corechart' ] } );
 			google.charts.setOnLoadCallback( drawChart );
+			metermaid.registerTabBlocker( 'ytd_chart' );
 
 			function drawChart() {
 				// Create the data table.
@@ -537,6 +545,8 @@ class METERMAID_METER {
 
 				var chart = new google.visualization.LineChart( document.getElementById( <?php echo json_encode( $chart_id ); ?> ) );
 				chart.draw( data, options );
+
+				metermaid.clearTabBlocker( 'ytd_chart' );
 			  }
 		</script>
 		<div id="<?php echo esc_attr( $chart_id ); ?>" style="height: 500px;"></div>
