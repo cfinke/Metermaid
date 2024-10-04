@@ -388,7 +388,7 @@ class METERMAID {
 									<input type="submit" value="<?php echo esc_attr( __( 'Delete Meter', 'metermaid' ) ); ?>" />
 								</form>
 							</td>
-							<td><a href="<?php echo esc_url( add_query_arg( 'meter', $meter->id ) ); ?>"><?php echo esc_html( $meter->name ); ?></a></td>
+							<td><a href="<?php echo esc_url( add_query_arg( 'meter', $meter->id ) ); ?>"><?php echo esc_html( $meter->name ?: __( '[Unnamed]' ) ); ?></a></td>
 							<td><?php echo esc_html( $meter->location ); ?></td>
 							<td>
 								<?php if ( ! empty( $readings ) ) { ?>
