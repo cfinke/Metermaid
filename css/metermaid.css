@@ -14,3 +14,16 @@
 .metermaid-deficit {
 	color: red;
 }
+
+.metermaid-tabbed-content-container nav .nav-tab.nav-tab-active {
+	background-color: #fff;
+	border-bottom-color: #fff;
+}
+
+.metermaid-tabbed-content.card {
+	margin-top: 0;
+	width: 100%;
+	max-width: 100%;
+	border-top: 0;
+	margin-bottom: 20px;
+}

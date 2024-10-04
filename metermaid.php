@@ -138,6 +138,9 @@ class METERMAID {
 
 		wp_register_style( 'metermaid-css', plugin_dir_url( __FILE__ ) . '/css/metermaid.css', array(), time() );
 		wp_enqueue_style( 'metermaid-css' );
+
+		wp_register_script( 'metermaid-admin.js', plugin_dir_url( __FILE__ ) . '/js/metermaid-admin.js', array( 'jquery' ), time() );
+		wp_enqueue_script( 'metermaid-admin.js' );
 	}
 
 	public static function measurement() {
@@ -542,18 +545,51 @@ class METERMAID {
 				?>
 				<h1>Meter Details: <?php echo esc_html( $meter->display_name() ); ?> <span>(<a href="<?php echo esc_url( remove_query_arg( 'meter' ) ); ?>">Back to all meters</a>)</span></h1>
 
-				<?php self::add_reading_form( $meter->id ); ?>
+				<div class="metermaid-tabbed-content-container">
+					<nav class="nav-tab-wrapper">
+						<a href="#tab-reading" class="nav-tab" data-metermaid-tab="reading">Add Reading</a>
+						<a href="#tab-supplement" class="nav-tab" data-metermaid-tab="supplement">Add Supplement</a>
+						<a href="#tab-edit" class="nav-tab" data-metermaid-tab="edit">Edit Meter</a>
+					</nav>
+					<div class="metermaid-tabbed-content card">
+						<div data-metermaid-tab="reading">
+							<?php self::add_reading_form( $meter->id ); ?>
+						</div>
+						<div data-metermaid-tab="supplement">
+							<?php self::add_supplement_form( $meter->id ); ?>
+						</div>
+						<div data-metermaid-tab="edit">
+							<?php self::edit_meter_form( $meter->id ); ?>
+						</div>
+					</div>
+				</div>
 
-				<?php self::add_supplement_form( $meter->id ); ?>
-
-				<?php self::edit_meter_form( $meter->id ); ?>
-
-				<?php $meter->year_chart(); ?>
-				<?php $meter->ytd_chart(); ?>
-
-				<?php if ( $meter->is_parent() ) { ?>
-					<?php $meter->children_chart(); ?>
-				<?php } ?>
+				<div class="metermaid-tabbed-content-container">
+					<nav class="nav-tab-wrapper">
+						<a href="#tab-year-chart" class="nav-tab" data-metermaid-tab="year-chart">
+							<?php echo esc_html( strtoupper( METERMAID::measurement()['rate_abbreviation'] ) ); ?>
+						</a>
+						<a href="#tab-supplement-chart" class="nav-tab" data-metermaid-tab="supplement-chart">
+							<?php echo esc_html( __( 'YTD', 'metermaid' ) ); ?>
+						</a>
+						<?php if ( $meter->is_parent() ) { ?>
+							<a href="#tab-children-chart" class="nav-tab" data-metermaid-tab="children-chart"><?php echo esc_html( __( 'Children', 'metermaid' ) ); ?></a>
+						<?php } ?>
+					</nav>
+					<div class="metermaid-tabbed-content card">
+						<div data-metermaid-tab="year-chart">
+							<?php $meter->year_chart(); ?>
+						</div>
+						<div data-metermaid-tab="supplement-chart">
+							<?php $meter->ytd_chart(); ?>
+						</div>
+						<?php if ( $meter->is_parent() ) { ?>
+							<div data-metermaid-tab="children-chart">
+								<?php $meter->children_chart(); ?>
+							</div>
+						<?php } ?>
+					</div>
+				</div>
 
 				<?php
 
@@ -779,8 +815,6 @@ class METERMAID {
 	public static function add_reading_form( $meter_id = null ) {
 		?>
 		<form method="post" action="">
-			<h2>Add Reading</h2>
-
 			<input type="hidden" name="metermaid_action" value="add_reading" />
 			<input type="hidden" name="metermaid_nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-add-reading' ) ); ?>" />
 
@@ -933,8 +967,6 @@ class METERMAID {
 	public static function add_supplement_form( $meter_id ) {
 		?>
 		<form method="post" action="">
-			<h2>Add Supplement</h2>
-
 			<input type="hidden" name="metermaid_action" value="add_supplement" />
 			<input type="hidden" name="metermaid_nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-add-supplement' ) ); ?>" />
 			<input type="hidden" name="metermaid_meter_id" value="<?php echo esc_attr( $meter_id ); ?>" />
@@ -981,7 +1013,6 @@ class METERMAID {
 
 		?>
 		<form method="post" action="">
-			<h1>Edit Meter</h1>
 			<input type="hidden" name="metermaid_action" value="edit_meter" />
 			<input type="hidden" name="metermaid_meter_id" value="<?php echo esc_attr( $meter_id ); ?>" />
 			<input type="hidden" name="metermaid_nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-edit-meter' ) ); ?>" />
