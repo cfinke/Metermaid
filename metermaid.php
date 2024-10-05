@@ -874,7 +874,7 @@ class METERMAID {
 						Reading
 					</th>
 					<td>
-						<input type="text" name="metermaid_reading" value="" />
+						<input type="number" name="metermaid_reading" value="" />
 					</td>
 				</tr>
 				<tr>
@@ -1065,7 +1065,7 @@ class METERMAID {
 						Amount
 					</th>
 					<td>
-						<input type="text" name="metermaid_supplement_amount" value="" />
+						<input type="number" name="metermaid_supplement_amount" value="" />
 					</td>
 				</tr>
 				<tr>
