@@ -576,7 +576,7 @@ class METERMAID {
 					<nav class="nav-tab-wrapper">
 						<a href="#tab-reading" class="nav-tab" data-metermaid-tab="reading">Add Reading</a>
 						<a href="#tab-supplement" class="nav-tab" data-metermaid-tab="supplement">Add Supplement</a>
-						<a href="#tab-edit" class="nav-tab" data-metermaid-tab="edit">Edit Meter</a>
+						<a href="#tab-settings" class="nav-tab" data-metermaid-tab="settings">Settings</a>
 					</nav>
 					<div class="metermaid-tabbed-content card">
 						<div data-metermaid-tab="reading">
@@ -585,7 +585,7 @@ class METERMAID {
 						<div data-metermaid-tab="supplement">
 							<?php self::add_supplement_form( $meter->id ); ?>
 						</div>
-						<div data-metermaid-tab="edit">
+						<div data-metermaid-tab="settings">
 							<?php self::edit_meter_form( $meter->id ); ?>
 						</div>
 					</div>
