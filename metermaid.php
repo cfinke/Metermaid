@@ -129,8 +129,8 @@ class METERMAID {
 
 		add_submenu_page(
 			'metermaid',
-			'All meters',
-			'All meters',
+			__( 'All meters', 'metermaid' ),
+			__( 'All meters', 'metermaid' ),
 			'publish_posts',
 			'metermaid-all-meters',
 			array( 'METERMAID', 'admin_page' ),
@@ -139,11 +139,11 @@ class METERMAID {
 
 		add_submenu_page(
 			'metermaid',
-			'Add Meter',
-			'Add Meter',
+			__( 'Add meter', 'metermaid' ),
+			__( 'Add meter', 'metermaid' ),
 			'publish_posts',
 			'metermaid-add-meter',
-			array( 'METERMAID', 'add_meter_page' ),
+			array( 'METERMAID', 'admin_page' ),
 			2
 		);
 
@@ -158,6 +158,15 @@ class METERMAID {
 		wp_enqueue_style( 'metermaid-css' );
 
 		wp_register_script( 'metermaid-admin.js', plugin_dir_url( __FILE__ ) . '/js/metermaid-admin.js', array( 'jquery' ), time() );
+
+		$metermaid_i18n = array(
+			'meter_delete_confirm' => __( 'Are you sure you want to delete this meter?', 'metermaid' ),
+			'reading_delete_confirm' => __( 'Are you sure you want to delete this reading?', 'metermaid' ),
+			'supplement_delete_confirm' => __( 'Are you sure you want to delete this supplement?', 'metermaid' ),
+		);
+
+		wp_localize_script( 'metermaid-admin.js', 'metermaid_i18n', $metermaid_i18n );
+
 		wp_enqueue_script( 'metermaid-admin.js' );
 	}
 
@@ -335,8 +344,6 @@ class METERMAID {
 
 		if ( isset( $_GET['meter'] ) ) {
 			return self::meter_detail_page( $_GET['meter'] );
-		} else if ( isset( $_GET['metermaid_add_meter'] ) ) {
-			return self::add_meter_page();
 		}
 
 		$all_meters = self::meters();
@@ -347,16 +354,16 @@ class METERMAID {
 
 			<div class="metermaid-tabbed-content-container">
 				<nav class="nav-tab-wrapper">
-					<a href="#tab-reading" class="nav-tab" data-metermaid-tab="reading">Add Reading</a>
-					<a href="#tab-add-meter" class="nav-tab" data-metermaid-tab="add-meter">Add Meter</a>
-					<a href="#tab-settings" class="nav-tab" data-metermaid-tab="settings">Settings</a>
+					<a href="#tab-reading" class="nav-tab" data-metermaid-tab="reading"><?php echo esc_html( __( 'Add Reading', 'metermaid' ) ); ?></a>
+					<a href="#tab-add-meter" class="nav-tab" data-metermaid-tab="add-meter"><?php echo esc_html( __( 'Add Meter', 'metermaid' ) ); ?></a>
+					<a href="#tab-settings" class="nav-tab" data-metermaid-tab="settings"><?php echo esc_html( __( 'Settings', 'metermaid' ) ); ?></a>
 				</nav>
 				<div class="metermaid-tabbed-content card">
 					<div data-metermaid-tab="reading">
 						<?php if ( ! empty( $all_meters ) ) { ?>
 							<?php self::add_reading_form(); ?>
 						<?php } else { ?>
-							<p>You must <a href="#add-meter">add a meter</a> before you can add a reading.</p>
+							<p><?php echo esc_html( __( 'Add a meter before entering any readings.', 'metermaid' ) ); ?></p>
 						<?php } ?>
 					</div>
 					<div data-metermaid-tab="add-meter">
@@ -399,7 +406,7 @@ class METERMAID {
 						?>
 						<tr>
 							<td>
-								<form method="post" action="" onsubmit="return confirm( <?php echo json_encode( __( 'Are you sure you want to delete this meter?', 'metermaid' ) ); ?> );">
+								<form method="post" action="" onsubmit="return confirm( metermaid_i18n.meter_delete_confirm ); ?> );">
 									<input type="hidden" name="metermaid_action" value="delete_meter" />
 									<input type="hidden" name="metermaid_nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-delete-meter' ) ); ?>" />
 									<input type="hidden" name="meter_id" value="<?php echo esc_attr( $meter->id ); ?>" />
@@ -442,67 +449,6 @@ class METERMAID {
 					<?php } ?>
 				</tbody>
 			</table>
-		</div>
-		<?php
-	}
-
-	public static function add_meter_page() {
-		global $wpdb;
-
-		$all_meters = METERMAID::meters();
-
-		?>
-		<div class="wrap">
-			<h1 class="wp-heading-inline">Add Meter</h1>
-			<a href="?page=metermaid" class="page-title-action">Back to main</a>
-
-			<form method="post" action="">
-				<input type="hidden" name="metermaid_action" value="add_meter" />
-				<input type="hidden" name="metermaid_nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-add-meter' ) ); ?>" />
-
-				<table class="form-table">
-					<tr>
-						<th scope="row">
-							Name
-						</th>
-						<td>
-							<input type="text" name="metermaid_meter_name" />
-						</td>
-					</tr>
-					<tr>
-						<th scope="row">
-							Location
-						</th>
-						<td>
-							<input type="text" name="metermaid_meter_location" />
-						</td>
-					</tr>
-					<?php if ( ! empty( $all_meters ) ) { ?>
-						<tr>
-							<th scope="row">
-								Parent Meters
-							</th>
-							<td>
-								<?php METERMAID::meter_list_selection( 'metermaid_parent_meters', true ); ?>
-							</td>
-						</tr>
-						<tr>
-							<th scope="row">
-								Child Meters
-							</th>
-							<td>
-								<?php METERMAID::meter_list_selection( 'metermaid_child_meters', true ); ?>
-							</td>
-						</tr>
-					<?php } ?>
-					<tr>
-						<th scope="row"></th>
-						<td>
-							<input class="button button-primary" type="submit" value="Add Meter" />
-						</td>
-					</tr>
-				</table>
-			</form>
 		</div>
 		<?php
 	}
@@ -581,20 +527,24 @@ class METERMAID {
 			}
 
 			if ( empty( $meter ) ) {
-				?><h1>Meter Not Found</h1><?php
+				?><h1><?php echo esc_html( __( 'Meter Not Found', 'metermaid' ) ); ?></h1><?php
 			} else {
 				?>
 				<h1 class="wp-heading-inline">
-					<a href="<?php echo esc_url( remove_query_arg( 'meter' ) ); ?>">Metermaid</a>
+					<a href="<?php echo esc_url( remove_query_arg( 'meter' ) ); ?>"><?php echo esc_html( __( 'Metermaid', 'metermaid' ) ); ?></a>
 					&raquo;
-					Meter Details: <?php echo esc_html( $meter->display_name() ); ?>
+					<?php
+
+					echo sprintf( esc_html(	__( 'Meter Details: %s', 'metermaid' ) ), esc_html( $meter->display_name() ) );
+
+					?>
 				</h1>
 
 				<div class="metermaid-tabbed-content-container">
 					<nav class="nav-tab-wrapper">
-						<a href="#tab-reading" class="nav-tab" data-metermaid-tab="reading">Add Reading</a>
-						<a href="#tab-supplement" class="nav-tab" data-metermaid-tab="supplement">Add Supplement</a>
-						<a href="#tab-settings" class="nav-tab" data-metermaid-tab="settings">Settings</a>
+						<a href="#tab-reading" class="nav-tab" data-metermaid-tab="reading"><?php echo esc_html( __( 'Add Reading', 'metermaid' ) ); ?></a>
+						<a href="#tab-supplement" class="nav-tab" data-metermaid-tab="supplement"><?php echo esc_html( __( 'Add Supplement', 'metermaid' ) ); ?></a>
+						<a href="#tab-settings" class="nav-tab" data-metermaid-tab="settings"><?php echo esc_html( __( 'Settings', 'metermaid' ) ); ?></a>
 					</nav>
 					<div class="metermaid-tabbed-content card">
 						<div data-metermaid-tab="reading">
@@ -649,14 +599,16 @@ class METERMAID {
 				<table class="wp-list-table widefat striped" style="margin-top: 20px;">
 					<thead>
 						<th></th>
-						<th>Date</th>
-						<th>Reading</th>
-						<th>Real Reading</th>
+						<th><?php echo esc_html( __( 'Date', 'metermaid' ) ); ?></th>
+						<th><?php echo esc_html( __( 'Reading', 'metermaid' ) ); ?></th>
+						<th><?php echo esc_html( __( 'Real Reading', 'metermaid' ) ); ?></th>
 						<?php if ( $meter->is_parent() ) { ?>
-							<th>Children Reading</th>
+							<th><?php echo esc_html( __( 'Children Reading', 'metermaid' ) ); ?></th>
 						<?php } ?>
-						<th><?php echo esc_html( strtoupper( METERMAID::measurement()['rate_abbreviation'] ) ); ?>  Since Last (At least <?php echo esc_html( METERMAID::get_option( 'minimum_rate_interval' ) ); ?> days)</th>
-						<th><?php echo esc_html( METERMAID::measurement()['plural'] ); ?> Since Last</th>
+						<th>
+							<?php echo esc_html( sprintf( __( '%1$s Since Last (At least %2$s days)', 'metermaid' ), strtoupper( METERMAID::measurement()['rate_abbreviation'] ), METERMAID::get_option( 'minimum_rate_interval' ) ) ); ?>
+						</th>
+						<th><?php echo esc_html( sprintf( __( '%s Since Last', 'metermaid' ), METERMAID::measurement()['plural'] ) ); ?></th>
 					</thead>
 					<tbody>
 						<?php
@@ -666,7 +618,7 @@ class METERMAID {
 							<tr>
 								<td>
 									<?php if ( $reading->id ) { ?>
-										<form method="post" action="" onsubmit="return confirm( 'Are you sure you want to delete this reading?' );">
+										<form method="post" action="" onsubmit="return confirm( metermaid_i18n.reading_delete_confirm );">
 											<input type="hidden" name="metermaid_action" value="delete_reading" />
 											<input type="hidden" name="metermaid_nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-delete-reading' ) ); ?>" />
 											<input type="hidden" name="reading_id" value="<?php echo esc_attr( $reading->id ); ?>" />
@@ -756,21 +708,21 @@ class METERMAID {
 						?>
 					</tbody>
 				</table>
-				<h2>Supplemented Water</h2>
+				<h2><?php echo esc_html( __( 'Supplementary Water', 'metermaid' ) ); ?></h2>
 				<table class="wp-list-table widefat striped">
 					<thead>
 						<tr>
 							<th></th>
-							<th>Date</th>
-							<th>Supplement</th>
-							<th>Note</th>
+							<th><?php echo esc_html( __( 'Date', 'metermaid' ) ); ?></th>
+							<th><?php echo esc_html( __( 'Supplement', 'metermaid' ) ); ?></th>
+							<th><?php echo esc_html( __( 'Note', 'metermaid' ) ); ?></th>
 						</tr>
 					</thead>
 					<tbody>
 						<?php foreach ( $supplements as $supplement ) { ?>
 							<tr>
 								<td>
-									<form method="post" action="" onsubmit="return confirm( 'Are you sure you want to delete this supplement?' );">
+									<form method="post" action="" onsubmit="return confirm( metermaid_i18n.supplement_delete_confirm );">
 										<input type="hidden" name="metermaid_action" value="delete_supplement" />
 										<input type="hidden" name="metermaid_nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-delete-supplement' ) ); ?>" />
 										<input type="hidden" name="supplement_id" value="<?php echo esc_attr( $supplement->metermaid_supplement_id ); ?>" />
@@ -787,19 +739,41 @@ class METERMAID {
 				<?php
 
 				if ( $meter->is_parent() ) {
-					echo '<h2>Child Meters</h2>';
-					echo '<table class="widefat striped wp-list-table">';
-					echo '<thead><tr><th></th><th>Child Meter</th></td></thead>';
-					echo '<tbody>';
-					$children = $meter->children;
+					?>
 
-					foreach ( $children as $child_id ) {
-						$child = new METERMAID_METER( $child_id );
+					<h2><?php echo esc_html( __( 'Child Meters', 'metermaid' ) ); ?></h2>
+					<table class="widefat striped wp-list-table">
+						<thead>
+							<tr>
+								<th></th>
+								<th><?php echo esc_html( __( 'Child Meter', 'metermaid' ) ); ?></th>
+							</tr>
+						</thead>
+						<tbody>
+							<?php
 
-						echo '<tr><td></td><td><a href="' . add_query_arg( 'meter', $child->id ) . '">' . esc_html( $child->display_name() ) . '</a></td></tr>';
-					}
+							$children = $meter->children;
 
-					echo '</tbody></table>';
+							foreach ( $children as $child_id ) {
+								$child = new METERMAID_METER( $child_id );
+
+								?>
+								<tr>
+									<td></td>
+									<td>
+										<a href="<?php echo esc_attr( add_query_arg( 'meter', $child->id ) ); ?>">
+											<?php echo esc_html( $child->display_name() ); ?>
+										</a>
+									</td>
+								</tr>
+								<?php
+							}
+
+							?>
+						</tbody>
+					</table>
+
+					<?php
 				}
 			}
 
@@ -838,7 +812,7 @@ class METERMAID {
 		?>
 		<select name="<?php echo esc_attr( $field_name ); ?><?php if ( $multiple ) { ?>[]<?php } ?>"<?php if ( $multiple ) { ?> multiple<?php } ?>>
 			<?php if ( ! $multiple ) { ?>
-				<option value="">-- Select Meter --</option>
+				<option value=""><?php echo esc_html( __( '-- Select Meter --', 'metermaid' ) ); ?></option>
 			<?php } ?>
 			<?php
 
@@ -872,7 +846,7 @@ class METERMAID {
 				<?php if ( ! $meter_id ) { ?>
 					<tr>
 						<th scope="row">
-							Meter
+							<?php echo esc_html( __( 'Meter', 'metermaid' ) ); ?>
 						</th>
 						<td>
 							<?php METERMAID::meter_list_selection( 'metermaid_meter_id' ); ?>
@@ -881,7 +855,7 @@ class METERMAID {
 				<?php } ?>
 				<tr>
 					<th scope="row">
-						Date
+						<?php echo esc_html( __( 'Date', 'metermaid' ) ); ?>
 					</th>
 					<td>
 						<input type="date" name="metermaid_reading_date" value="<?php echo esc_html( current_datetime()->format( 'Y-m-d' ) ); ?>" />
@@ -889,7 +863,7 @@ class METERMAID {
 				</tr>
 				<tr>
 					<th scope="row">
-						Reading
+						<?php echo esc_html( __( 'Reading', 'metermaid' ) ); ?>
 					</th>
 					<td>
 						<input type="number" name="metermaid_reading" value="" />
@@ -898,7 +872,7 @@ class METERMAID {
 				<tr>
 					<th scope="row"></th>
 					<td>
-						<input class="button button-primary" type="submit" value="Add Reading" />
+						<input class="button button-primary" type="submit" value="<?php echo esc_attr( __( 'Add Reading', 'metermaid' ) ); ?>" />
 					</td>
 				</tr>
 			</table>
@@ -943,15 +917,13 @@ class METERMAID {
 	public static function add_settings_form() {
 		?>
 		<form method="post" action="">
-			<h2>Settings</h2>
-
 			<input type="hidden" name="metermaid_action" value="update_settings" />
 			<input type="hidden" name="metermaid_nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-update-settings' ) ); ?>" />
 
 			<table class="form-table">
 				<tr>
 					<th scope="row">
-						Unit of measurement
+						<?php echo esc_html( __( 'Unit of measurement', 'metermaid' ) ); ?>
 					</th>
 					<td>
 						<select name="metermaid_unit_of_measurement">
@@ -963,7 +935,7 @@ class METERMAID {
 				</tr>
 				<tr>
 					<th scope="row">
-						Minimum rate interval (in days)
+						<?php echo esc_html( __( 'Minimum rate interval (in days)', 'metermaid' ) ); ?>
 					</th>
 					<td>
 						<input type="number" name="metermaid_minimum_rate_interval" value="<?php echo esc_attr( METERMAID::get_option( 'minimum_rate_interval' ) ); ?>" />
@@ -972,7 +944,7 @@ class METERMAID {
 				<tr>
 					<th scope="row"></th>
 					<td>
-						<input class="button button-primary" type="submit" value="Update Settings" />
+						<input class="button button-primary" type="submit" value="<?php echo esc_attr( __( 'Update Settings', 'metermaid' ) ); ?>" />
 					</td>
 				</tr>
 			</table>
@@ -1016,11 +988,10 @@ class METERMAID {
 			<input type="hidden" name="metermaid_nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-add-supplement' ) ); ?>" />
 			<input type="hidden" name="metermaid_meter_id" value="<?php echo esc_attr( $meter_id ); ?>" />
 
-
 			<table class="form-table">
 				<tr>
 					<th scope="row">
-						Date
+						<?php echo esc_html( __( 'Date', 'metermaid' ) ); ?>
 					</th>
 					<td>
 						<input type="date" name="metermaid_supplement_date" value="<?php echo esc_html( current_datetime()->format( 'Y-m-d' ) ); ?>" />
@@ -1028,7 +999,7 @@ class METERMAID {
 				</tr>
 				<tr>
 					<th scope="row">
-						Amount
+						<?php echo esc_html( __( 'Amount', 'metermaid' ) ); ?>
 					</th>
 					<td>
 						<input type="number" name="metermaid_supplement_amount" value="" />
@@ -1036,7 +1007,7 @@ class METERMAID {
 				</tr>
 				<tr>
 					<th scope="row">
-						Note
+						<?php echo esc_html( __( 'Note', 'metermaid' ) ); ?>
 					</th>
 					<td>
 						<textarea name="metermaid_supplement_note"></textarea>
@@ -1045,7 +1016,7 @@ class METERMAID {
 				<tr>
 					<th scope="row"></th>
 					<td>
-						<input class="button button-primary" type="submit" value="Add Supplement" />
+						<input class="button button-primary" type="submit" value="<?php echo esc_attr( __( 'Add Supplement', 'metermaid' ) ); ?>" />
 					</td>
 				</tr>
 			</table>
@@ -1070,7 +1041,7 @@ class METERMAID {
 			<table class="form-table">
 				<tr>
 					<th scope="row">
-						Name
+						<?php echo esc_html( __( 'Name', 'metermaid' ) ); ?>
 					</th>
 					<td>
 						<input type="text" name="metermaid_meter_name" value="<?php echo esc_attr( $meter->name ); ?>" />
@@ -1078,7 +1049,7 @@ class METERMAID {
 				</tr>
 				<tr>
 					<th scope="row">
-						Location
+						<?php echo esc_html( __( 'Location', 'metermaid' ) ); ?>
 					</th>
 					<td>
 						<input type="text" name="metermaid_meter_location" value="<?php echo esc_attr( $meter->location ); ?>" />
@@ -1086,7 +1057,7 @@ class METERMAID {
 				</tr>
 				<tr>
 					<th scope="row">
-						Status
+						<?php echo esc_html( __( 'Status', 'metermaid' ) ); ?>
 					</th>
 					<td>
 						<select name="metermaid_meter_status">
@@ -1106,7 +1077,7 @@ class METERMAID {
 				</tr>
 				<tr>
 					<th scope="row">
-						Parent Meters
+						<?php echo esc_html( __( 'Parent Meters', 'metermaid' ) ); ?>
 					</th>
 					<td>
 						<?php METERMAID::meter_list_selection( 'metermaid_parent_meters', true, $meter->parents ); ?>
@@ -1114,7 +1085,7 @@ class METERMAID {
 				</tr>
 				<tr>
 					<th scope="row">
-						Child Meters
+						<?php echo esc_html( __( 'Child Meters', 'metermaid' ) ); ?>
 					</th>
 					<td>
 						<?php METERMAID::meter_list_selection( 'metermaid_child_meters', true, $meter->children ); ?>
