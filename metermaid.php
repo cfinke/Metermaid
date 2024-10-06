@@ -123,7 +123,7 @@ class METERMAID {
 			'publish_posts',                    // capability
 			'metermaid',	                    // menu slug
 			array( 'METERMAID', 'admin_page' ), // Callback
-			'dashicons-welcome-write-blog',     // Icon
+			plugins_url( 'metermaid/images/admin-menu-icon.png' ),
 			4                                   // Position
 		);
 
