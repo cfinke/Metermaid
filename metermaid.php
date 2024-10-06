@@ -1003,6 +1003,7 @@ class METERMAID {
 					</th>
 					<td>
 						<input type="number" name="metermaid_supplement_amount" value="" />
+						<p class="description"><?php echo esc_html( __( 'A supplement is water that is added to the system after his meter. For example, water being delivered directly to a holding tank downstream from this meter would be a supplement.', 'metermaid' ) ); ?></p>
 					</td>
 				</tr>
 				<tr>
@@ -1081,6 +1082,7 @@ class METERMAID {
 					</th>
 					<td>
 						<?php METERMAID::meter_list_selection( 'metermaid_parent_meters', true, $meter->parents ); ?>
+						<p class="description"><?php echo esc_html( __( 'A parent meter is a meter that is located upstream from this meter.', 'metermaid' ) ); ?></p>
 					</td>
 				</tr>
 				<tr>
@@ -1089,6 +1091,8 @@ class METERMAID {
 					</th>
 					<td>
 						<?php METERMAID::meter_list_selection( 'metermaid_child_meters', true, $meter->children ); ?>
+						<p class="description"><?php echo esc_html( __( 'A child meter is a meter that is located downstream from this meter.', 'metermaid' ) ); ?></p>
+
 					</td>
 				</tr>
 				<tr>
