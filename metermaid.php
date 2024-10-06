@@ -10,6 +10,9 @@ Author: Christopher Finke
 require_once __DIR__ . '/classes/class.meter.php';
 require_once __DIR__ . '/classes/class.reading.php';
 
+define( 'METERMAID_STATUS_ACTIVE', 0 );
+define( 'METERMAID_STATUS_INACTIVE', 1 );
+
 class METERMAID {
 	public static function init() {
 		add_filter( 'not_a_blog_default_page', function ( $url ) {
@@ -53,8 +56,12 @@ class METERMAID {
 		$wpdb->query( "CREATE TABLE IF NOT EXISTS ".$wpdb->prefix."metermaid_meters
 			(
 				metermaid_meter_id bigint(20) NOT NULL AUTO_INCREMENT,
+				metermaid_system_id bigint(20) NOT NULL,
 				name varchar(100) NOT NULL,
 				location varchar(100) NOT NULL,
+				status int(11) NOT NULL,
+				added DATETIME,
+				added_by VARCHAR(100),
 				PRIMARY KEY (metermaid_meter_id),
 				INDEX name (name)
 			) ENGINE=InnoDB DEFAULT CHARSET=utf8"
@@ -224,10 +231,10 @@ class METERMAID {
 				}
 
 				$wpdb->query( $wpdb->prepare(
-					"UPDATE " . $wpdb->prefix . "metermaid_meters SET name=%s, location=%s, inactive=%d WHERE metermaid_meter_id=%d LIMIT 1",
+					"UPDATE " . $wpdb->prefix . "metermaid_meters SET name=%s, location=%s, status=%d WHERE metermaid_meter_id=%d LIMIT 1",
 					$_POST['metermaid_meter_name'],
 					$_POST['metermaid_meter_location'],
-					( isset( $_POST['metermaid_meter_inactive'] ) && ! empty( $_POST['metermaid_meter_inactive'] ) ) ? 1 : 0,
+					$_POST['metermaid_meter_status'],
 					$_POST['metermaid_meter_id']
 				) );
 
@@ -342,7 +349,7 @@ class METERMAID {
 						<?php } ?>
 					</div>
 					<div data-metermaid-tab="add-meter">
-						<?php self::add_meter_form(); ?>
+						<?php self::edit_meter_form(); ?>
 					</div>
 					<div data-metermaid-tab="settings">
 						<?php self::add_settings_form(); ?>
@@ -888,58 +895,6 @@ class METERMAID {
 		<?php
 	}
 
-	public static function add_meter_form() {
-		?>
-		<form method="post" action="">
-			<input type="hidden" name="metermaid_action" value="add_meter" />
-			<input type="hidden" name="metermaid_nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-add-meter' ) ); ?>" />
-
-			<table class="form-table">
-				<tr>
-					<th scope="row">
-						Name
-					</th>
-					<td>
-						<input type="text" name="metermaid_meter_name" />
-					</td>
-				</tr>
-				<tr>
-					<th scope="row">
-						Location
-					</th>
-					<td>
-						<input type="text" name="metermaid_meter_location" />
-					</td>
-				</tr>
-				<?php if ( ! empty( $all_meters ) ) { ?>
-					<tr>
-						<th scope="row">
-							Parent Meters
-						</th>
-						<td>
-							<?php METERMAID::meter_list_selection( 'metermaid_parent_meters', true ); ?>
-						</td>
-					</tr>
-					<tr>
-						<th scope="row">
-							Child Meters
-						</th>
-						<td>
-							<?php METERMAID::meter_list_selection( 'metermaid_child_meters', true ); ?>
-						</td>
-					</tr>
-				<?php } ?>
-				<tr>
-					<th scope="row"></th>
-					<td>
-						<input class="button button-primary" type="submit" value="Add Meter" />
-					</td>
-				</tr>
-			</table>
-		</form>
-		<?php
-	}
-
 	// Sort readings in reverse descending order.
 	public static function readings_sort( $a, $b ) {
 		if ( $a->reading_date < $b->reading_date ) {
@@ -1087,14 +1042,19 @@ class METERMAID {
 		<?php
 	}
 
-	public static function edit_meter_form( $meter_id ) {
+	public static function edit_meter_form( $meter_id = null ) {
 		$meter = new METERMAID_METER( $meter_id );
 
 		?>
 		<form method="post" action="">
-			<input type="hidden" name="metermaid_action" value="edit_meter" />
-			<input type="hidden" name="metermaid_meter_id" value="<?php echo esc_attr( $meter_id ); ?>" />
-			<input type="hidden" name="metermaid_nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-edit-meter' ) ); ?>" />
+			<?php if ( $meter_id ) { ?>
+				<input type="hidden" name="metermaid_action" value="edit_meter" />
+				<input type="hidden" name="metermaid_meter_id" value="<?php echo esc_attr( $meter_id ); ?>" />
+				<input type="hidden" name="metermaid_nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-edit-meter' ) ); ?>" />
+			<?php } else { ?>
+				<input type="hidden" name="metermaid_action" value="add_meter" />
+				<input type="hidden" name="metermaid_nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-add-meter' ) ); ?>" />
+			<?php } ?>
 
 			<table class="form-table">
 				<tr>
@@ -1115,10 +1075,22 @@ class METERMAID {
 				</tr>
 				<tr>
 					<th scope="row">
-						Inactive
+						Status
 					</th>
 					<td>
-						<input type="checkbox" name="metermaid_meter_inactive" <?php if ( $meter->inactive ) { ?> checked="checked"<?php } ?> />
+						<select name="metermaid_meter_status">
+							<?php foreach ( $meter->statuses as $status_value => $status_label ) { ?>
+								<option
+									value="<?php echo esc_attr( $status_values ); ?>"
+									<?php if ( $meter->status == $status_value ) { ?>
+										selected="selected"
+									<?php } ?>
+								>
+									<?php echo esc_html( $status_label ); ?>
+								</option>
+							<?php } ?>
+						</select>
+						<p class="description"><?php echo esc_html( __( 'Inactive meters can either be meters that have been removed from the system or ones that can be assumed to have the same reading as their last reading.', 'metermaid' ) ); ?></p>
 					</td>
 				</tr>
 				<tr>
@@ -1140,7 +1112,7 @@ class METERMAID {
 				<tr>
 					<th scope="row"></th>
 					<td>
-						<input class="button button-primary" type="submit" value="Update Meter" />
+						<input class="button button-primary" type="submit" value="<?php echo esc_attr( $meter_id ? __( 'Update Meter', 'metermaid' ) : __( 'Add Meter', 'metermaid' ) ); ?>" />
 					</td>
 				</tr>
 			</table>

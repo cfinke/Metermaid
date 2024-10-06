@@ -4,15 +4,24 @@ class METERMAID_METER {
 	public $id;
 	public $name;
 	public $location;
-	public $inactive;
+	public $status;
+
+	public $statuses = array();
 
 	private $_readings = null;
 	private $_children = null;
 	private $_parents = null;
 	private $_children_readings = null;
 
-	public function __construct( $meter_id_or_row ) {
+	public function __construct( $meter_id_or_row = null ) {
 		global $wpdb;
+
+		$this->statuses[ METERMAID_STATUS_ACTIVE ] = __( 'Active', 'metermaid' );
+		$this->statuses[ METERMAID_STATUS_INACTIVE ] = __( 'Inactive', 'metermaid' );
+
+		if ( is_null( $meter_id_or_row ) ) {
+			return;
+		}
 
 		if ( is_numeric( $meter_id_or_row ) ) {
 			$meter_id_or_row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM " . $wpdb->prefix . "metermaid_meters WHERE metermaid_meter_id=%s LIMIT 1", $meter_id_or_row ) );
@@ -25,7 +34,7 @@ class METERMAID_METER {
 		$this->name = $meter_id_or_row->name;
 		$this->location = $meter_id_or_row->location;
 		$this->id = $meter_id_or_row->metermaid_meter_id;
-		$this->inactive = $meter_id_or_row->inactive;
+		$this->status = $meter_id_or_row->status;
 	}
 
 	/**
@@ -51,7 +60,7 @@ class METERMAID_METER {
 		) );
 
 		if ( ! empty( $readings ) ) {
-			if ( $this->inactive ) {
+			if ( $this->status === METERMAID_STATUS_INACTIVE ) {
 				// For inactive meters, set the current reading to the last known reading.
 				$current_reading = clone $readings[0];
 				$current_reading->reading_date = date( "Y-m-d" );
