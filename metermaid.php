@@ -129,8 +129,8 @@ class METERMAID {
 
 		add_submenu_page(
 			'metermaid',
-			__( 'All meters', 'metermaid' ),
-			__( 'All meters', 'metermaid' ),
+			__( 'All Meters', 'metermaid' ),
+			__( 'All Meters', 'metermaid' ),
 			'publish_posts',
 			'metermaid-all-meters',
 			array( 'METERMAID', 'admin_page' ),
@@ -139,8 +139,8 @@ class METERMAID {
 
 		add_submenu_page(
 			'metermaid',
-			__( 'Add meter', 'metermaid' ),
-			__( 'Add meter', 'metermaid' ),
+			__( 'Add Meter', 'metermaid' ),
+			__( 'Add Meter', 'metermaid' ),
 			'publish_posts',
 			'metermaid-add-meter',
 			array( 'METERMAID', 'admin_page' ),
