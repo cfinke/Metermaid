@@ -19,6 +19,17 @@ class METERMAID {
 			return 'wp-admin/admin.php?page=metermaid';
 		} );
 
+		/**
+		 * add_submenu_page() doesn't let us deep-link, so manage that redirection here.
+		 */
+		if ( isset( $_GET['page'] ) && 'metermaid-add-meter' === $_GET['page'] ) {
+			$redirect_url = remove_query_arg( 'page' );
+			$redirect_url = add_query_arg( 'page', 'metermaid-all-meters', $redirect_url );
+			$redirect_url .= '#tab-add-meter';
+			wp_safe_redirect( $redirect_url );
+			exit;
+		}
+
 		add_action( 'admin_menu', array( __CLASS__, 'add_options_menu' ) );
 
 		if ( isset( $_GET['page'] ) && strpos( $_GET['page'], 'metermaid' ) !== false ) {
