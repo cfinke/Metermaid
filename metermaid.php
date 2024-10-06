@@ -612,14 +612,14 @@ class METERMAID {
 					</nav>
 					<div class="metermaid-tabbed-content card">
 						<div data-metermaid-tab="year-chart">
-							<?php $meter->year_chart(); ?>
+							<?php $meter->output_year_chart(); ?>
 						</div>
 						<div data-metermaid-tab="supplement-chart">
-							<?php $meter->ytd_chart(); ?>
+							<?php $meter->output_ytd_chart(); ?>
 						</div>
 						<?php if ( $meter->is_parent() ) { ?>
 							<div data-metermaid-tab="children-chart">
-								<?php $meter->children_chart(); ?>
+								<?php $meter->output_children_chart(); ?>
 							</div>
 						<?php } ?>
 					</div>

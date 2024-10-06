@@ -19,6 +19,7 @@ class METERMAID_METER {
 		$this->statuses[ METERMAID_STATUS_ACTIVE ] = __( 'Active', 'metermaid' );
 		$this->statuses[ METERMAID_STATUS_INACTIVE ] = __( 'Inactive', 'metermaid' );
 
+		// If we're just instantiating the object to use it for its methods, skip the rest of the initialization.
 		if ( is_null( $meter_id_or_row ) ) {
 			return;
 		}
@@ -118,6 +119,9 @@ class METERMAID_METER {
 		return $reading_objects;
 	}
 
+	/**
+	 * By default, sort the readings in reverse chronological order.
+	 */
 	public static function sort_readings( $a, $b ) {
 		if ( $a->reading_date < $b->reading_date ) {
 			return 1;
@@ -128,6 +132,9 @@ class METERMAID_METER {
 		return 0;
 	}
 
+	/**
+	 * Hide some expensive calls behind a cached __get().
+	 */
 	public function __get( $key ) {
 		global $wpdb;
 
@@ -157,6 +164,9 @@ class METERMAID_METER {
 		return null;
 	}
 
+	/**
+	 * @return bool
+	 */
 	public function is_parent() {
 		$children = $this->children;
 
@@ -167,7 +177,10 @@ class METERMAID_METER {
 		return false;
 	}
 
-	public function year_chart() {
+	/**
+	 * Output the year comparison chart.
+	 */
+	public function output_year_chart() {
 		$readings = $this->readings();
 
 		if ( count( $readings ) < 2 ) {
@@ -265,7 +278,7 @@ class METERMAID_METER {
 		<?php
 	}
 
-	public function children_chart() {
+	public function output_children_chart() {
 		$chart_id = 'metermaid-child-chart-' . $this->id;
 
 		$data = array();
@@ -458,7 +471,7 @@ class METERMAID_METER {
 		return $children_readings[ $reading_date ] ?? false;
 	}
 
-	public function ytd_chart() {
+	public function output_ytd_chart() {
 		$readings = $this->readings();
 
 		if ( empty( $readings ) ) {
