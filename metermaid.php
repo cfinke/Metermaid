@@ -1006,7 +1006,7 @@ class METERMAID {
 					</th>
 					<td>
 						<input type="number" name="metermaid_supplement_amount" value="" />
-						<p class="description"><?php echo esc_html( __( 'A supplement is water that is added to the system after his meter. For example, water being delivered directly to a holding tank downstream from this meter would be a supplement.', 'metermaid' ) ); ?></p>
+						<p class="description"><?php echo esc_html( __( 'A supplement is water that is added to the system after this meter. For example, water being delivered directly to a holding tank downstream from this meter would be a supplement.', 'metermaid' ) ); ?></p>
 					</td>
 				</tr>
 				<tr>
