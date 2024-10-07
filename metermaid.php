@@ -212,9 +212,10 @@ class METERMAID {
 				}
 
 				$wpdb->query( $wpdb->prepare(
-					"INSERT INTO " . $wpdb->prefix . "metermaid_meters SET name=%s, location=%s",
+					"INSERT INTO " . $wpdb->prefix . "metermaid_meters SET name=%s, location=%s, added=NOW(), added_by=%d",
 					$_POST['metermaid_meter_name'],
-					$_POST['metermaid_meter_location']
+					$_POST['metermaid_meter_location'],
+					get_current_user_id()
 				) );
 
 				$meter_id = $wpdb->insert_id;
@@ -298,10 +299,11 @@ class METERMAID {
 				$reading_int = intval( str_replace( ',', '', $_POST['metermaid_reading'] ) );
 
 				$wpdb->query( $wpdb->prepare(
-					"INSERT INTO " . $wpdb->prefix . "metermaid_readings SET meter_id=%s, reading=%d, reading_date=%s ON DUPLICATE KEY UPDATE reading=VALUES(reading)",
+					"INSERT INTO " . $wpdb->prefix . "metermaid_readings SET meter_id=%s, reading=%d, reading_date=%s, added=NOW(), added_by=%d ON DUPLICATE KEY UPDATE reading=VALUES(reading)",
 					$_POST['metermaid_meter_id'],
 					$reading_int,
-					$_POST['metermaid_reading_date']
+					$_POST['metermaid_reading_date'],
+					get_current_user_id()
 				) );
 
 				$meter = new METERMAID_METER( $_POST['metermaid_meter_id'] );
@@ -511,11 +513,12 @@ class METERMAID {
 					$amount_int = intval( str_replace( ',', '', $_POST['metermaid_supplement_amount'] ) );
 
 					$wpdb->query( $wpdb->prepare(
-						"INSERT INTO " . $wpdb->prefix . "metermaid_supplements SET meter_id=%s, amount=%d, supplement_date=%s, note=%s ON DUPLICATE KEY UPDATE amount=VALUES(amount)",
+						"INSERT INTO " . $wpdb->prefix . "metermaid_supplements SET meter_id=%s, amount=%d, supplement_date=%s, note=%s, added=NOW(), added_by=%d ON DUPLICATE KEY UPDATE amount=VALUES(amount)",
 						$_POST['metermaid_meter_id'],
 						$amount_int,
 						$_POST['metermaid_supplement_date'],
-						$_POST['metermaid_supplement_note']
+						$_POST['metermaid_supplement_note'],
+						get_current_user_id()
 					) );
 
 					?>
