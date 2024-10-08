@@ -195,11 +195,11 @@ class METERMAID {
 
 		$wpdb->query( "CREATE TABLE IF NOT EXISTS ".$wpdb->prefix."metermaid_meters
 			(
-				metermaid_meter_id bigint(20) NOT NULL AUTO_INCREMENT,
-				metermaid_system_id bigint(20) NOT NULL,
+				metermaid_meter_id bigint NOT NULL AUTO_INCREMENT,
+				metermaid_system_id bigint NOT NULL,
 				name varchar(100) NOT NULL,
 				location varchar(100) NOT NULL,
-				status int(11) NOT NULL,
+				status int NOT NULL,
 				added DATETIME,
 				added_by VARCHAR(100),
 				PRIMARY KEY (metermaid_meter_id),
@@ -209,9 +209,11 @@ class METERMAID {
 
 		$wpdb->query( "CREATE TABLE IF NOT EXISTS ".$wpdb->prefix."metermaid_relationships
 			(
-				metermaid_relationship_id bigint(20) NOT NULL AUTO_INCREMENT,
-				parent_meter_id bigint(20) NOT NULL,
-				child_meter_id bigint(20) NOT NULL,
+				metermaid_relationship_id bigint NOT NULL AUTO_INCREMENT,
+				parent_meter_id bigint NOT NULL,
+				child_meter_id bigint NOT NULL,
+				added DATETIME,
+				added_by VARCHAR(100),
 				PRIMARY KEY (metermaid_relationship_id),
 				UNIQUE KEY relationship (parent_meter_id, child_meter_id),
 				INDEX child_meter_id (child_meter_id)
@@ -220,11 +222,13 @@ class METERMAID {
 
 		$wpdb->query( "CREATE TABLE IF NOT EXISTS ".$wpdb->prefix."metermaid_readings
 			(
-				metermaid_reading_id bigint(20) NOT NULL AUTO_INCREMENT,
-				meter_id bigint(20) NOT NULL,
-				reading int(11) NOT NULL,
-				real_reading int(11) NOT NULL,
+				metermaid_reading_id bigint NOT NULL AUTO_INCREMENT,
+				meter_id bigint NOT NULL,
+				reading int NOT NULL,
+				real_reading int NOT NULL,
 				reading_date date NOT NULL,
+				added DATETIME,
+				added_by VARCHAR(100),
 				PRIMARY KEY (metermaid_reading_id),
 				INDEX meter_id (meter_id),
 				UNIQUE KEY reading_date (reading_date, meter_id)
@@ -233,11 +237,13 @@ class METERMAID {
 
 		$wpdb->query( "CREATE TABLE IF NOT EXISTS ".$wpdb->prefix."metermaid_supplements
 			(
-				metermaid_supplement_id bigint(20) NOT NULL AUTO_INCREMENT,
-				meter_id bigint(20) NOT NULL,
-				amount int(11) NOT NULL,
+				metermaid_supplement_id bigint NOT NULL AUTO_INCREMENT,
+				meter_id bigint NOT NULL,
+				amount int NOT NULL,
 				supplement_date date NOT NULL,
 				note TEXT,
+				added DATETIME,
+				added_by VARCHAR(100),
 				PRIMARY KEY (metermaid_supplement_id),
 				INDEX meter_id (meter_id),
 				UNIQUE KEY supplement_date (supplement_date, meter_id)
