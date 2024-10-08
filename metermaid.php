@@ -182,8 +182,18 @@ class METERMAID {
 
 			if ( count( $args ) > 2 ) {
 				// This is related to a specific access issue.
+
+				// First confirm that they generally have the right to take this action.
 				if ( isset( $allcaps[ $cap_to_check ] ) && $allcaps[ $cap_to_check ] ) {
-					if ( 'metermaid-access-system' == $cap_to_check || 'metermaid-edit-system' == $cap_to_check ) {
+					// Now confirm that they have the right to take it on this specific system/meter/etc.
+
+					// System-level actions
+					if ( in_array( $cap_to_check, array(
+							'metermaid-access-system',
+							'metermaid-edit-system',
+							'metermaid-add-meter',
+							), true )
+						) {
 						$system_id = $args[2];
 
 						// Check if this user is listed as personnel on this system.
@@ -200,99 +210,16 @@ class METERMAID {
 						if ( ! $row ) {
 							unset( $allcaps[ $cap_to_check ] );
 						}
-					} else if ( 'metermaid-add-meter' == $cap_to_check ) {
-						// If they can't add a meter anywhere, we wouldn't be this far down. Check if they
-						// have access to this system.
-						$system_id = $args[2];
 
-						if ( ! current_user_can( 'metermaid-access-system', $system_id ) ) {
-							unset( $allcaps[ $cap_to_check ] );
-						}
-					} else if ( 'metermaid-add-reading' == $cap_to_check ) {
-						$meter_id = $args[2];
-
-						$meter = new METERMAID_METER( $meter_id );
-
-						$system_id = $meter->system_id;
-
-						$row = $wpdb->get_row( $wpdb->prepare(
-							"SELECT * FROM " . $wpdb->prefix . "metermaid_personnel
-							WHERE email=%s
-								AND metermaid_system_id=%d
-								AND ( metermaid_meter_id IS NULL OR metermaid_meter_id=%d )
-							LIMIT 1",
-							$user->user_email,
-							$system_id,
-							$meter_id
-						) );
-
-						if ( ! $row ) {
-							unset( $allcaps[ $cap_to_check ] );
-						}
-					} else if ( 'metermaid-view-meter' == $cap_to_check ) {
-						$meter_id = $args[2];
-
-						$meter = new METERMAID_METER( $meter_id );
-
-						$system_id = $meter->system_id;
-
-						$row = $wpdb->get_row( $wpdb->prepare(
-							"SELECT * FROM " . $wpdb->prefix . "metermaid_personnel
-							WHERE email=%s
-								AND metermaid_system_id=%d
-								AND ( metermaid_meter_id IS NULL OR metermaid_meter_id=%d )
-							LIMIT 1",
-							$user->user_email,
-							$system_id,
-							$meter_id
-						) );
-
-						if ( ! $row ) {
-							unset( $allcaps[ $cap_to_check ] );
-						}
-					} else if ( 'metermaid-delete-reading' == $cap_to_check ) {
-						$meter_id = $args[2];
-
-						$meter = new METERMAID_METER( $meter_id );
-
-						$system_id = $meter->system_id;
-
-						$row = $wpdb->get_row( $wpdb->prepare(
-							"SELECT * FROM " . $wpdb->prefix . "metermaid_personnel
-							WHERE email=%s
-								AND metermaid_system_id=%d
-								AND ( metermaid_meter_id IS NULL OR metermaid_meter_id=%d )
-							LIMIT 1",
-							$user->user_email,
-							$system_id,
-							$meter_id
-						) );
-
-						if ( ! $row ) {
-							unset( $allcaps[ $cap_to_check ] );
-						}
-					} else if ( 'metermaid-delete-meter' == $cap_to_check ) {
-						$meter_id = $args[2];
-
-						$meter = new METERMAID_METER( $meter_id );
-
-						$system_id = $meter->system_id;
-
-						$row = $wpdb->get_row( $wpdb->prepare(
-							"SELECT * FROM " . $wpdb->prefix . "metermaid_personnel
-							WHERE email=%s
-								AND metermaid_system_id=%d
-								AND ( metermaid_meter_id IS NULL OR metermaid_meter_id=%d )
-							LIMIT 1",
-							$user->user_email,
-							$system_id,
-							$meter_id
-						) );
-
-						if ( ! $row ) {
-							unset( $allcaps[ $cap_to_check ] );
-						}
-					} else if ( 'metermaid-edit-meter' == $cap_to_check ) {
+					// Meter-level-actions
+					} else if ( in_array( $cap_to_check, array(
+							'metermaid-add-reading',
+							'metermaid-view-meter',
+							'metermaid-delete-reading',
+							'metermaid-delete-meter',
+							'metermaid-edit-meter',
+							), true )
+						) {
 						$meter_id = $args[2];
 
 						$meter = new METERMAID_METER( $meter_id );
