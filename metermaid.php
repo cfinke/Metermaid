@@ -20,6 +20,105 @@ class METERMAID {
 			return 'wp-admin/admin.php?page=metermaid';
 		} );
 
+		add_filter( 'user_has_cap', array( 'METERMAID', 'user_has_cap' ), 10, 4 );
+
+		$admin_role = get_role( 'administrator' );
+		$admin_role->add_cap( 'metermaid', true );
+		$admin_role->add_cap( 'metermaid-access-system', true );
+
+		$admin_role->add_cap( 'metermaid-add-system', true );
+		$admin_role->add_cap( 'metermaid-add-meter', true );
+		$admin_role->add_cap( 'metermaid-add-reading', true );
+		$admin_role->add_cap( 'metermaid-edit-system', true );
+		$admin_role->add_cap( 'metermaid-delete-meter', true );
+		$admin_role->add_cap( 'metermaid-delete-reading', true );
+
+		add_role(
+			'multisystem_manager',
+			__( 'Metermaid: Multi-System Manager', 'metermaid' ),
+			[
+				'read' => true,
+
+				'metermaid' => true,
+				'metermaid-access-system' => true,
+
+
+
+
+				'metermaid-add-system' => true,
+				'metermaid-add-meter' => true,
+				'metermaid-add-reading' => true,
+				'metermaid-access-system' => true,
+				'metermaid-view-meter' => true,
+				'metermaid-view-reading' => true,
+				'metermaid-delete-reading' => true,
+				'metermaid-delete-meter' => true,
+
+
+			]
+		);
+
+		$role = get_role( 'multisystem_manager' );
+		$role->add_cap( 'read', true );
+		$role->add_cap( 'metermaid', true );
+		$role->add_cap( 'metermaid-access-system', true );
+
+		add_role(
+			'system_manager',
+			__( 'Metermaid: System Manager', 'metermaid' ),
+			[
+				'metermaid' => true,
+				'metermaid-add-meter' => true,
+				'metermaid-add-reading' => true,
+				'metermaid-access-system' => true,
+				'metermaid-view-meter' => true,
+				'metermaid-view-reading' => true,
+				'metermaid-delete-reading' => true,
+				'metermaid-delete-meter' => true,
+				'read' => true,
+
+			]
+		);
+
+		$role = get_role( 'system_manager' );
+		$role->add_cap( 'read', true );
+		$role->add_cap( 'metermaid', true );
+		$role->add_cap( 'metermaid-access-system', true );
+
+		add_role(
+			'meter_manager',
+			__( 'Metermaid: Meter Manager', 'metermaid' ),
+			[
+				'metermaid' => true,
+				'metermaid-add-reading' => true,
+				'metermaid-view-meter' => true,
+				'metermaid-view-reading' => true,
+				'metermaid-delete-reading' => true,
+				'read' => true,
+			]
+		);
+
+		$role = get_role( 'meter_manager' );
+		$role->add_cap( 'read', true );
+		$role->add_cap( 'metermaid', true );
+		$role->add_cap( 'metermaid-access-system', true );
+
+		add_role(
+			'meter_viewer',
+			__( 'Metermaid: Meter Viewer', 'metermaid' ),
+			[
+				'metermaid' => true,
+				'metermaid-view-meter' => true,
+				'metermaid-view-reading' => true,
+				'read' => true,
+			]
+		);
+
+		$role = get_role( 'meter_viewer' );
+		$role->add_cap( 'read', true );
+		$role->add_cap( 'metermaid', true );
+		$role->add_cap( 'metermaid-access-system', true );
+
 		/**
 		 * add_submenu_page() doesn't let us deep-link, so manage that redirection here.
 		 */
@@ -38,6 +137,35 @@ class METERMAID {
 		}
 
 		add_action( 'admin_title', array( __CLASS__, 'edit_page_title' ) );
+	}
+
+	public static function user_has_cap( $allcaps, $caps, $args, $user ) {
+		global $wpdb;
+		if ( ! in_array( 'administrator', $user->roles ) && strpos( $args[0], 'metermaid-' ) === 0 ) {
+			$cap_to_check = $args[0];
+
+			if ( count( $args ) > 2 ) {
+				// This is related to a specific access issue.
+				if ( isset( $allcaps[ $cap_to_check ] ) && $allcaps[ $cap_to_check ] ) {
+					if ( 'metermaid-access-system' == $cap_to_check ) {
+						$system_id = $args[2];
+
+						// Check if this user is listed as personnel on this system.
+						$row = $wpdb->get_row( $wpdb->prepare(
+							"SELECT * FROM " . $wpdb->prefix . "metermaid_personnel WHERE email=%s AND metermaid_system_id=%d LIMIT 1",
+							$user->user_email,
+							$system_id
+						) );
+
+						if ( ! $row ) {
+							unset( $allcaps['metermaid-access-system'] );
+						}
+					}
+				}
+			}
+		}
+
+		return $allcaps;
 	}
 
 	public static function edit_page_title() {
@@ -113,7 +241,22 @@ class METERMAID {
 				PRIMARY KEY (metermaid_supplement_id),
 				INDEX meter_id (meter_id),
 				UNIQUE KEY supplement_date (supplement_date, meter_id)
-			) ENGINE=InnoDB DEFAULT CHARSET=utf8"
+			) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
+		);
+
+		$wpdb->query( "CREATE TABLE IF NOT EXISTS " . $wpdb->prefix . "metermaid_personnel
+			(
+				metermaid_personnel_id bigint NOT NULL AUTO_INCREMENT,
+				email varchar(100) NOT NULL,
+				metermaid_system_id bigint NOT NULL,
+				metermaid_meter_id bigint NULL,
+				added DATETIME NOT NULL,
+				added_by bigint NOT NULL,
+				PRIMARY KEY (metermaid_personnel_id),
+				INDEX email (email),
+				INDEX metermaid_system_and_meter (metermaid_system_id, metermaid_meter_id),
+				INDEX added (added)
+			) ENGINE=InnoDB DEFAULT CHARSET utf8mb4"
 		);
 	}
 
@@ -121,7 +264,7 @@ class METERMAID {
 		add_menu_page(
 			'Metermaid',                        // Page title
 			'Metermaid',                        // Menu title
-			'publish_posts',                    // capability
+			'metermaid',                        // capability
 			'metermaid',	                    // menu slug
 			array( 'METERMAID', 'admin_page' ), // Callback
 			plugins_url( 'metermaid/images/admin-menu-icon.png' ),
@@ -132,7 +275,7 @@ class METERMAID {
 			'metermaid',
 			__( 'All Meters', 'metermaid' ),
 			__( 'All Meters', 'metermaid' ),
-			'publish_posts',
+			'metermaid',
 			'metermaid-all-meters',
 			array( 'METERMAID', 'admin_page' ),
 			1
@@ -142,7 +285,7 @@ class METERMAID {
 			'metermaid',
 			__( 'Add Meter', 'metermaid' ),
 			__( 'Add Meter', 'metermaid' ),
-			'publish_posts',
+			'metermaid-add-meter',
 			'metermaid-add-meter',
 			array( 'METERMAID', 'admin_page' ),
 			2
