@@ -25,9 +25,15 @@ class METERMAID {
 		$role = get_role( 'administrator' );
 		$role->add_cap( 'metermaid', true );
 		$role->add_cap( 'metermaid-access-system', true );
+		$role->add_cap( 'metermaid-edit-system', true );
 		$role->add_cap( 'metermaid-add-meter', true );
+		$role->add_cap( 'metermaid-edit-meter', true );
+		$role->add_cap( 'metermaid-delete-meter', true );
 		$role->add_cap( 'metermaid-view-meter', true );
 		$role->add_cap( 'metermaid-add-reading', true );
+		$role->add_cap( 'metermaid-delete-reading', true );
+		$role->add_cap( 'metermaid-add-supplement', true );
+		$role->add_cap( 'metermaid-delete-supplement', true );
 
 		/*
 		$role->add_cap( 'metermaid-add-system', true );
@@ -44,9 +50,15 @@ class METERMAID {
 
 				'metermaid' => true,
 				'metermaid-access-system' => true,
+				'metermaid-edit-system' => true,
 				'metermaid-add-meter' => true,
+				'metermaid-edit-meter' => true,
+				'metermaid-delete-meter' => true,
 				'metermaid-view-meter' => true,
 				'metermaid-add-reading' => true,
+				'metermaid-delete-reading' => true,
+				'metermaid-add-supplement' => true,
+				'metermaid-delete-supplement' => true,
 			]
 		);
 
@@ -54,9 +66,15 @@ class METERMAID {
 		$role->add_cap( 'read', true );
 		$role->add_cap( 'metermaid', true );
 		$role->add_cap( 'metermaid-access-system', true );
+		$role->add_cap( 'metermaid-edit-system', true );
 		$role->add_cap( 'metermaid-add-meter', true );
+		$role->add_cap( 'metermaid-edit-meter', true );
+		$role->add_cap( 'metermaid-delete-meter', true );
 		$role->add_cap( 'metermaid-view-meter', true );
 		$role->add_cap( 'metermaid-add-reading', true );
+		$role->add_cap( 'metermaid-delete-reading', true );
+		$role->add_cap( 'metermaid-add-supplement', true );
+		$role->add_cap( 'metermaid-delete-supplement', true );
 
 		add_role(
 			'system_manager',
@@ -66,9 +84,15 @@ class METERMAID {
 
 				'metermaid' => true,
 				'metermaid-access-system' => true,
+				'metermaid-edit-system' => true,
 				'metermaid-add-meter' => true,
+				'metermaid-edit-meter' => true,
+				'metermaid-delete-meter' => true,
 				'metermaid-view-meter' => true,
 				'metermaid-add-reading' => true,
+				'metermaid-delete-reading' => true,
+				'metermaid-add-supplement' => true,
+				'metermaid-delete-supplement' => true,
 			]
 		);
 
@@ -76,9 +100,15 @@ class METERMAID {
 		$role->add_cap( 'read', true );
 		$role->add_cap( 'metermaid', true );
 		$role->add_cap( 'metermaid-access-system', true );
+		$role->add_cap( 'metermaid-edit-system', true );
 		$role->add_cap( 'metermaid-add-meter', true );
+		$role->add_cap( 'metermaid-edit-meter', true );
+		$role->add_cap( 'metermaid-delete-meter', true );
 		$role->add_cap( 'metermaid-view-meter', true );
 		$role->add_cap( 'metermaid-add-reading', true );
+		$role->add_cap( 'metermaid-delete-reading', true );
+		$role->add_cap( 'metermaid-add-supplement', true );
+		$role->add_cap( 'metermaid-delete-supplement', true );
 
 		add_role(
 			'meter_manager',
@@ -90,6 +120,9 @@ class METERMAID {
 				'metermaid-access-system' => true,
 				'metermaid-view-meter' => true,
 				'metermaid-add-reading' => true,
+				'metermaid-delete-reading' => true,
+				'metermaid-add-supplement' => true,
+				'metermaid-delete-supplement' => true,
 			]
 		);
 
@@ -99,6 +132,9 @@ class METERMAID {
 		$role->add_cap( 'metermaid-access-system', true );
 		$role->add_cap( 'metermaid-view-meter', true );
 		$role->add_cap( 'metermaid-add-reading', true );
+		$role->add_cap( 'metermaid-delete-reading', true );
+		$role->add_cap( 'metermaid-add-supplement', true );
+		$role->add_cap( 'metermaid-delete-supplement', true );
 
 		add_role(
 			'meter_viewer',
@@ -147,7 +183,7 @@ class METERMAID {
 			if ( count( $args ) > 2 ) {
 				// This is related to a specific access issue.
 				if ( isset( $allcaps[ $cap_to_check ] ) && $allcaps[ $cap_to_check ] ) {
-					if ( 'metermaid-access-system' == $cap_to_check ) {
+					if ( 'metermaid-access-system' == $cap_to_check || 'metermaid-edit-system' == $cap_to_check ) {
 						$system_id = $args[2];
 
 						// Check if this user is listed as personnel on this system.
@@ -194,6 +230,69 @@ class METERMAID {
 							unset( $allcaps[ $cap_to_check ] );
 						}
 					} else if ( 'metermaid-view-meter' == $cap_to_check ) {
+						$meter_id = $args[2];
+
+						$meter = new METERMAID_METER( $meter_id );
+
+						$system_id = $meter->system_id;
+
+						$row = $wpdb->get_row( $wpdb->prepare(
+							"SELECT * FROM " . $wpdb->prefix . "metermaid_personnel
+							WHERE email=%s
+								AND metermaid_system_id=%d
+								AND ( metermaid_meter_id IS NULL OR metermaid_meter_id=%d )
+							LIMIT 1",
+							$user->user_email,
+							$system_id,
+							$meter_id
+						) );
+
+						if ( ! $row ) {
+							unset( $allcaps[ $cap_to_check ] );
+						}
+					} else if ( 'metermaid-delete-reading' == $cap_to_check ) {
+						$meter_id = $args[2];
+
+						$meter = new METERMAID_METER( $meter_id );
+
+						$system_id = $meter->system_id;
+
+						$row = $wpdb->get_row( $wpdb->prepare(
+							"SELECT * FROM " . $wpdb->prefix . "metermaid_personnel
+							WHERE email=%s
+								AND metermaid_system_id=%d
+								AND ( metermaid_meter_id IS NULL OR metermaid_meter_id=%d )
+							LIMIT 1",
+							$user->user_email,
+							$system_id,
+							$meter_id
+						) );
+
+						if ( ! $row ) {
+							unset( $allcaps[ $cap_to_check ] );
+						}
+					} else if ( 'metermaid-delete-meter' == $cap_to_check ) {
+						$meter_id = $args[2];
+
+						$meter = new METERMAID_METER( $meter_id );
+
+						$system_id = $meter->system_id;
+
+						$row = $wpdb->get_row( $wpdb->prepare(
+							"SELECT * FROM " . $wpdb->prefix . "metermaid_personnel
+							WHERE email=%s
+								AND metermaid_system_id=%d
+								AND ( metermaid_meter_id IS NULL OR metermaid_meter_id=%d )
+							LIMIT 1",
+							$user->user_email,
+							$system_id,
+							$meter_id
+						) );
+
+						if ( ! $row ) {
+							unset( $allcaps[ $cap_to_check ] );
+						}
+					} else if ( 'metermaid-edit-meter' == $cap_to_check ) {
 						$meter_id = $args[2];
 
 						$meter = new METERMAID_METER( $meter_id );
@@ -398,6 +497,11 @@ class METERMAID {
 					wp_die();
 				}
 
+				if ( ! current_user_can( 'metermaid-edit-system', $_POST['metermaid_system_id'] ) ) {
+					echo 'You are not authorized to update these settings.';
+					wp_die();
+				}
+
 				if ( isset( METERMAID::$units_of_measurement[ $_POST['metermaid_unit_of_measurement'] ] ) ) {
 					update_option( 'metermaid_unit_of_measurement', $_POST['metermaid_unit_of_measurement'] );
 				}
@@ -463,6 +567,12 @@ class METERMAID {
 					echo 'You are not authorized to edit a meter.';
 					wp_die();
 				}
+
+				if ( ! current_user_can( 'metermaid-edit-meter', $_POST['metermaid_meter_id'] ) ) {
+					echo 'You are not authorized to edit this meter.';
+					wp_die();
+				}
+
 
 				$wpdb->query( $wpdb->prepare(
 					"UPDATE " . $wpdb->prefix . "metermaid_meters SET name=%s, location=%s, status=%d WHERE metermaid_meter_id=%d LIMIT 1",
@@ -538,6 +648,11 @@ class METERMAID {
 					wp_die();
 				}
 
+				if ( ! current_user_can( 'metermaid-delete-meter', $_POST['meter_id'] ) ) {
+					echo 'You are not authorized to delete this meter.';
+					wp_die();
+				}
+
 				$wpdb->query( $wpdb->prepare(
 					"DELETE FROM " . $wpdb->prefix . "metermaid_meters WHERE metermaid_meter_id=%s LIMIT 1",
 					$_POST['meter_id'],
@@ -563,6 +678,11 @@ class METERMAID {
 		}
 
 		if ( isset( $_GET['meter'] ) ) {
+			if ( ! current_user_can( 'metermaid-view-meter', $_GET['meter'] ) ) {
+				echo 'You are not authorized to access this meter.';
+				wp_die();
+			}
+
 			return self::meter_detail_page( $_GET['meter'] );
 		}
 
@@ -642,12 +762,14 @@ class METERMAID {
 							?>
 							<tr>
 								<td>
-									<form method="post" action="" onsubmit="return confirm( metermaid_i18n.meter_delete_confirm ); ?> );">
-										<input type="hidden" name="metermaid_action" value="delete_meter" />
-										<input type="hidden" name="metermaid_nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-delete-meter' ) ); ?>" />
-										<input type="hidden" name="meter_id" value="<?php echo esc_attr( $meter->id ); ?>" />
-										<input type="submit" value="<?php echo esc_attr( __( 'Delete Meter', 'metermaid' ) ); ?>" />
-									</form>
+									<?php if ( current_user_can( 'metermaid-delete-meter', $meter->id ) ) { ?>
+										<form method="post" action="" onsubmit="return confirm( metermaid_i18n.meter_delete_confirm ); ?> );">
+											<input type="hidden" name="metermaid_action" value="delete_meter" />
+											<input type="hidden" name="metermaid_nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-delete-meter' ) ); ?>" />
+											<input type="hidden" name="meter_id" value="<?php echo esc_attr( $meter->id ); ?>" />
+											<input type="submit" value="<?php echo esc_attr( __( 'Delete Meter', 'metermaid' ) ); ?>" />
+										</form>
+									<?php } ?>
 								</td>
 								<td><a href="<?php echo esc_url( add_query_arg( 'meter', $meter->id ) ); ?>"><?php echo esc_html( $meter->name ?: __( '[Unnamed]' ) ); ?></a></td>
 								<td><?php echo esc_html( $meter->location ); ?></td>
@@ -710,6 +832,13 @@ class METERMAID {
 						wp_die();
 					}
 
+					// @todo Should meter managers only be able to delete their own readings?
+					// If so, the second arg of this should be the reading ID, not the meter.
+					if ( ! current_user_can( 'metermaid-delete-reading', $_GET['meter'] ) ) {
+						echo 'You are not authorized to delete a reading for this meter.';
+						wp_die();
+					}
+
 					$wpdb->query( $wpdb->prepare(
 						"DELETE FROM " . $wpdb->prefix . "metermaid_readings WHERE metermaid_reading_id=%s LIMIT 1",
 						$_POST['reading_id'],
@@ -729,6 +858,12 @@ class METERMAID {
 						wp_die();
 					}
 
+					if ( ! current_user_can( 'metermaid-delete-supplement', $_GET['meter'] ) ) {
+						echo 'You are not authorized to delete a supplement for this meter.';
+						wp_die();
+					}
+
+
 					$wpdb->query( $wpdb->prepare(
 						"DELETE FROM " . $wpdb->prefix . "metermaid_supplements WHERE metermaid_supplement_id=%s LIMIT 1",
 						$_POST['supplement_id'],
@@ -742,6 +877,11 @@ class METERMAID {
 				} else if ( 'add_supplement' == $_POST['metermaid_action'] ) {
 					if ( ! wp_verify_nonce( $_POST['metermaid_nonce'], 'metermaid-add-supplement' ) ) {
 						echo 'You are not authorized to add a supplement.';
+						wp_die();
+					}
+
+					if ( ! current_user_can( 'metermaid-add-supplement', $_GET['meter'] ) ) {
+						echo 'You are not authorized to add a supplement for this meter.';
 						wp_die();
 					}
 
@@ -783,8 +923,8 @@ class METERMAID {
 				<div class="metermaid-tabbed-content-container">
 					<nav class="nav-tab-wrapper">
 						<?php if ( current_user_can( 'metermaid-add-reading', $meter->id ) ) { ?><a href="#tab-reading" class="nav-tab" data-metermaid-tab="reading"><?php echo esc_html( __( 'Add Reading', 'metermaid' ) ); ?></a><?php } ?>
-						<a href="#tab-supplement" class="nav-tab" data-metermaid-tab="supplement"><?php echo esc_html( __( 'Add Supplement', 'metermaid' ) ); ?></a>
-						<a href="#tab-settings" class="nav-tab" data-metermaid-tab="settings"><?php echo esc_html( __( 'Settings', 'metermaid' ) ); ?></a>
+						<?php if ( current_user_can( 'metermaid-add-supplement', $meter->id ) ) { ?><a href="#tab-supplement" class="nav-tab" data-metermaid-tab="supplement"><?php echo esc_html( __( 'Add Supplement', 'metermaid' ) ); ?></a><?php } ?>
+						<?php if ( current_user_can( 'metermaid-edit-meter', $meter->id ) ) { ?><a href="#tab-settings" class="nav-tab" data-metermaid-tab="settings"><?php echo esc_html( __( 'Settings', 'metermaid' ) ); ?></a><?php } ?>
 					</nav>
 					<div class="metermaid-tabbed-content card">
 						<?php if ( current_user_can( 'metermaid-add-reading', $meter->id ) ) { ?>
@@ -792,12 +932,16 @@ class METERMAID {
 								<?php self::add_reading_form( $meter->id ); ?>
 							</div>
 						<?php } ?>
-						<div data-metermaid-tab="supplement">
-							<?php self::add_supplement_form( $meter->id ); ?>
-						</div>
-						<div data-metermaid-tab="settings">
-							<?php self::edit_meter_form( $meter->id ); ?>
-						</div>
+						<?php if ( current_user_can( 'metermaid-add-supplement', $meter->id ) ) { ?>
+							<div data-metermaid-tab="supplement">
+								<?php self::add_supplement_form( $meter->id ); ?>
+							</div>
+						<?php } ?>
+						<?php if ( current_user_can( 'metermaid-edit-meter', $meter->id ) ) { ?>
+							<div data-metermaid-tab="settings">
+								<?php self::edit_meter_form( $meter->id ); ?>
+							</div>
+						<?php } ?>
 					</div>
 				</div>
 
@@ -859,7 +1003,7 @@ class METERMAID {
 							?>
 							<tr>
 								<td>
-									<?php if ( $reading->id ) { ?>
+									<?php if ( $reading->id && current_user_can( 'metermaid-delete-reading', $meter->id ) ) { ?>
 										<form method="post" action="" onsubmit="return confirm( metermaid_i18n.reading_delete_confirm );">
 											<input type="hidden" name="metermaid_action" value="delete_reading" />
 											<input type="hidden" name="metermaid_nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-delete-reading' ) ); ?>" />
@@ -964,12 +1108,14 @@ class METERMAID {
 						<?php foreach ( $supplements as $supplement ) { ?>
 							<tr>
 								<td>
-									<form method="post" action="" onsubmit="return confirm( metermaid_i18n.supplement_delete_confirm );">
-										<input type="hidden" name="metermaid_action" value="delete_supplement" />
-										<input type="hidden" name="metermaid_nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-delete-supplement' ) ); ?>" />
-										<input type="hidden" name="supplement_id" value="<?php echo esc_attr( $supplement->metermaid_supplement_id ); ?>" />
-										<input type="submit" value="Delete" />
-									</form>
+									<?php if ( current_user_can( 'metermaid-delete-supplement', $meter->id ) ) { ?>
+										<form method="post" action="" onsubmit="return confirm( metermaid_i18n.supplement_delete_confirm );">
+											<input type="hidden" name="metermaid_action" value="delete_supplement" />
+											<input type="hidden" name="metermaid_nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-delete-supplement' ) ); ?>" />
+											<input type="hidden" name="supplement_id" value="<?php echo esc_attr( $supplement->metermaid_supplement_id ); ?>" />
+											<input type="submit" value="Delete" />
+										</form>
+									<?php } ?>
 								</td>
 								<td><?php echo esc_html( date( get_option( 'date_format' ), strtotime( $supplement->supplement_date ) ) ); ?></td>
 								<td><?php echo number_format( $supplement->amount, 0 ); ?></td>
@@ -978,7 +1124,20 @@ class METERMAID {
 						<?php } ?>
 					</tbody>
 				</table>
-				<?php if ( $meter->is_parent() ) { ?>
+				<?php
+
+				if ( $meter->is_parent() ) {
+					$child_meters = array();
+
+					foreach ( $meter->children as $child_id ) {
+						if ( current_user_can( 'metermaid-view-meter', $child_id ) ) {
+							$child_meters[] = new METERMAID_METER( $child_id );
+						}
+					}
+				}
+
+				if ( ! empty( $child_meters ) ) {
+					?>
 					<h2><?php echo esc_html( __( 'Child Meters', 'metermaid' ) ); ?></h2>
 					<table class="widefat striped wp-list-table">
 						<thead>
@@ -992,9 +1151,7 @@ class METERMAID {
 
 							$children = $meter->children;
 
-							foreach ( $children as $child_id ) {
-								$child = new METERMAID_METER( $child_id );
-
+							foreach ( $child_meters as $child ) {
 								?>
 								<tr>
 									<td></td>
@@ -1010,7 +1167,6 @@ class METERMAID {
 							?>
 						</tbody>
 					</table>
-
 					<?php
 				}
 			}
@@ -1145,7 +1301,6 @@ class METERMAID {
 			<?php if ( $meter_id ) { ?>
 				<input type="hidden" name="metermaid_meter_id" value="<?php echo esc_attr( $meter_id ); ?>" />
 			<?php } ?>
-
 
 			<table class="form-table">
 				<?php
