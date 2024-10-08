@@ -17,7 +17,7 @@ define( 'METERMAID_STATUS_INACTIVE', 1 );
 class METERMAID {
 	public static function init() {
 		add_filter( 'not_a_blog_default_page', function ( $url ) {
-			return 'wp-admin/admin.php?page=metermaid';
+			return 'wp-admin/admin.php?page=metermaid-home';
 		} );
 
 		add_filter( 'user_has_cap', array( 'METERMAID', 'user_has_cap' ), 10, 4 );
@@ -159,7 +159,7 @@ class METERMAID {
 		 */
 		if ( isset( $_GET['page'] ) && 'metermaid-add-meter' === $_GET['page'] ) {
 			$redirect_url = remove_query_arg( 'page' );
-			$redirect_url = add_query_arg( 'page', 'metermaid-all-meters', $redirect_url );
+			$redirect_url = add_query_arg( 'page', 'metermaid-home', $redirect_url );
 			$redirect_url .= '#tab-add-meter';
 			wp_safe_redirect( $redirect_url );
 			exit;
@@ -359,10 +359,10 @@ class METERMAID {
 
 		add_submenu_page(
 			'metermaid',
-			__( 'All Meters', 'metermaid' ),
-			__( 'All Meters', 'metermaid' ),
+			__( 'Metermaid Dashboard', 'metermaid' ),
+			__( 'Dashboard', 'metermaid' ),
 			'metermaid',
-			'metermaid-all-meters',
+			'metermaid-home',
 			array( 'METERMAID', 'admin_page' ),
 			1
 		);
