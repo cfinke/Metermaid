@@ -5,13 +5,16 @@ class METERMAID_METER {
 	public $name;
 	public $location;
 	public $status;
+	public $system_id;
 
 	public $statuses = array();
+
 
 	private $_readings = null;
 	private $_children = null;
 	private $_parents = null;
 	private $_children_readings = null;
+	private $_system = null;
 
 	public function __construct( $meter_id_or_row = null ) {
 		global $wpdb;
@@ -35,6 +38,7 @@ class METERMAID_METER {
 		$this->name = $meter_id_or_row->name;
 		$this->location = $meter_id_or_row->location;
 		$this->id = $meter_id_or_row->metermaid_meter_id;
+		$this->system_id = $meter_id_or_row->metermaid_system_id;
 		$this->status = $meter_id_or_row->status;
 	}
 
@@ -159,6 +163,9 @@ class METERMAID_METER {
 			}
 
 			return $this->__get( $key );
+		} else if ( 'system' == $key ) {
+			$this->_system = new METERMAID_SYSTEM( $this->system_id );
+			return $this->_system;
 		}
 
 		return null;
