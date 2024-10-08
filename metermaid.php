@@ -26,12 +26,14 @@ class METERMAID {
 		$admin_role->add_cap( 'metermaid', true );
 		$admin_role->add_cap( 'metermaid-access-system', true );
 
+		/*
 		$admin_role->add_cap( 'metermaid-add-system', true );
 		$admin_role->add_cap( 'metermaid-add-meter', true );
 		$admin_role->add_cap( 'metermaid-add-reading', true );
 		$admin_role->add_cap( 'metermaid-edit-system', true );
 		$admin_role->add_cap( 'metermaid-delete-meter', true );
 		$admin_role->add_cap( 'metermaid-delete-reading', true );
+		*/
 
 		add_role(
 			'multisystem_manager',
@@ -41,20 +43,6 @@ class METERMAID {
 
 				'metermaid' => true,
 				'metermaid-access-system' => true,
-
-
-
-
-				'metermaid-add-system' => true,
-				'metermaid-add-meter' => true,
-				'metermaid-add-reading' => true,
-				'metermaid-access-system' => true,
-				'metermaid-view-meter' => true,
-				'metermaid-view-reading' => true,
-				'metermaid-delete-reading' => true,
-				'metermaid-delete-meter' => true,
-
-
 			]
 		);
 
@@ -67,16 +55,10 @@ class METERMAID {
 			'system_manager',
 			__( 'Metermaid: System Manager', 'metermaid' ),
 			[
-				'metermaid' => true,
-				'metermaid-add-meter' => true,
-				'metermaid-add-reading' => true,
-				'metermaid-access-system' => true,
-				'metermaid-view-meter' => true,
-				'metermaid-view-reading' => true,
-				'metermaid-delete-reading' => true,
-				'metermaid-delete-meter' => true,
 				'read' => true,
 
+				'metermaid' => true,
+				'metermaid-access-system' => true,
 			]
 		);
 
@@ -89,12 +71,10 @@ class METERMAID {
 			'meter_manager',
 			__( 'Metermaid: Meter Manager', 'metermaid' ),
 			[
-				'metermaid' => true,
-				'metermaid-add-reading' => true,
-				'metermaid-view-meter' => true,
-				'metermaid-view-reading' => true,
-				'metermaid-delete-reading' => true,
 				'read' => true,
+
+				'metermaid' => true,
+				'metermaid-access-system' => true,
 			]
 		);
 
@@ -107,10 +87,10 @@ class METERMAID {
 			'meter_viewer',
 			__( 'Metermaid: Meter Viewer', 'metermaid' ),
 			[
-				'metermaid' => true,
-				'metermaid-view-meter' => true,
-				'metermaid-view-reading' => true,
 				'read' => true,
+
+				'metermaid' => true,
+				'metermaid-access-system' => true,
 			]
 		);
 
