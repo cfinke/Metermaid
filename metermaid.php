@@ -22,17 +22,18 @@ class METERMAID {
 
 		add_filter( 'user_has_cap', array( 'METERMAID', 'user_has_cap' ), 10, 4 );
 
-		$admin_role = get_role( 'administrator' );
-		$admin_role->add_cap( 'metermaid', true );
-		$admin_role->add_cap( 'metermaid-access-system', true );
+		$role = get_role( 'administrator' );
+		$role->add_cap( 'metermaid', true );
+		$role->add_cap( 'metermaid-access-system', true );
+		$role->add_cap( 'metermaid-add-meter', true );
+		$role->add_cap( 'metermaid-view-meter', true );
+		$role->add_cap( 'metermaid-add-reading', true );
 
 		/*
-		$admin_role->add_cap( 'metermaid-add-system', true );
-		$admin_role->add_cap( 'metermaid-add-meter', true );
-		$admin_role->add_cap( 'metermaid-add-reading', true );
-		$admin_role->add_cap( 'metermaid-edit-system', true );
-		$admin_role->add_cap( 'metermaid-delete-meter', true );
-		$admin_role->add_cap( 'metermaid-delete-reading', true );
+		$role->add_cap( 'metermaid-add-system', true );
+		$role->add_cap( 'metermaid-edit-system', true );
+		$role->add_cap( 'metermaid-delete-meter', true );
+		$role->add_cap( 'metermaid-delete-reading', true );
 		*/
 
 		add_role(
@@ -43,6 +44,9 @@ class METERMAID {
 
 				'metermaid' => true,
 				'metermaid-access-system' => true,
+				'metermaid-add-meter' => true,
+				'metermaid-view-meter' => true,
+				'metermaid-add-reading' => true,
 			]
 		);
 
@@ -50,6 +54,9 @@ class METERMAID {
 		$role->add_cap( 'read', true );
 		$role->add_cap( 'metermaid', true );
 		$role->add_cap( 'metermaid-access-system', true );
+		$role->add_cap( 'metermaid-add-meter', true );
+		$role->add_cap( 'metermaid-view-meter', true );
+		$role->add_cap( 'metermaid-add-reading', true );
 
 		add_role(
 			'system_manager',
@@ -59,6 +66,9 @@ class METERMAID {
 
 				'metermaid' => true,
 				'metermaid-access-system' => true,
+				'metermaid-add-meter' => true,
+				'metermaid-view-meter' => true,
+				'metermaid-add-reading' => true,
 			]
 		);
 
@@ -66,6 +76,9 @@ class METERMAID {
 		$role->add_cap( 'read', true );
 		$role->add_cap( 'metermaid', true );
 		$role->add_cap( 'metermaid-access-system', true );
+		$role->add_cap( 'metermaid-add-meter', true );
+		$role->add_cap( 'metermaid-view-meter', true );
+		$role->add_cap( 'metermaid-add-reading', true );
 
 		add_role(
 			'meter_manager',
@@ -75,6 +88,8 @@ class METERMAID {
 
 				'metermaid' => true,
 				'metermaid-access-system' => true,
+				'metermaid-view-meter' => true,
+				'metermaid-add-reading' => true,
 			]
 		);
 
@@ -82,6 +97,8 @@ class METERMAID {
 		$role->add_cap( 'read', true );
 		$role->add_cap( 'metermaid', true );
 		$role->add_cap( 'metermaid-access-system', true );
+		$role->add_cap( 'metermaid-view-meter', true );
+		$role->add_cap( 'metermaid-add-reading', true );
 
 		add_role(
 			'meter_viewer',
@@ -91,6 +108,7 @@ class METERMAID {
 
 				'metermaid' => true,
 				'metermaid-access-system' => true,
+				'metermaid-view-meter' => true,
 			]
 		);
 
@@ -98,6 +116,7 @@ class METERMAID {
 		$role->add_cap( 'read', true );
 		$role->add_cap( 'metermaid', true );
 		$role->add_cap( 'metermaid-access-system', true );
+		$role->add_cap( 'metermaid-view-meter', true );
 
 		/**
 		 * add_submenu_page() doesn't let us deep-link, so manage that redirection here.
@@ -121,6 +140,7 @@ class METERMAID {
 
 	public static function user_has_cap( $allcaps, $caps, $args, $user ) {
 		global $wpdb;
+
 		if ( ! in_array( 'administrator', $user->roles ) && strpos( $args[0], 'metermaid-' ) === 0 ) {
 			$cap_to_check = $args[0];
 
@@ -132,13 +152,67 @@ class METERMAID {
 
 						// Check if this user is listed as personnel on this system.
 						$row = $wpdb->get_row( $wpdb->prepare(
-							"SELECT * FROM " . $wpdb->prefix . "metermaid_personnel WHERE email=%s AND metermaid_system_id=%d LIMIT 1",
+							"SELECT *
+							FROM " . $wpdb->prefix . "metermaid_personnel
+							WHERE email=%s
+								AND metermaid_system_id=%d
+							LIMIT 1",
 							$user->user_email,
 							$system_id
 						) );
 
 						if ( ! $row ) {
-							unset( $allcaps['metermaid-access-system'] );
+							unset( $allcaps[ $cap_to_check ] );
+						}
+					} else if ( 'metermaid-add-meter' == $cap_to_check ) {
+						// If they can't add a meter anywhere, we wouldn't be this far down. Check if they
+						// have access to this system.
+						$system_id = $args[2];
+
+						if ( ! current_user_can( 'metermaid-access-system', $system_id ) ) {
+							unset( $allcaps[ $cap_to_check ] );
+						}
+					} else if ( 'metermaid-add-reading' == $cap_to_check ) {
+						$meter_id = $args[2];
+
+						$meter = new METERMAID_METER( $meter_id );
+
+						$system_id = $meter->system_id;
+
+						$row = $wpdb->get_row( $wpdb->prepare(
+							"SELECT * FROM " . $wpdb->prefix . "metermaid_personnel
+							WHERE email=%s
+								AND metermaid_system_id=%d
+								AND ( metermaid_meter_id IS NULL OR metermaid_meter_id=%d )
+							LIMIT 1",
+							$user->user_email,
+							$system_id,
+							$meter_id
+						) );
+
+						if ( ! $row ) {
+							unset( $allcaps[ $cap_to_check ] );
+						}
+					} else if ( 'metermaid-view-meter' == $cap_to_check ) {
+						$meter_id = $args[2];
+
+						$meter = new METERMAID_METER( $meter_id );
+
+						$system_id = $meter->system_id;
+
+						$row = $wpdb->get_row( $wpdb->prepare(
+							"SELECT * FROM " . $wpdb->prefix . "metermaid_personnel
+							WHERE email=%s
+								AND metermaid_system_id=%d
+								AND ( metermaid_meter_id IS NULL OR metermaid_meter_id=%d )
+							LIMIT 1",
+							$user->user_email,
+							$system_id,
+							$meter_id
+						) );
+
+						if ( ! $row ) {
+							unset( $allcaps[ $cap_to_check ] );
 						}
 					}
 				}
@@ -267,15 +341,17 @@ class METERMAID {
 			1
 		);
 
-		add_submenu_page(
-			'metermaid',
-			__( 'Add Meter', 'metermaid' ),
-			__( 'Add Meter', 'metermaid' ),
-			'metermaid-add-meter',
-			'metermaid-add-meter',
-			array( 'METERMAID', 'admin_page' ),
-			2
-		);
+		if ( current_user_can( 'metermaid-add-meter' ) ) {
+			add_submenu_page(
+				'metermaid',
+				__( 'Add Meter', 'metermaid' ),
+				__( 'Add Meter', 'metermaid' ),
+				'metermaid-add-meter',
+				'metermaid-add-meter',
+				array( 'METERMAID', 'admin_page' ),
+				2
+			);
+		}
 
 		// Remove the auto-generated "Metermaid" submenu item.
 		remove_submenu_page( 'metermaid', 'metermaid' );
@@ -328,6 +404,7 @@ class METERMAID {
 
 				$rate_interval = max( 1, intval( $_POST['metermaid_minimum_rate_interval'] ) );
 
+				// @todo Make this per-user-per-system, not global.
 				update_option( 'metermaid_minimum_rate_interval', $rate_interval );
 
 				?>
@@ -338,6 +415,11 @@ class METERMAID {
 			} else if ( 'add_meter' == $_POST['metermaid_action'] ) {
 				if ( ! wp_verify_nonce( $_POST['metermaid_nonce'], 'metermaid-add-meter' ) ) {
 					echo 'You are not authorized to add a meter.';
+					wp_die();
+				}
+
+				if ( ! current_user_can( 'metermaid-add-meter', $_POST['metermaid_system_id'] ) ) {
+					echo 'You are not authorized to add a meter to this system.';
 					wp_die();
 				}
 
@@ -427,6 +509,11 @@ class METERMAID {
 					wp_die();
 				}
 
+				if ( ! current_user_can( 'metermaid-add-reading', $_POST['metermaid_meter_id'] ) ) {
+					echo 'You are not authorized to add a reading for this meter.';
+					wp_die();
+				}
+
 				$reading_int = intval( str_replace( ',', '', $_POST['metermaid_reading'] ) );
 
 				$wpdb->query( $wpdb->prepare(
@@ -492,21 +579,25 @@ class METERMAID {
 
 			<div class="metermaid-tabbed-content-container">
 				<nav class="nav-tab-wrapper">
-					<a href="#tab-reading" class="nav-tab" data-metermaid-tab="reading"><?php echo esc_html( __( 'Add Reading', 'metermaid' ) ); ?></a>
-					<a href="#tab-add-meter" class="nav-tab" data-metermaid-tab="add-meter"><?php echo esc_html( __( 'Add Meter', 'metermaid' ) ); ?></a>
+					<?php if ( current_user_can( 'metermaid-add-reading' ) ) { ?><a href="#tab-reading" class="nav-tab" data-metermaid-tab="reading"><?php echo esc_html( __( 'Add Reading', 'metermaid' ) ); ?></a><?php } ?>
+					<?php if ( current_user_can( 'metermaid-add-meter' ) ) { ?><a href="#tab-add-meter" class="nav-tab" data-metermaid-tab="add-meter"><?php echo esc_html( __( 'Add Meter', 'metermaid' ) ); ?></a><?php } ?>
 					<a href="#tab-settings" class="nav-tab" data-metermaid-tab="settings"><?php echo esc_html( __( 'Settings', 'metermaid' ) ); ?></a>
 				</nav>
 				<div class="metermaid-tabbed-content card">
-					<div data-metermaid-tab="reading">
-						<?php if ( $meter_count > 0 ) { ?>
-							<?php self::add_reading_form(); ?>
-						<?php } else { ?>
-							<p><?php echo esc_html( __( 'Add a meter before entering any readings.', 'metermaid' ) ); ?></p>
-						<?php } ?>
-					</div>
-					<div data-metermaid-tab="add-meter">
-						<?php self::edit_meter_form(); ?>
-					</div>
+					<?php if ( current_user_can( 'metermaid-add-reading' ) ) { ?>
+						<div data-metermaid-tab="reading">
+							<?php if ( $meter_count > 0 ) { ?>
+								<?php self::add_reading_form(); ?>
+							<?php } else { ?>
+								<p><?php echo esc_html( __( 'Add a meter before entering any readings.', 'metermaid' ) ); ?></p>
+							<?php } ?>
+						</div>
+					<?php } ?>
+					<?php if ( current_user_can( 'metermaid-add-meter' ) ) { ?>
+						<div data-metermaid-tab="add-meter">
+							<?php self::edit_meter_form(); ?>
+						</div>
+					<?php } ?>
 					<div data-metermaid-tab="settings">
 						<?php self::add_settings_form(); ?>
 					</div>
@@ -532,6 +623,9 @@ class METERMAID {
 						<?php
 
 						foreach ( $system->meters as $meter ) {
+							if ( ! current_user_can( 'metermaid-view-meter', $meter->id ) ) {
+								continue;
+							}
 
 							if ( $meter->is_parent() ) {
 								$last_was_parent = true;
@@ -688,14 +782,16 @@ class METERMAID {
 
 				<div class="metermaid-tabbed-content-container">
 					<nav class="nav-tab-wrapper">
-						<a href="#tab-reading" class="nav-tab" data-metermaid-tab="reading"><?php echo esc_html( __( 'Add Reading', 'metermaid' ) ); ?></a>
+						<?php if ( current_user_can( 'metermaid-add-reading', $meter->id ) ) { ?><a href="#tab-reading" class="nav-tab" data-metermaid-tab="reading"><?php echo esc_html( __( 'Add Reading', 'metermaid' ) ); ?></a><?php } ?>
 						<a href="#tab-supplement" class="nav-tab" data-metermaid-tab="supplement"><?php echo esc_html( __( 'Add Supplement', 'metermaid' ) ); ?></a>
 						<a href="#tab-settings" class="nav-tab" data-metermaid-tab="settings"><?php echo esc_html( __( 'Settings', 'metermaid' ) ); ?></a>
 					</nav>
 					<div class="metermaid-tabbed-content card">
-						<div data-metermaid-tab="reading">
-							<?php self::add_reading_form( $meter->id ); ?>
-						</div>
+						<?php if ( current_user_can( 'metermaid-add-reading', $meter->id ) ) { ?>
+							<div data-metermaid-tab="reading">
+								<?php self::add_reading_form( $meter->id ); ?>
+							</div>
+						<?php } ?>
 						<div data-metermaid-tab="supplement">
 							<?php self::add_supplement_form( $meter->id ); ?>
 						</div>
@@ -997,7 +1093,11 @@ class METERMAID {
 		$all_meters = array();
 
 		foreach ( $all_systems as $system ) {
-			$all_meters = array_merge( $all_meters, $system->meters );
+			foreach ( $system->meters as $meter ) {
+				if ( current_user_can( 'metermaid-view-meter', $meter->id ) ) {
+					$all_meters[] = $meter;
+				}
+			}
 		}
 
 		if ( ! is_array( $selected ) ) {
