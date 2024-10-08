@@ -1067,7 +1067,7 @@ class METERMAID {
 						<select name="metermaid_meter_status">
 							<?php foreach ( $meter->statuses as $status_value => $status_label ) { ?>
 								<option
-									value="<?php echo esc_attr( $status_values ); ?>"
+									value="<?php echo esc_attr( $status_value ); ?>"
 									<?php if ( $meter->status == $status_value ) { ?>
 										selected="selected"
 									<?php } ?>
