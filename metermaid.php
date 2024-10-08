@@ -769,7 +769,7 @@ class METERMAID {
 						<?php } ?>
 						<?php if ( current_user_can( 'metermaid-add-meter' ) ) { ?>
 							<div data-metermaid-tab="add-meter">
-								<?php self::edit_meter_form( $system->id ); ?>
+								<?php self::meter_form( $system->id ); ?>
 							</div>
 						<?php } ?>
 						<?php if ( current_user_can( 'metermaid-edit-system', $system->id ) ) { ?>
@@ -992,7 +992,7 @@ class METERMAID {
 						<?php } ?>
 						<?php if ( current_user_can( 'metermaid-edit-meter', $meter->id ) ) { ?>
 							<div data-metermaid-tab="settings">
-								<?php self::edit_meter_form( $meter->id ); ?>
+								<?php self::meter_form( $meter->system_id, $meter->id ); ?>
 							</div>
 						<?php } ?>
 					</div>
@@ -1588,8 +1588,7 @@ class METERMAID {
 		<?php
 	}
 
-	public static function edit_meter_form( $meter_id = null ) {
-		$systems = METERMAID::systems();
+	public static function meter_form( $system_id, $meter_id = null ) {
 		$meter = new METERMAID_METER( $meter_id );
 
 		?>
@@ -1601,31 +1600,16 @@ class METERMAID {
 			<?php } else { ?>
 				<input type="hidden" name="metermaid_action" value="add_meter" />
 				<input type="hidden" name="metermaid_nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-add-meter' ) ); ?>" />
-
-				<?php if ( count( $systems ) == 1 ) { ?>
-					<input type="hidden" name="metermaid_system_id" value="<?php echo esc_attr( $systems[0]->id ); ?>" />
-				<?php } ?>
+				<input type="hidden" name="metermaid_system_id" value="<?php echo esc_attr( $system_id ); ?>" />
 			<?php } ?>
 
 			<table class="form-table">
-				<?php if ( ! $meter_id ) { ?>
-					<?php if ( count( $systems ) > 1 ) { ?>
-						<tr>
-							<th scope="row">
-								<?php echo esc_html( __( 'System', 'metermaid' ) ); ?>
-							</th>
-							<td>
-								<?php METERMAID::system_list_selection( 'metermaid_system_id' ); ?>
-							</td>
-						</tr>
-					<?php } ?>
-				<?php } ?>
 				<tr>
 					<th scope="row">
 						<?php echo esc_html( __( 'Name', 'metermaid' ) ); ?>
 					</th>
 					<td>
-						<input type="text" name="metermaid_meter_name" value="<?php echo esc_attr( $meter->name ); ?>" />
+						<input type="text" name="metermaid_meter_name" value="<?php echo esc_attr( $meter ? $meter->name : '' ); ?>" />
 					</td>
 				</tr>
 				<tr>
@@ -1633,7 +1617,7 @@ class METERMAID {
 						<?php echo esc_html( __( 'Location', 'metermaid' ) ); ?>
 					</th>
 					<td>
-						<input type="text" name="metermaid_meter_location" value="<?php echo esc_attr( $meter->location ); ?>" />
+						<input type="text" name="metermaid_meter_location" value="<?php echo esc_attr( $meter ? $meter->location : '' ); ?>" />
 					</td>
 				</tr>
 				<tr>
@@ -1661,7 +1645,7 @@ class METERMAID {
 						<?php echo esc_html( __( 'Parent Meters', 'metermaid' ) ); ?>
 					</th>
 					<td>
-						<?php METERMAID::meter_list_selection( $meter->system_id, 'metermaid_parent_meters', true, $meter->parents ); ?>
+						<?php METERMAID::meter_list_selection( $system_id, 'metermaid_parent_meters', true, $meter->parents ); ?>
 						<p class="description"><?php echo esc_html( __( 'A parent meter is a meter that is located upstream from this meter.', 'metermaid' ) ); ?></p>
 					</td>
 				</tr>
@@ -1670,9 +1654,8 @@ class METERMAID {
 						<?php echo esc_html( __( 'Child Meters', 'metermaid' ) ); ?>
 					</th>
 					<td>
-						<?php METERMAID::meter_list_selection( $meter->system_id, 'metermaid_child_meters', true, $meter->children ); ?>
+						<?php METERMAID::meter_list_selection( $system_id, 'metermaid_child_meters', true, $meter->children ); ?>
 						<p class="description"><?php echo esc_html( __( 'A child meter is a meter that is located downstream from this meter.', 'metermaid' ) ); ?></p>
-
 					</td>
 				</tr>
 				<tr>
