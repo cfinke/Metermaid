@@ -467,6 +467,19 @@ class METERMAID {
 				<?php echo esc_html( __( 'Your Systems', 'metermaid' ) ); ?>
 			</h1>
 
+			<div class="metermaid-tabbed-content-container">
+				<nav class="nav-tab-wrapper">
+					<?php if ( current_user_can( 'metermaid-add-system' ) ) { ?><a href="#tab-reading" class="nav-tab" data-metermaid-tab="add-system"><?php echo esc_html( __( 'Add System', 'metermaid' ) ); ?></a><?php } ?>
+				</nav>
+				<div class="metermaid-tabbed-content card">
+					<?php if ( current_user_can( 'metermaid-add-system' ) ) { ?>
+						<div data-metermaid-tab="add-system">
+							<?php self::add_system_form(); ?>
+						</div>
+					<?php } ?>
+				</div>
+			</div>
+
 			<?php foreach ( $all_systems as $system ) { ?>
 				<h2 class="wp-heading-inline"><a href="<?php echo esc_attr( add_query_arg( 'metermaid_system_id', $system->id ) ); ?>"><?php echo esc_html( $system->display_name() ); ?></a></h2>
 
@@ -1299,6 +1312,52 @@ class METERMAID {
 
 			?>
 		</select>
+		<?php
+	}
+
+	public static function add_system_form( $system_id = null ) {
+		$system = null;
+
+		if ( $system_id ) {
+			$system = new METERMAID_SYSTEM( $system_id );
+		}
+
+		?>
+		<form method="post" action="" class="metermaid_add_system_form">
+			<?php if ( $system_id ) { ?>
+				<input type="hidden" name="metermaid_action" value="edit_system" />
+				<input type="hidden" name="metermaid_system_id" value="<?php echo esc_attr( $system_id ); ?>" />
+				<input type="hidden" name="metermaid_nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-edit-system' ) ); ?>" />
+			<?php } else { ?>
+				<input type="hidden" name="metermaid_action" value="add_system" />
+				<input type="hidden" name="metermaid_nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-add-system' ) ); ?>" />
+			<?php } ?>
+
+			<table class="form-table">
+				<tr>
+					<th scope="row">
+						<?php echo esc_html( __( 'Name', 'metermaid' ) ); ?>
+					</th>
+					<td>
+						<input type="text" name="metermaid_system_name" value="<?php echo esc_attr( $system ? $system->name : '' ); ?>" />
+					</td>
+				</tr>
+				<tr>
+					<th scope="row">
+						<?php echo esc_html( __( 'Location', 'metermaid' ) ); ?>
+					</th>
+					<td>
+						<input type="text" name="metermaid_system_location" value="<?php echo esc_attr( $system ? $system->location : '' ); ?>" />
+					</td>
+				</tr>
+				<tr>
+					<th scope="row"></th>
+					<td>
+						<input class="button button-primary" type="submit" value="<?php echo esc_attr( $system_id ? __( 'Update System', 'metermaid' ) : __( 'Add System', 'metermaid' ) ); ?>" />
+					</td>
+				</tr>
+			</table>
+		</form>
 		<?php
 	}
 
