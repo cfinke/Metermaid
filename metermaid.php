@@ -448,6 +448,33 @@ class METERMAID {
 			return self::meter_detail_page( $_GET['meter'] );
 		}
 
+		if ( isset( $_POST['metermaid_action'] ) ) {
+			if ( 'add_system' == $_POST['metermaid_action'] ) {
+				if ( ! wp_verify_nonce( $_POST['metermaid_nonce'], 'metermaid-add-system' ) ) {
+					echo 'You are not authorized to add a system.';
+					wp_die();
+				}
+
+				if ( ! current_user_can( 'metermaid-add-system' ) ) {
+					echo 'You are not authorized to add this system.';
+					wp_die();
+				}
+
+				$wpdb->query( $wpdb->prepare(
+					"INSERT INTO " . $wpdb->prefix . "metermaid_systems SET name=%s, location=%s, added=NOW(), added_by=%d",
+					$_POST['metermaid_system_name'],
+					$_POST['metermaid_system_location'],
+					get_current_user_id()
+				) );
+
+				?>
+				<div class="updated">
+					<p><?php echo esc_html( __( 'The system has been added.', 'metermaid' ) ); ?></p>
+				</div>
+				<?php
+			}
+		}
+
 		if ( isset( $_GET['metermaid_system_id'] ) ) {
 			if ( ! current_user_can( 'metermaid-access-system', $_GET['metermaid_system_id'] ) ) {
 				echo 'You are not authorized to access this system.';
