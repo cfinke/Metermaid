@@ -24,6 +24,7 @@ class METERMAID {
 
 		$role = get_role( 'administrator' );
 		$role->add_cap( 'metermaid', true );
+		$role->add_cap( 'metermaid-add-system', true );
 		$role->add_cap( 'metermaid-access-system', true );
 		$role->add_cap( 'metermaid-edit-system', true );
 		$role->add_cap( 'metermaid-add-meter', true );
@@ -49,6 +50,7 @@ class METERMAID {
 				'read' => true,
 
 				'metermaid' => true,
+				'metermaid-add-system' => true,
 				'metermaid-access-system' => true,
 				'metermaid-edit-system' => true,
 				'metermaid-add-meter' => true,
@@ -65,6 +67,7 @@ class METERMAID {
 		$role = get_role( 'multisystem_manager' );
 		$role->add_cap( 'read', true );
 		$role->add_cap( 'metermaid', true );
+		$role->add_cap( 'metermaid-add-system', true );
 		$role->add_cap( 'metermaid-access-system', true );
 		$role->add_cap( 'metermaid-edit-system', true );
 		$role->add_cap( 'metermaid-add-meter', true );
@@ -164,6 +167,25 @@ class METERMAID {
 			wp_safe_redirect( $redirect_url );
 			exit;
 		}
+
+		if ( isset( $_GET['metermaid_meter_id'] ) && ! isset( $_GET['metermaid_system_id'] ) ) {
+			$meter = new METERMAID_METER( $_GET['metermaid_meter_id'] );
+			$_GET['metermaid_system_id'] = $meter->system_id;
+		}
+
+		$all_systems = self::systems();
+
+		if ( ! isset( $_GET['metermaid_system_id'] ) ) {
+			if ( count( $all_systems ) == 1 ) {
+				if ( ! current_user_can( 'metermaid-add-system' ) ) {
+					$redirect_url = add_query_arg( 'metermaid_system_id', $all_systems[0]->id );
+					wp_safe_redirect( $redirect_url );
+					exit;
+				}
+			}
+		}
+
+		// @todo If the user only has permissions on one meter and can't add any, redirect them to that meter.
 
 		add_action( 'admin_menu', array( __CLASS__, 'add_options_menu' ) );
 
@@ -417,6 +439,127 @@ class METERMAID {
 	public static function admin_page() {
 		global $wpdb;
 
+		if ( isset( $_GET['meter'] ) ) {
+			if ( ! current_user_can( 'metermaid-view-meter', $_GET['meter'] ) ) {
+				echo 'You are not authorized to access this meter.';
+				wp_die();
+			}
+
+			return self::meter_detail_page( $_GET['meter'] );
+		}
+
+		if ( isset( $_GET['metermaid_system_id'] ) ) {
+			if ( ! current_user_can( 'metermaid-access-system', $_GET['metermaid_system_id'] ) ) {
+				echo 'You are not authorized to access this system.';
+				wp_die();
+			}
+
+			return self::system_detail_page( $_GET['metermaid_system_id'] );
+		}
+
+		$all_systems = self::systems();
+
+		?>
+		<div class="wrap">
+			<h1 class="wp-heading-inline">
+				<?php echo esc_html( __( 'Metermaid', 'metermaid' ) ); ?>
+				&raquo;
+				<?php echo esc_html( __( 'Your Systems', 'metermaid' ) ); ?>
+			</h1>
+
+			<?php foreach ( $all_systems as $system ) { ?>
+				<h2 class="wp-heading-inline"><a href="<?php echo esc_attr( add_query_arg( 'metermaid_system_id', $system->id ) ); ?>"><?php echo esc_html( $system->display_name() ); ?></a></h2>
+
+				<table class="wp-list-table widefat striped">
+					<thead>
+						<th></th>
+						<th><?php echo esc_html( __( 'Name', 'metermaid' ) ); ?></th>
+						<th><?php echo esc_html( __( 'Location', 'metermaid' ) ); ?></th>
+						<th><?php echo esc_html( __( 'Last Reading', 'metermaid' ) ); ?></th>
+						<th><?php echo esc_html( __( 'Last Reading Date', 'metermaid' ) ); ?></th>
+						<th>
+							<?php echo esc_html( sprintf( __( '%s All Time', 'metermaid' ), strtoupper( METERMAID::measurement()['rate_abbreviation'] ) ) ); ?>
+						</th>
+					</thead>
+					<tbody>
+						<?php $last_was_parent = false; ?>
+						<?php
+
+						foreach ( $system->meters as $meter ) {
+							if ( ! current_user_can( 'metermaid-view-meter', $meter->id ) ) {
+								continue;
+							}
+
+							if ( $meter->is_parent() ) {
+								$last_was_parent = true;
+							} else if ( $last_was_parent ) {
+								?><tr><td colspan="100"><hr /></td></tr><?php
+								$last_was_parent = false;
+							}
+
+							$readings = $wpdb->get_results( $wpdb->prepare(
+								"SELECT * FROM " . $wpdb->prefix . "metermaid_readings WHERE meter_id=%s ORDER BY reading_date DESC",
+								$meter->id
+							) );
+
+							?>
+							<tr>
+								<td>
+									<?php if ( current_user_can( 'metermaid-delete-meter', $meter->id ) ) { ?>
+										<form method="post" action="" onsubmit="return confirm( metermaid_i18n.meter_delete_confirm ); ?> );">
+											<input type="hidden" name="metermaid_action" value="delete_meter" />
+											<input type="hidden" name="metermaid_nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-delete-meter' ) ); ?>" />
+											<input type="hidden" name="meter_id" value="<?php echo esc_attr( $meter->id ); ?>" />
+											<input type="submit" value="<?php echo esc_attr( __( 'Delete Meter', 'metermaid' ) ); ?>" />
+										</form>
+									<?php } ?>
+								</td>
+								<td><a href="<?php echo esc_url( add_query_arg( 'meter', $meter->id ) ); ?>"><?php echo esc_html( $meter->name ?: __( '[Unnamed]' ) ); ?></a></td>
+								<td><?php echo esc_html( $meter->location ); ?></td>
+								<td>
+									<?php if ( ! empty( $readings ) ) { ?>
+										<?php echo esc_html( number_format( $readings[0]->reading, 0 ) ); ?>
+									<?php } ?>
+								</td>
+								<td>
+									<?php if ( ! empty( $readings ) ) { ?>
+										<?php echo esc_html( date( get_option( 'date_format' ), strtotime( $readings[0]->reading_date ) ) ); ?>
+									<?php } ?>
+								</td>
+								<td>
+									<?php if ( count( $readings ) > 1 ) { ?>
+										<?php echo esc_html(
+											number_format(
+												round(
+													( $readings[0]->real_reading - $readings[ count( $readings ) - 1 ]->real_reading ) // total gallons
+													/
+													(
+														(
+															  strtotime( $readings[0]->reading_date )
+															- strtotime( $readings[ count( $readings ) - 1 ]->reading_date )
+														)
+														/ ( 24 * 60 * 60 )
+													) // total days between first and last readings
+												),
+												0
+											)
+										); ?>
+									<?php } ?>
+								</td>
+							</tr>
+						<?php } ?>
+					</tbody>
+				</table>
+			<?php } ?>
+		</div>
+		<?php
+	}
+
+	public static function system_detail_page( $system_id ) {
+		global $wpdb;
+
+		$system = new METERMAID_SYSTEM( $system_id );
+
 		if ( isset( $_POST['metermaid_action'] ) ) {
 			if ( 'update_settings' == $_POST['metermaid_action'] ) {
 				if ( ! wp_verify_nonce( $_POST['metermaid_nonce'], 'metermaid-update-settings' ) ) {
@@ -489,57 +632,6 @@ class METERMAID {
 					<p><?php echo esc_html( __( 'The meter has been added.', 'metermaid' ) ); ?></p>
 				</div>
 				<?php
-			} else if ( 'edit_meter' == $_POST['metermaid_action'] ) {
-				if ( ! wp_verify_nonce( $_POST['metermaid_nonce'], 'metermaid-edit-meter' ) ) {
-					echo 'You are not authorized to edit a meter.';
-					wp_die();
-				}
-
-				if ( ! current_user_can( 'metermaid-edit-meter', $_POST['metermaid_meter_id'] ) ) {
-					echo 'You are not authorized to edit this meter.';
-					wp_die();
-				}
-
-
-				$wpdb->query( $wpdb->prepare(
-					"UPDATE " . $wpdb->prefix . "metermaid_meters SET name=%s, location=%s, status=%d WHERE metermaid_meter_id=%d LIMIT 1",
-					$_POST['metermaid_meter_name'],
-					$_POST['metermaid_meter_location'],
-					$_POST['metermaid_meter_status'],
-					$_POST['metermaid_meter_id']
-				) );
-
-				$wpdb->query( $wpdb->prepare(
-					"DELETE FROM ".$wpdb->prefix."metermaid_relationships WHERE parent_meter_id=%d OR parent_meter_id=%d",
-					$_POST['metermaid_meter_id'],
-					$_POST['metermaid_meter_id']
-				) );
-
-				if ( ! empty( $_POST['metermaid_parent_meters'] ) ) {
-					foreach ( array_filter( $_POST['metermaid_parent_meters'] ) as $parent_meter_id ) {
-						$wpdb->query( $wpdb->prepare(
-							"INSERT INTO ".$wpdb->prefix."metermaid_relationships SET parent_meter_id=%s, child_meter_id=%s ON DUPLICATE KEY UPDATE parent_meter_id=VALUES(parent_meter_id)",
-							$parent_meter_id,
-							$_POST['metermaid_meter_id']
-						) );
-					}
-				}
-
-				if ( ! empty( $_POST['metermaid_child_meters'] ) ) {
-					foreach ( array_filter( $_POST['metermaid_child_meters'] ) as $child_meter_id ) {
-						$wpdb->query( $wpdb->prepare(
-							"INSERT INTO ".$wpdb->prefix."metermaid_relationships SET child_meter_id=%s, parent_meter_id=%s ON DUPLICATE KEY UPDATE child_meter_id=VALUES(child_meter_id)",
-							$child_meter_id,
-							$_POST['metermaid_meter_id']
-						) );
-					}
-				}
-
-				?>
-				<div class="updated">
-					<p><?php echo esc_html( __( 'The meter has been edited.', 'metermaid' ) ); ?></p>
-				</div>
-				<?php
 			} else if ( 'add_reading' == $_POST['metermaid_action'] ) {
 				if ( ! wp_verify_nonce( $_POST['metermaid_nonce'], 'metermaid-add-reading' ) ) {
 					echo 'You are not authorized to add a reading.';
@@ -604,55 +696,49 @@ class METERMAID {
 			}
 		}
 
-		if ( isset( $_GET['meter'] ) ) {
-			if ( ! current_user_can( 'metermaid-view-meter', $_GET['meter'] ) ) {
-				echo 'You are not authorized to access this meter.';
-				wp_die();
-			}
-
-			return self::meter_detail_page( $_GET['meter'] );
-		}
-
-		$all_systems = self::systems();
-		$meter_count = 0;
-
-		foreach ( $all_systems as $system ) {
-			$meter_count += count( $system->meters );
-		}
-
 		?>
 		<div class="wrap">
-			<h1 class="wp-heading-inline"><?php echo esc_html( __( 'Metermaid', 'metermaid' ) ); ?></h1>
+			<?php
 
-			<div class="metermaid-tabbed-content-container">
-				<nav class="nav-tab-wrapper">
-					<?php if ( current_user_can( 'metermaid-add-reading' ) ) { ?><a href="#tab-reading" class="nav-tab" data-metermaid-tab="reading"><?php echo esc_html( __( 'Add Reading', 'metermaid' ) ); ?></a><?php } ?>
-					<?php if ( current_user_can( 'metermaid-add-meter' ) ) { ?><a href="#tab-add-meter" class="nav-tab" data-metermaid-tab="add-meter"><?php echo esc_html( __( 'Add Meter', 'metermaid' ) ); ?></a><?php } ?>
-					<a href="#tab-settings" class="nav-tab" data-metermaid-tab="settings"><?php echo esc_html( __( 'Settings', 'metermaid' ) ); ?></a>
-				</nav>
-				<div class="metermaid-tabbed-content card">
-					<?php if ( current_user_can( 'metermaid-add-reading' ) ) { ?>
-						<div data-metermaid-tab="reading">
-							<?php if ( $meter_count > 0 ) { ?>
-								<?php self::add_reading_form(); ?>
-							<?php } else { ?>
-								<p><?php echo esc_html( __( 'Add a meter before entering any readings.', 'metermaid' ) ); ?></p>
-							<?php } ?>
-						</div>
-					<?php } ?>
-					<?php if ( current_user_can( 'metermaid-add-meter' ) ) { ?>
-						<div data-metermaid-tab="add-meter">
-							<?php self::edit_meter_form(); ?>
-						</div>
-					<?php } ?>
-					<div data-metermaid-tab="settings">
-						<?php self::add_settings_form(); ?>
+			if ( ! $system ) {
+				?><h1><?php echo esc_html( __( 'System Not Found', 'metermaid' ) ); ?></h1><?php
+			} else {
+				?>
+
+				<h1 class="wp-heading-inline">
+					<a href="<?php echo esc_url( remove_query_arg( array( 'metermaid_system_id', 'metermaid_meter_id' ) ) ); ?>"><?php echo esc_html( __( 'Metermaid', 'metermaid' ) ); ?></a>
+					&raquo;
+					<?php echo esc_html( $system->display_name() ); ?>
+				</h1>
+
+				<div class="metermaid-tabbed-content-container">
+					<nav class="nav-tab-wrapper">
+						<?php if ( current_user_can( 'metermaid-add-reading' ) ) { ?><a href="#tab-reading" class="nav-tab" data-metermaid-tab="reading"><?php echo esc_html( __( 'Add Reading', 'metermaid' ) ); ?></a><?php } ?>
+						<?php if ( current_user_can( 'metermaid-add-meter' ) ) { ?><a href="#tab-add-meter" class="nav-tab" data-metermaid-tab="add-meter"><?php echo esc_html( __( 'Add Meter', 'metermaid' ) ); ?></a><?php } ?>
+						<?php if ( current_user_can( 'metermaid-edit-system', $system->id ) ) { ?><a href="#tab-settings" class="nav-tab" data-metermaid-tab="settings"><?php echo esc_html( __( 'Settings', 'metermaid' ) ); ?></a><?php } ?>
+					</nav>
+					<div class="metermaid-tabbed-content card">
+						<?php if ( current_user_can( 'metermaid-add-reading' ) ) { ?>
+							<div data-metermaid-tab="reading">
+								<?php if ( count( $system->meters ) > 0 ) { ?>
+									<?php self::add_reading_form( $system->id ); ?>
+								<?php } else { ?>
+									<p><?php echo esc_html( __( 'Add a meter before entering any readings.', 'metermaid' ) ); ?></p>
+								<?php } ?>
+							</div>
+						<?php } ?>
+						<?php if ( current_user_can( 'metermaid-add-meter' ) ) { ?>
+							<div data-metermaid-tab="add-meter">
+								<?php self::edit_meter_form( $system->id ); ?>
+							</div>
+						<?php } ?>
+						<?php if ( current_user_can( 'metermaid-edit-system', $system->id ) ) { ?>
+							<div data-metermaid-tab="settings">
+								<?php self::add_settings_form( $system->id ); ?>
+							</div>
+						<?php } ?>
 					</div>
 				</div>
-			</div>
-
-			<?php foreach ( $all_systems as $system ) { ?>
-				<h2 class="wp-heading-inline"><?php echo esc_html( $system->display_name() ); ?></h2>
 
 				<table class="wp-list-table widefat striped">
 					<thead>
@@ -856,7 +942,7 @@ class METERMAID {
 					<div class="metermaid-tabbed-content card">
 						<?php if ( current_user_can( 'metermaid-add-reading', $meter->id ) ) { ?>
 							<div data-metermaid-tab="reading">
-								<?php self::add_reading_form( $meter->id ); ?>
+								<?php self::add_reading_form( $meter->system_id, $meter->id ); ?>
 							</div>
 						<?php } ?>
 						<?php if ( current_user_can( 'metermaid-add-supplement', $meter->id ) ) { ?>
@@ -1168,18 +1254,17 @@ class METERMAID {
 		<?php
 	}
 
-	public static function meter_list_selection( $field_name, $multiple = false, $selected = array() ) {
+	public static function meter_list_selection( $system_id, $field_name, $multiple = false, $selected = array() ) {
 		global $wpdb;
 
-		$all_systems = METERMAID::systems();
+		$system = new METERMAID_SYSTEM( $system_id );
+		// @todo Error handle invalid system.
 
 		$all_meters = array();
 
-		foreach ( $all_systems as $system ) {
-			foreach ( $system->meters as $meter ) {
-				if ( current_user_can( 'metermaid-view-meter', $meter->id ) ) {
-					$all_meters[] = $meter;
-				}
+		foreach ( $system->meters as $meter ) {
+			if ( current_user_can( 'metermaid-view-meter', $meter->id ) ) {
+				$all_meters[] = $meter;
 			}
 		}
 
@@ -1197,21 +1282,19 @@ class METERMAID {
 				<?php
 			}
 
-			foreach ( $all_systems as $system ) {
-				$last_was_parent = false;
+			$last_was_parent = false;
 
-				foreach ( $system->meters as $meter ) {
-					if ( $meter->is_parent() ) {
-						$last_was_parent = true;
-					} else if ( $last_was_parent ) {
-						?><option value="" data-metermaid-system-id="<?php echo esc_attr( $system->id ); ?>">--</option><?php
-						$last_was_parent = false;
-					}
-
-					?>
-					<option data-metermaid-system-id="<?php echo esc_attr( $system->id ); ?>" value="<?php echo esc_attr( $meter->id ); ?>"<?php if ( in_array( $meter->id, $selected ) ) { ?> selected="selected"<?php } ?>><?php echo esc_html( $meter->display_name() ); ?></option>
-					<?php
+			foreach ( $system->meters as $meter ) {
+				if ( $meter->is_parent() ) {
+					$last_was_parent = true;
+				} else if ( $last_was_parent ) {
+					?><option value="" data-metermaid-system-id="<?php echo esc_attr( $system->id ); ?>">--</option><?php
+					$last_was_parent = false;
 				}
+
+				?>
+				<option data-metermaid-system-id="<?php echo esc_attr( $system->id ); ?>" value="<?php echo esc_attr( $meter->id ); ?>"<?php if ( in_array( $meter->id, $selected ) ) { ?> selected="selected"<?php } ?>><?php echo esc_html( $meter->display_name() ); ?></option>
+				<?php
 			}
 
 			?>
@@ -1219,7 +1302,7 @@ class METERMAID {
 		<?php
 	}
 
-	public static function add_reading_form( $meter_id = null ) {
+	public static function add_reading_form( $system_id, $meter_id = null ) {
 		?>
 		<form method="post" action="" class="metermaid_add_reading_form">
 			<input type="hidden" name="metermaid_action" value="add_reading" />
@@ -1233,20 +1316,9 @@ class METERMAID {
 				<?php
 
 				if ( ! $meter_id ) {
-					$systems = METERMAID::systems();
+					$system = new METERMAID_SYSTEM( $system_id );
 
-					if ( count( $systems ) > 1 ) {
-						?>
-						<tr>
-							<th scope="row">
-								<?php echo esc_html( __( 'System', 'metermaid' ) ); ?>
-							</th>
-							<td>
-								<?php METERMAID::system_list_selection( 'metermaid_system_id' ); ?>
-							</td>
-						</tr>
-						<?php
-					}
+					// @todo Error handle if the system doesn't exist.
 
 					?>
 					<tr>
@@ -1254,7 +1326,7 @@ class METERMAID {
 							<?php echo esc_html( __( 'Meter', 'metermaid' ) ); ?>
 						</th>
 						<td>
-							<?php METERMAID::meter_list_selection( 'metermaid_meter_id' ); ?>
+							<?php METERMAID::meter_list_selection( $system->id, 'metermaid_meter_id' ); ?>
 						</td>
 					</tr>
 				<?php } ?>
@@ -1503,7 +1575,7 @@ class METERMAID {
 						<?php echo esc_html( __( 'Parent Meters', 'metermaid' ) ); ?>
 					</th>
 					<td>
-						<?php METERMAID::meter_list_selection( 'metermaid_parent_meters', true, $meter->parents ); ?>
+						<?php METERMAID::meter_list_selection( $meter->system_id, 'metermaid_parent_meters', true, $meter->parents ); ?>
 						<p class="description"><?php echo esc_html( __( 'A parent meter is a meter that is located upstream from this meter.', 'metermaid' ) ); ?></p>
 					</td>
 				</tr>
@@ -1512,7 +1584,7 @@ class METERMAID {
 						<?php echo esc_html( __( 'Child Meters', 'metermaid' ) ); ?>
 					</th>
 					<td>
-						<?php METERMAID::meter_list_selection( 'metermaid_child_meters', true, $meter->children ); ?>
+						<?php METERMAID::meter_list_selection( $meter->system_id, 'metermaid_child_meters', true, $meter->children ); ?>
 						<p class="description"><?php echo esc_html( __( 'A child meter is a meter that is located downstream from this meter.', 'metermaid' ) ); ?></p>
 
 					</td>
