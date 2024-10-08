@@ -75,7 +75,7 @@ class METERMAID {
 				added_by VARCHAR(100),
 				PRIMARY KEY (metermaid_meter_id),
 				INDEX name (name)
-			) ENGINE=InnoDB DEFAULT CHARSET=utf8"
+			) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
 		);
 
 		$wpdb->query( "CREATE TABLE IF NOT EXISTS ".$wpdb->prefix."metermaid_relationships
@@ -86,7 +86,7 @@ class METERMAID {
 				PRIMARY KEY (metermaid_relationship_id),
 				UNIQUE KEY relationship (parent_meter_id, child_meter_id),
 				INDEX child_meter_id (child_meter_id)
-			) ENGINE=InnoDB DEFAULT CHARSET=utf8"
+			) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
 		);
 
 		$wpdb->query( "CREATE TABLE IF NOT EXISTS ".$wpdb->prefix."metermaid_readings
@@ -99,7 +99,7 @@ class METERMAID {
 				PRIMARY KEY (metermaid_reading_id),
 				INDEX meter_id (meter_id),
 				UNIQUE KEY reading_date (reading_date, meter_id)
-			) ENGINE=InnoDB DEFAULT CHARSET=utf8"
+			) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
 		);
 
 		$wpdb->query( "CREATE TABLE IF NOT EXISTS ".$wpdb->prefix."metermaid_supplements
