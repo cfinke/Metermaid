@@ -170,6 +170,14 @@ class METERMAID {
 			exit;
 		}
 
+		if ( isset( $_GET['page'] ) && 'metermaid-add-system' === $_GET['page'] ) {
+			$redirect_url = remove_query_arg( 'page' );
+			$redirect_url = add_query_arg( 'page', 'metermaid-home', $redirect_url );
+			$redirect_url .= '#tab-add-system';
+			wp_safe_redirect( $redirect_url );
+			exit;
+		}
+
 		if ( isset( $_GET['metermaid_meter_id'] ) && ! isset( $_GET['metermaid_system_id'] ) ) {
 			$meter = new METERMAID_METER( $_GET['metermaid_meter_id'] );
 			$_GET['metermaid_system_id'] = $meter->system_id;
@@ -391,6 +399,18 @@ class METERMAID {
 			1
 		);
 
+		if ( current_user_can( 'metermaid-add-system' ) ) {
+			add_submenu_page(
+				'metermaid',
+				__( 'Add System', 'metermaid' ),
+				__( 'Add System', 'metermaid' ),
+				'metermaid-add-system',
+				'metermaid-add-system',
+				array( 'METERMAID', 'admin_page' ),
+				2
+			);
+		}
+
 		if ( current_user_can( 'metermaid-add-meter' ) ) {
 			add_submenu_page(
 				'metermaid',
@@ -399,7 +419,7 @@ class METERMAID {
 				'metermaid-add-meter',
 				'metermaid-add-meter',
 				array( 'METERMAID', 'admin_page' ),
-				2
+				3
 			);
 		}
 
@@ -531,7 +551,6 @@ class METERMAID {
 
 				<table class="wp-list-table widefat striped">
 					<thead>
-						<th></th>
 						<th><?php echo esc_html( __( 'Name', 'metermaid' ) ); ?></th>
 						<th><?php echo esc_html( __( 'Location', 'metermaid' ) ); ?></th>
 						<th><?php echo esc_html( __( 'Last Reading', 'metermaid' ) ); ?></th>
@@ -563,16 +582,6 @@ class METERMAID {
 
 							?>
 							<tr>
-								<td>
-									<?php if ( current_user_can( 'metermaid-delete-meter', $meter->id ) ) { ?>
-										<form method="post" action="" onsubmit="return confirm( metermaid_i18n.meter_delete_confirm ); ?> );">
-											<input type="hidden" name="metermaid_action" value="delete_meter" />
-											<input type="hidden" name="metermaid_nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-delete-meter' ) ); ?>" />
-											<input type="hidden" name="meter_id" value="<?php echo esc_attr( $meter->id ); ?>" />
-											<input type="submit" value="<?php echo esc_attr( __( 'Delete Meter', 'metermaid' ) ); ?>" />
-										</form>
-									<?php } ?>
-								</td>
 								<td><a href="<?php echo esc_url( add_query_arg( 'metermaid_meter_id', $meter->id ) ); ?>"><?php echo esc_html( $meter->name ?: __( '[Unnamed]' ) ); ?></a></td>
 								<td><?php echo esc_html( $meter->location ); ?></td>
 								<td>
@@ -820,7 +829,7 @@ class METERMAID {
 												<input type="hidden" name="metermaid_action" value="delete_meter" />
 												<input type="hidden" name="metermaid_nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-delete-meter' ) ); ?>" />
 												<input type="hidden" name="meter_id" value="<?php echo esc_attr( $meter->id ); ?>" />
-												<input type="submit" value="<?php echo esc_attr( __( 'Delete Meter', 'metermaid' ) ); ?>" />
+												<input type="submit" class="button button-secondary" value="<?php echo esc_attr( __( 'Delete Meter', 'metermaid' ) ); ?>" />
 											</form>
 										<?php } ?>
 									</td>
@@ -1125,7 +1134,7 @@ class METERMAID {
 												<input type="hidden" name="metermaid_action" value="delete_reading" />
 												<input type="hidden" name="metermaid_nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-delete-reading' ) ); ?>" />
 												<input type="hidden" name="reading_id" value="<?php echo esc_attr( $reading->id ); ?>" />
-												<input type="submit" value="Delete" />
+												<input type="submit" class="button button-secondary" value="Delete" />
 											</form>
 										<?php } ?>
 									</td>
@@ -1232,7 +1241,7 @@ class METERMAID {
 												<input type="hidden" name="metermaid_action" value="delete_supplement" />
 												<input type="hidden" name="metermaid_nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-delete-supplement' ) ); ?>" />
 												<input type="hidden" name="supplement_id" value="<?php echo esc_attr( $supplement->metermaid_supplement_id ); ?>" />
-												<input type="submit" value="Delete" />
+												<input type="submit" class="button button-secondary" value="Delete" />
 											</form>
 										<?php } ?>
 									</td>
