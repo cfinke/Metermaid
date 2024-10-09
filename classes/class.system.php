@@ -3,6 +3,8 @@
 class METERMAID_SYSTEM {
 	public $id;
 	public $name;
+	public $unit;
+	public $rate_interval;
 
 	private $_meters = null;
 
@@ -20,6 +22,8 @@ class METERMAID_SYSTEM {
 		$this->id = $system_id_or_row->metermaid_system_id;
 		$this->name = $system_id_or_row->name;
 		$this->location = $system_id_or_row->location;
+		$this->unit = $system_id_or_row->unit;
+		$this->rate_interval = $system_id_or_row->rate_interval;
 	}
 
 	/**
@@ -55,5 +59,11 @@ class METERMAID_SYSTEM {
 		}
 
 		return null;
+	}
+
+	public function measurement() {
+		$default_unit = 'gallon';
+
+		return METERMAID::$units_of_measurement[ $this->unit ] ?? METERMAID::$units_of_measurement[ $default_unit ];
 	}
 }

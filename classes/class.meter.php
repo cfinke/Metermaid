@@ -262,8 +262,8 @@ class METERMAID_METER {
 					title: <?php echo json_encode(
 							sprintf(
 								__( '%1$s Per Day (over at least %2$d days)', 'metermaid' ),
-								METERMAID::measurement()['plural'],
-								intval( METERMAID::get_option( 'minimum_rate_interval' ) )
+								$this->system->measurement()['plural'],
+								intval( $this->system->rate_interval )
 							)
 						); ?>,
 					legend: { position: 'bottom' },
@@ -400,8 +400,8 @@ class METERMAID_METER {
 					title: <?php echo json_encode(
 							sprintf(
 								__( '%1$s Per Day (Children, over at least %2$d days)', 'metermaid' ),
-								METERMAID::measurement()['plural'],
-								intval( METERMAID::get_option( 'minimum_rate_interval' ) )
+								$this->system->measurement()['plural'],
+								intval( $this->system->rate_interval )
 							)
 						); ?>,
 					legend: { position: 'bottom' },
@@ -560,7 +560,7 @@ class METERMAID_METER {
 					title: <?php echo json_encode(
 							sprintf(
 								__( '%1$s YTD', 'metermaid' ),
-								METERMAID::measurement()['plural']
+								$this->system->measurement()['plural']
 							)
 						); ?>,
 					legend: { position: 'bottom' },

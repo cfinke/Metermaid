@@ -14,6 +14,8 @@ require_once __DIR__ . '/classes/class.reading.php';
 define( 'METERMAID_STATUS_ACTIVE', 0 );
 define( 'METERMAID_STATUS_INACTIVE', 1 );
 
+define( 'METERMAID_DEFAULT_RATE_INTERVAL', 7 );
+
 class METERMAID {
 	public static function init() {
 		add_filter( 'not_a_blog_default_page', function ( $url ) {
@@ -424,18 +426,6 @@ class METERMAID {
 		wp_enqueue_script( 'metermaid-admin.js' );
 	}
 
-	public static function measurement() {
-		$default_measurement = 'gallon';
-
-		$chosen_measurement = get_option( 'metermaid_unit_of_measurement', $default_measurement );
-
-		if ( ! isset( METERMAID::$units_of_measurement[ $chosen_measurement ] ) ) {
-			$chosen_measurement = $default_measurement;
-		}
-
-		return METERMAID::$units_of_measurement[ $chosen_measurement ];
-	}
-
 	public static function admin_page() {
 		global $wpdb;
 
@@ -501,7 +491,7 @@ class METERMAID {
 				<div class="metermaid-tabbed-content card">
 					<?php if ( current_user_can( 'metermaid-add-system' ) ) { ?>
 						<div data-metermaid-tab="add-system">
-							<?php self::add_system_form(); ?>
+							<?php self::system_form(); ?>
 						</div>
 					<?php } ?>
 				</div>
@@ -518,7 +508,7 @@ class METERMAID {
 						<th><?php echo esc_html( __( 'Last Reading', 'metermaid' ) ); ?></th>
 						<th><?php echo esc_html( __( 'Last Reading Date', 'metermaid' ) ); ?></th>
 						<th>
-							<?php echo esc_html( sprintf( __( '%s All Time', 'metermaid' ), strtoupper( METERMAID::measurement()['rate_abbreviation'] ) ) ); ?>
+							<?php echo esc_html( sprintf( __( '%s All Time', 'metermaid' ), strtoupper( $system->measurement()['rate_abbreviation'] ) ) ); ?>
 						</th>
 					</thead>
 					<tbody>
@@ -601,32 +591,7 @@ class METERMAID {
 		$system = new METERMAID_SYSTEM( $system_id );
 
 		if ( isset( $_POST['metermaid_action'] ) ) {
-			if ( 'update_settings' == $_POST['metermaid_action'] ) {
-				if ( ! wp_verify_nonce( $_POST['metermaid_nonce'], 'metermaid-update-settings' ) ) {
-					echo 'You are not authorized to update settings.';
-					wp_die();
-				}
-
-				if ( ! current_user_can( 'metermaid-edit-system', $_POST['metermaid_system_id'] ) ) {
-					echo 'You are not authorized to update these settings.';
-					wp_die();
-				}
-
-				if ( isset( METERMAID::$units_of_measurement[ $_POST['metermaid_unit_of_measurement'] ] ) ) {
-					update_option( 'metermaid_unit_of_measurement', $_POST['metermaid_unit_of_measurement'] );
-				}
-
-				$rate_interval = max( 1, intval( $_POST['metermaid_minimum_rate_interval'] ) );
-
-				// @todo Make this per-user-per-system, not global.
-				update_option( 'metermaid_minimum_rate_interval', $rate_interval );
-
-				?>
-				<div class="updated">
-					<p><?php echo esc_html( __( 'Settings updated.', 'metermaid' ) ); ?></p>
-				</div>
-				<?php
-			} else if ( 'add_meter' == $_POST['metermaid_action'] ) {
+			if ( 'add_meter' == $_POST['metermaid_action'] ) {
 				if ( ! wp_verify_nonce( $_POST['metermaid_nonce'], 'metermaid-add-meter' ) ) {
 					echo 'You are not authorized to add a meter.';
 					wp_die();
@@ -731,6 +696,31 @@ class METERMAID {
 				?>
 				<div class="updated">
 					<p><?php echo esc_html( __( 'The meter has been deleted.', 'metermaid' ) ); ?></p>
+				</div>
+				<?php
+			} else if ( 'edit_system' == $_POST['metermaid_action'] ) {
+				if ( ! wp_verify_nonce( $_POST['metermaid_nonce'], 'metermaid-edit-system' ) ) {
+					echo 'You are not authorized to edit a system.';
+					wp_die();
+				}
+
+				if ( ! current_user_can( 'metermaid-edit-system', $_POST['metermaid_system_id'] ) ) {
+					echo 'You are not authorized to edit this system.';
+					wp_die();
+				}
+
+				$wpdb->query( $wpdb->prepare(
+					"UPDATE " . $wpdb->prefix . "metermaid_systems SET name=%s, location=%s, unit=%s, rate_interval=%d WHERE metermaid_system_id=%d LIMIT 1",
+					$_POST['metermaid_system_name'],
+					$_POST['metermaid_system_location'],
+					$_POST['metermaid_system_unit'],
+					$_POST['metermaid_system_rate_interval'],
+					$_POST['metermaid_system_id']
+				) );
+
+				?>
+				<div class="updated">
+					<p><?php echo esc_html( __( 'The system has been updated.', 'metermaid' ) ); ?></p>
 				</div>
 				<?php
 			}
@@ -1402,7 +1392,7 @@ class METERMAID {
 		<?php
 	}
 
-	public static function add_system_form( $system_id = null ) {
+	public static function system_form( $system_id = null ) {
 		$system = null;
 
 		if ( $system_id ) {
@@ -1435,6 +1425,26 @@ class METERMAID {
 					</th>
 					<td>
 						<input type="text" name="metermaid_system_location" value="<?php echo esc_attr( $system ? $system->location : '' ); ?>" />
+					</td>
+				</tr>
+				<tr>
+					<th scope="row">
+						<?php echo esc_html( __( 'Unit of measurement', 'metermaid' ) ); ?>
+					</th>
+					<td>
+						<select name="metermaid_system_unit">
+							<?php foreach ( METERMAID::$units_of_measurement as $unit => $unit_meta ) { ?>
+								<option value="<?php echo esc_attr( $unit ); ?>" <?php if ( $system && ( $unit == $system->unit ) ) { ?> selected="selected"<?php } ?>><?php echo esc_html( $unit_meta['plural'] ); ?></option>
+							<?php } ?>
+						</select>
+					</td>
+				</tr>
+				<tr>
+					<th scope="row">
+						<?php echo esc_html( __( 'Minimum rate interval (in days)', 'metermaid' ) ); ?>
+					</th>
+					<td>
+						<input type="number" name="metermaid_system_rate_interval" value="<?php echo esc_attr( $system ? $system->rate_interval : METERMAID_DEFAULT_RATE_INTERVAL ); ?>" />
 					</td>
 				</tr>
 				<tr>
@@ -1515,64 +1525,28 @@ class METERMAID {
 	}
 
 	public static function gpd( $reading, $readings, $minimum_days = 1 ) {
-		usort( $readings, array( __CLASS__, 'readings_sort' ) );
+		if ( count( $readings ) > 1 ) {
+			usort( $readings, array( __CLASS__, 'readings_sort' ) );
 
-		foreach ( $readings as $_reading ) {
-			if ( $_reading->reading_date > date( "Y-m-d", strtotime( $reading->reading_date ) - ( 24 * 60 * 60 * ( $minimum_days ) ) ) ) {
-				continue;
-			}
+			foreach ( $readings as $_reading ) {
+				if ( $_reading->reading_date > date( "Y-m-d", strtotime( $reading->reading_date ) - ( 24 * 60 * 60 * ( $minimum_days ) ) ) ) {
+					continue;
+				}
 
-			return number_format( round(
-				( $reading->real_reading - $_reading->real_reading ) /
-					(
-					(
-						  strtotime( $reading->reading_date )
-						- strtotime( $_reading->reading_date )
+				return number_format( round(
+					( $reading->real_reading - $_reading->real_reading ) /
+						(
+						(
+							  strtotime( $reading->reading_date )
+							- strtotime( $_reading->reading_date )
+						)
+						/ ( 24 * 60 * 60 )
 					)
-					/ ( 24 * 60 * 60 )
-				)
-			), 0 );
+				), 0 );
+			}
 		}
 
 		return '';
-	}
-
-	public static function add_settings_form() {
-		?>
-		<form method="post" action="">
-			<input type="hidden" name="metermaid_action" value="update_settings" />
-			<input type="hidden" name="metermaid_nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-update-settings' ) ); ?>" />
-
-			<table class="form-table">
-				<tr>
-					<th scope="row">
-						<?php echo esc_html( __( 'Unit of measurement', 'metermaid' ) ); ?>
-					</th>
-					<td>
-						<select name="metermaid_unit_of_measurement">
-							<?php foreach ( METERMAID::$units_of_measurement as $unit => $unit_meta ) { ?>
-								<option value="<?php echo esc_attr( $unit ); ?>" <?php if ( $unit == METERMAID::get_option( 'unit_of_measurement' ) ) { ?> selected="selected"<?php } ?>><?php echo esc_html( $unit_meta['plural'] ); ?></option>
-							<?php } ?>
-						</select>
-					</td>
-				</tr>
-				<tr>
-					<th scope="row">
-						<?php echo esc_html( __( 'Minimum rate interval (in days)', 'metermaid' ) ); ?>
-					</th>
-					<td>
-						<input type="number" name="metermaid_minimum_rate_interval" value="<?php echo esc_attr( METERMAID::get_option( 'minimum_rate_interval' ) ); ?>" />
-					</td>
-				</tr>
-				<tr>
-					<th scope="row"></th>
-					<td>
-						<input class="button button-primary" type="submit" value="<?php echo esc_attr( __( 'Update Settings', 'metermaid' ) ); ?>" />
-					</td>
-				</tr>
-			</table>
-		</form>
-		<?php
 	}
 
 	public static $units_of_measurement = array(
