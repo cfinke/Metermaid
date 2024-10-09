@@ -276,8 +276,8 @@ class METERMAID {
 		global $title;
 
 		if ( isset( $_GET['page'] ) && strpos( $_GET['page'], 'metermaid' ) !== false ) {
-			if ( isset( $_GET['meter'] ) ) {
-				$meter = new METERMAID_METER( $_GET['meter'] );
+			if ( isset( $_GET['metermaid_meter_id'] ) ) {
+				$meter = new METERMAID_METER( $_GET['metermaid_meter_id'] );
 
 				if ( $meter ) {
 					$title = 'Metermaid &raquo; ' . $meter->display_name();
@@ -485,13 +485,13 @@ class METERMAID {
 			}
 		}
 
-		if ( isset( $_GET['meter'] ) ) {
-			if ( ! current_user_can( 'metermaid-view-meter', $_GET['meter'] ) ) {
+		if ( isset( $_GET['metermaid_meter_id'] ) ) {
+			if ( ! current_user_can( 'metermaid-view-meter', $_GET['metermaid_meter_id'] ) ) {
 				echo 'You are not authorized to access this meter.';
 				wp_die();
 			}
 
-			return self::meter_detail_page( $_GET['meter'] );
+			return self::meter_detail_page( $_GET['metermaid_meter_id'] );
 		}
 
 		if ( isset( $_GET['metermaid_system_id'] ) ) {
@@ -573,7 +573,7 @@ class METERMAID {
 										</form>
 									<?php } ?>
 								</td>
-								<td><a href="<?php echo esc_url( add_query_arg( 'meter', $meter->id ) ); ?>"><?php echo esc_html( $meter->name ?: __( '[Unnamed]' ) ); ?></a></td>
+								<td><a href="<?php echo esc_url( add_query_arg( 'metermaid_meter_id', $meter->id ) ); ?>"><?php echo esc_html( $meter->name ?: __( '[Unnamed]' ) ); ?></a></td>
 								<td><?php echo esc_html( $meter->location ); ?></td>
 								<td>
 									<?php if ( ! empty( $readings ) ) { ?>
@@ -824,7 +824,7 @@ class METERMAID {
 											</form>
 										<?php } ?>
 									</td>
-									<td><a href="<?php echo esc_url( add_query_arg( 'meter', $meter->id ) ); ?>"><?php echo esc_html( $meter->name ?: __( '[Unnamed]' ) ); ?></a></td>
+									<td><a href="<?php echo esc_url( add_query_arg( 'metermaid_meter_id', $meter->id ) ); ?>"><?php echo esc_html( $meter->name ?: __( '[Unnamed]' ) ); ?></a></td>
 									<td><?php echo esc_html( $meter->location ); ?></td>
 									<td>
 										<?php if ( ! empty( $readings ) ) { ?>
@@ -888,7 +888,7 @@ class METERMAID {
 
 					// @todo Should meter managers only be able to delete their own readings?
 					// If so, the second arg of this should be the reading ID, not the meter.
-					if ( ! current_user_can( 'metermaid-delete-reading', $_GET['meter'] ) ) {
+					if ( ! current_user_can( 'metermaid-delete-reading', $_GET['metermaid_meter_id'] ) ) {
 						echo 'You are not authorized to delete a reading for this meter.';
 						wp_die();
 					}
@@ -898,7 +898,7 @@ class METERMAID {
 						$_POST['reading_id'],
 					) );
 
-					$meter = new METERMAID_METER( $_GET['meter'] );
+					$meter = new METERMAID_METER( $_GET['metermaid_meter_id'] );
 					$meter->recalculate_real_readings();
 
 					?>
@@ -912,7 +912,7 @@ class METERMAID {
 						wp_die();
 					}
 
-					if ( ! current_user_can( 'metermaid-delete-supplement', $_GET['meter'] ) ) {
+					if ( ! current_user_can( 'metermaid-delete-supplement', $_GET['metermaid_meter_id'] ) ) {
 						echo 'You are not authorized to delete a supplement for this meter.';
 						wp_die();
 					}
@@ -934,7 +934,7 @@ class METERMAID {
 						wp_die();
 					}
 
-					if ( ! current_user_can( 'metermaid-add-supplement', $_GET['meter'] ) ) {
+					if ( ! current_user_can( 'metermaid-add-supplement', $_GET['metermaid_meter_id'] ) ) {
 						echo 'You are not authorized to add a supplement for this meter.';
 						wp_die();
 					}
@@ -1025,9 +1025,9 @@ class METERMAID {
 
 				?>
 				<h1 class="wp-heading-inline">
-					<a href="<?php echo esc_url( remove_query_arg( 'meter' ) ); ?>"><?php echo esc_html( __( 'Metermaid', 'metermaid' ) ); ?></a>
+					<a href="<?php echo esc_url( remove_query_arg( 'metermaid_meter_id' ) ); ?>"><?php echo esc_html( __( 'Metermaid', 'metermaid' ) ); ?></a>
 					&raquo;
-					<a href="<?php echo esc_url( add_query_arg( 'metermaid_system_id', $meter->system_id, remove_query_arg( 'meter' ) ) ); ?>"><?php echo esc_html( $meter->system->name ); ?></a>
+					<a href="<?php echo esc_url( add_query_arg( 'metermaid_system_id', $meter->system_id, remove_query_arg( 'metermaid_meter_id' ) ) ); ?>"><?php echo esc_html( $meter->system->name ); ?></a>
 					&raquo;
 					<?php
 
@@ -1277,7 +1277,7 @@ class METERMAID {
 								<tr>
 									<td></td>
 									<td>
-										<a href="<?php echo esc_attr( add_query_arg( 'meter', $child->id ) ); ?>">
+										<a href="<?php echo esc_attr( add_query_arg( 'metermaid_meter_id', $child->id ) ); ?>">
 											<?php echo esc_html( $child->display_name() ); ?>
 										</a>
 									</td>
