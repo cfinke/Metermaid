@@ -954,6 +954,66 @@ class METERMAID {
 						<p>The supplement has been added.</p>
 					</div>
 					<?php
+				} else if ( 'edit_meter' == $_POST['metermaid_action'] ) {
+					if ( ! wp_verify_nonce( $_POST['metermaid_nonce'], 'metermaid-edit-meter' ) ) {
+						echo 'You are not authorized to edit a meter.';
+						wp_die();
+					}
+
+					if ( ! current_user_can( 'metermaid-edit-meter', $_POST['metermaid_meter_id'] ) ) {
+						echo 'You are not authorized to edit this meter.';
+						wp_die();
+					}
+
+					$wpdb->query( $wpdb->prepare(
+						"UPDATE " . $wpdb->prefix . "metermaid_meters SET name=%s, location=%s, status=%d WHERE metermaid_meter_id=%d LIMIT 1",
+						$_POST['metermaid_meter_name'],
+						$_POST['metermaid_meter_location'],
+						$_POST['metermaid_meter_status'],
+						$_POST['metermaid_meter_id']
+					) );
+
+					$wpdb->query( $wpdb->prepare(
+						"DELETE FROM ".$wpdb->prefix."metermaid_relationships WHERE parent_meter_id=%d OR parent_meter_id=%d",
+						$_POST['metermaid_meter_id'],
+						$_POST['metermaid_meter_id']
+					) );
+
+					if ( ! empty( $_POST['metermaid_parent_meters'] ) ) {
+						foreach ( array_filter( $_POST['metermaid_parent_meters'] ) as $parent_meter_id ) {
+							if ( $parent_meter_id == $_POST['metermaid_meter_id'] ) {
+								// A meter can't be a parent of itself.
+								continue;
+							}
+
+							$wpdb->query( $wpdb->prepare(
+								"INSERT INTO ".$wpdb->prefix."metermaid_relationships SET parent_meter_id=%s, child_meter_id=%s ON DUPLICATE KEY UPDATE parent_meter_id=VALUES(parent_meter_id)",
+								$parent_meter_id,
+								$_POST['metermaid_meter_id']
+							) );
+						}
+					}
+
+					if ( ! empty( $_POST['metermaid_child_meters'] ) ) {
+						foreach ( array_filter( $_POST['metermaid_child_meters'] ) as $child_meter_id ) {
+							if ( $child_meter_id == $_POST['metermaid_meter_id'] ) {
+								// A meter can't be a child of itself.
+								continue;
+							}
+
+							$wpdb->query( $wpdb->prepare(
+								"INSERT INTO ".$wpdb->prefix."metermaid_relationships SET child_meter_id=%s, parent_meter_id=%s ON DUPLICATE KEY UPDATE child_meter_id=VALUES(child_meter_id)",
+								$child_meter_id,
+								$_POST['metermaid_meter_id']
+							) );
+						}
+					}
+
+					?>
+					<div class="updated">
+						<p><?php echo esc_html( __( 'The meter has been edited.', 'metermaid' ) ); ?></p>
+					</div>
+					<?php
 				}
 			}
 
