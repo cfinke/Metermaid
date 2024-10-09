@@ -37,13 +37,9 @@ class METERMAID {
 		$role->add_cap( 'metermaid-delete-reading', true );
 		$role->add_cap( 'metermaid-add-supplement', true );
 		$role->add_cap( 'metermaid-delete-supplement', true );
-
-		/*
-		$role->add_cap( 'metermaid-add-system', true );
-		$role->add_cap( 'metermaid-edit-system', true );
-		$role->add_cap( 'metermaid-delete-meter', true );
-		$role->add_cap( 'metermaid-delete-reading', true );
-		*/
+		$role->add_cap( 'metermaid-invite-system_manager', true );
+		$role->add_cap( 'metermaid-invite-meter_manager', true );
+		$role->add_cap( 'metermaid-invite-meter_viewer', true );
 
 		add_role(
 			'multisystem_manager',
@@ -63,6 +59,9 @@ class METERMAID {
 				'metermaid-delete-reading' => true,
 				'metermaid-add-supplement' => true,
 				'metermaid-delete-supplement' => true,
+				'metermaid-invite-system_manager' => true,
+				'metermaid-invite-meter_manager' => true,
+				'metermaid-invite-meter_viewer' => true,
 			]
 		);
 
@@ -80,6 +79,9 @@ class METERMAID {
 		$role->add_cap( 'metermaid-delete-reading', true );
 		$role->add_cap( 'metermaid-add-supplement', true );
 		$role->add_cap( 'metermaid-delete-supplement', true );
+		$role->add_cap( 'metermaid-invite-system_manager', true );
+		$role->add_cap( 'metermaid-invite-meter_manager', true );
+		$role->add_cap( 'metermaid-invite-meter_viewer', true );
 
 		add_role(
 			'system_manager',
@@ -98,6 +100,9 @@ class METERMAID {
 				'metermaid-delete-reading' => true,
 				'metermaid-add-supplement' => true,
 				'metermaid-delete-supplement' => true,
+				'metermaid-invite-system_manager' => true,
+				'metermaid-invite-meter_manager' => true,
+				'metermaid-invite-meter_viewer' => true,
 			]
 		);
 
@@ -114,6 +119,9 @@ class METERMAID {
 		$role->add_cap( 'metermaid-delete-reading', true );
 		$role->add_cap( 'metermaid-add-supplement', true );
 		$role->add_cap( 'metermaid-delete-supplement', true );
+		$role->add_cap( 'metermaid-invite-system_manager', true );
+		$role->add_cap( 'metermaid-invite-meter_manager', true );
+		$role->add_cap( 'metermaid-invite-meter_viewer', true );
 
 		add_role(
 			'meter_manager',
@@ -128,6 +136,8 @@ class METERMAID {
 				'metermaid-delete-reading' => true,
 				'metermaid-add-supplement' => true,
 				'metermaid-delete-supplement' => true,
+				'metermaid-invite-meter_manager' => true,
+				'metermaid-invite-meter_viewer' => true,
 			]
 		);
 
@@ -140,6 +150,8 @@ class METERMAID {
 		$role->add_cap( 'metermaid-delete-reading', true );
 		$role->add_cap( 'metermaid-add-supplement', true );
 		$role->add_cap( 'metermaid-delete-supplement', true );
+		$role->add_cap( 'metermaid-invite-meter_manager', true );
+		$role->add_cap( 'metermaid-invite-meter_viewer', true );
 
 		add_role(
 			'meter_viewer',
@@ -150,6 +162,7 @@ class METERMAID {
 				'metermaid' => true,
 				'metermaid-access-system' => true,
 				'metermaid-view-meter' => true,
+				'metermaid-invite-meter_viewer' => true,
 			]
 		);
 
@@ -158,6 +171,7 @@ class METERMAID {
 		$role->add_cap( 'metermaid', true );
 		$role->add_cap( 'metermaid-access-system', true );
 		$role->add_cap( 'metermaid-view-meter', true );
+		$role->add_cap( 'metermaid-invite-meter_viewer', true );
 
 		$all_systems = self::systems();
 
