@@ -1012,7 +1012,7 @@ class METERMAID {
 
 					?>
 					<div class="updated">
-						<p><?php echo esc_html( __( 'The meter has been edited.', 'metermaid' ) ); ?></p>
+						<p><?php echo esc_html( __( 'The meter has been updated.', 'metermaid' ) ); ?></p>
 					</div>
 					<?php
 				}
