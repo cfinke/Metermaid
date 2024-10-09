@@ -159,12 +159,15 @@ class METERMAID {
 		$role->add_cap( 'metermaid-access-system', true );
 		$role->add_cap( 'metermaid-view-meter', true );
 
+		$all_systems = self::systems();
+
 		/**
 		 * add_submenu_page() doesn't let us deep-link, so manage that redirection here.
 		 */
-		if ( isset( $_GET['page'] ) && 'metermaid-add-meter' === $_GET['page'] ) {
+		if ( count( $all_systems ) == 1 && isset( $_GET['page'] ) && 'metermaid-add-meter' === $_GET['page'] ) {
 			$redirect_url = remove_query_arg( 'page' );
 			$redirect_url = add_query_arg( 'page', 'metermaid-home', $redirect_url );
+			$redirect_url = add_query_arg( 'metermaid_system_id', $all_systems[0]->id );
 			$redirect_url .= '#tab-add-meter';
 			wp_safe_redirect( $redirect_url );
 			exit;
@@ -183,7 +186,6 @@ class METERMAID {
 			$_GET['metermaid_system_id'] = $meter->system_id;
 		}
 
-		$all_systems = self::systems();
 
 		if ( ! isset( $_GET['metermaid_system_id'] ) ) {
 			if ( count( $all_systems ) == 1 ) {
@@ -411,7 +413,12 @@ class METERMAID {
 			);
 		}
 
-		if ( current_user_can( 'metermaid-add-meter' ) ) {
+		$systems = METERMAID::systems();
+
+		if (
+			count( $systems ) == 1 &&
+			current_user_can( 'metermaid-add-meter', $systems[0]->id )
+		) {
 			add_submenu_page(
 				'metermaid',
 				__( 'Add Meter', 'metermaid' ),
@@ -535,7 +542,7 @@ class METERMAID {
 
 			<div class="metermaid-tabbed-content-container">
 				<nav class="nav-tab-wrapper">
-					<?php if ( current_user_can( 'metermaid-add-system' ) ) { ?><a href="#tab-reading" class="nav-tab" data-metermaid-tab="add-system"><?php echo esc_html( __( 'Add System', 'metermaid' ) ); ?></a><?php } ?>
+					<?php if ( current_user_can( 'metermaid-add-system' ) ) { ?><a href="#tab-add-system" class="nav-tab" data-metermaid-tab="add-system"><?php echo esc_html( __( 'Add System', 'metermaid' ) ); ?></a><?php } ?>
 				</nav>
 				<div class="metermaid-tabbed-content card">
 					<?php if ( current_user_can( 'metermaid-add-system' ) ) { ?>
