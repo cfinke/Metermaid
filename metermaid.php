@@ -1543,25 +1543,23 @@ class METERMAID {
 	}
 
 	public static function gpd( $reading, $readings, $minimum_days = 1 ) {
-		if ( count( $readings ) > 1 ) {
-			usort( $readings, array( __CLASS__, 'readings_sort' ) );
+		usort( $readings, array( __CLASS__, 'readings_sort' ) );
 
-			foreach ( $readings as $_reading ) {
-				if ( $_reading->reading_date > date( "Y-m-d", strtotime( $reading->reading_date ) - ( 24 * 60 * 60 * ( $minimum_days ) ) ) ) {
-					continue;
-				}
-
-				return number_format( round(
-					( $reading->real_reading - $_reading->real_reading ) /
-						(
-						(
-							  strtotime( $reading->reading_date )
-							- strtotime( $_reading->reading_date )
-						)
-						/ ( 24 * 60 * 60 )
-					)
-				), 0 );
+		foreach ( $readings as $_reading ) {
+			if ( $_reading->reading_date >= date( "Y-m-d", strtotime( $reading->reading_date ) - ( 24 * 60 * 60 * ( $minimum_days ) ) ) ) {
+				continue;
 			}
+
+			return number_format( round(
+				( $reading->real_reading - $_reading->real_reading ) /
+					(
+					(
+						  strtotime( $reading->reading_date )
+						- strtotime( $_reading->reading_date )
+					)
+					/ ( 24 * 60 * 60 )
+				)
+			), 0 );
 		}
 
 		return '';
