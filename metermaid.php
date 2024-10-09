@@ -562,6 +562,7 @@ class METERMAID {
 						<th><?php echo esc_html( __( 'Location', 'metermaid' ) ); ?></th>
 						<th><?php echo esc_html( __( 'Last Reading', 'metermaid' ) ); ?></th>
 						<th><?php echo esc_html( __( 'Last Reading Date', 'metermaid' ) ); ?></th>
+						<th><?php echo esc_html( sprintf( __( '%s YTD', 'metermaid' ), $system->measurement()['plural'] ) ); ?></th>
 						<th>
 							<?php echo esc_html( sprintf( __( '%s All Time', 'metermaid' ), strtoupper( $system->measurement()['rate_abbreviation'] ) ) ); ?>
 						</th>
@@ -601,6 +602,7 @@ class METERMAID {
 										<?php echo esc_html( date( get_option( 'date_format' ), strtotime( $readings[0]->reading_date ) ) ); ?>
 									<?php } ?>
 								</td>
+								<td><?php echo esc_html( number_format( $meter->gallons_ytd() ?? 0 ) ); ?></td>
 								<td>
 									<?php if ( count( $readings ) > 1 ) { ?>
 										<?php echo esc_html(
@@ -1128,6 +1130,7 @@ class METERMAID {
 								<?php echo esc_html( sprintf( __( '%1$s Since Last (At least %2$s days)', 'metermaid' ), strtoupper( $meter->system->measurement()['rate_abbreviation'] ), $meter->system->rate_interval ) ); ?>
 							</th>
 							<th><?php echo esc_html( sprintf( __( '%s Since Last', 'metermaid' ), $meter->system->measurement()['plural'] ) ); ?></th>
+							<th><?php echo esc_html( sprintf( __( '%s YTD', 'metermaid' ), $meter->system->measurement()['plural'] ) ); ?></th>
 						</thead>
 						<tbody>
 							<?php
@@ -1220,6 +1223,7 @@ class METERMAID {
 
 										?>
 									</td>
+									<td><?php echo esc_html( number_format( $meter->gallons_ytd( $reading ) ?? 0 ) ); ?></td>
 								</tr>
 								<?php
 							}
