@@ -753,7 +753,7 @@ class METERMAID {
 								<?php if ( count( $system->meters ) > 0 ) { ?>
 									<?php self::add_reading_form( $system->id ); ?>
 								<?php } else { ?>
-									<p><?php echo esc_html( __( 'Add a meter before entering any readings.', 'metermaid' ) ); ?></p>
+									<p><a href="#tab-add-meter"><?php echo esc_html( __( 'Add a meter before entering any readings.', 'metermaid' ) ); ?></a></p>
 								<?php } ?>
 							</div>
 						<?php } ?>
