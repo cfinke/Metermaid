@@ -10,6 +10,7 @@ Author: Christopher Finke
 require_once __DIR__ . '/classes/class.system.php';
 require_once __DIR__ . '/classes/class.meter.php';
 require_once __DIR__ . '/classes/class.reading.php';
+require_once __DIR__ . '/classes/class.sms.php';
 
 define( 'METERMAID_STATUS_ACTIVE', 0 );
 define( 'METERMAID_STATUS_INACTIVE', 1 );
