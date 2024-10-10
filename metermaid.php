@@ -507,6 +507,7 @@ class METERMAID {
 					wp_die();
 				}
 
+				update_option( 'METERMAID_TWILIO_PHONE_NUMBER', $_POST['metermaid_twilio_phone_number'] );
 				update_option( 'METERMAID_TWILIO_ACCOUNT_SID', $_POST['metermaid_twilio_account_sid'] );
 				update_option( 'METERMAID_TWILIO_AUTH_TOKEN', $_POST['metermaid_twilio_auth_token'] );
 				update_option( 'METERMAID_TWILIO_MESSAGING_SERVICE_SID', $_POST['metermaid_twilio_messaging_service_sid'] );
@@ -1581,6 +1582,15 @@ class METERMAID {
 			<table class="form-table">
 				<tr>
 					<th scope="row">
+						<?php echo esc_html( __( 'Twilio Phone Number', 'metermaid' ) ); ?>
+					</th>
+					<td>
+						<input type="text" name="metermaid_twilio_phone_number" value="<?php echo esc_attr( get_option( 'METERMAID_TWILIO_PHONE_NUMBER' ) ); ?>" />
+						<p class="description"><?php echo esc_html( __( 'For display purposes only.', 'metermaid' ) ); ?></p>
+					</td>
+				</tr>
+				<tr>
+					<th scope="row">
 						<?php echo esc_html( __( 'Twilio Account SID', 'metermaid' ) ); ?>
 					</th>
 					<td>
@@ -1906,7 +1916,9 @@ class METERMAID {
 
 								?>
 							</select>
-							<p class="description"><?php echo esc_html( __( 'Select your meter, and then you can submit meter readings by texting the current reading to 251-MY-WATER (251-699-2837).' ) ); ?></p>
+							<?php if ( METERMAID_SMS::is_configured() && get_option( 'METERMAID_TWILIO_PHONE_NUMBER' ) ) { ?>
+								<p class="description"><?php echo esc_html( sprintf( __( 'Select your meter, and then you can submit meter readings by texting the current reading to %s.' ), get_option( 'METERMAID_TWILIO_PHONE_NUMBER' ) ) ); ?></p>
+							<?php } ?>
 						</td>
 					</tr>
 				<?php } ?>
