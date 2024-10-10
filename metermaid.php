@@ -26,6 +26,7 @@ class METERMAID {
 
 		$role = get_role( 'administrator' );
 		$role->add_cap( 'metermaid', true );
+		$role->add_cap( 'metermaid-edit-settings', true );
 		$role->add_cap( 'metermaid-add-system', true );
 		$role->add_cap( 'metermaid-access-system', true );
 		$role->add_cap( 'metermaid-edit-system', true );
@@ -471,7 +472,42 @@ class METERMAID {
 		global $wpdb;
 
 		if ( isset( $_POST['metermaid_action'] ) ) {
-			if ( 'add_system' == $_POST['metermaid_action'] ) {
+			if ( 'edit_settings' == $_POST['metermaid_action'] ) {
+				if ( ! wp_verify_nonce( $_POST['metermaid_nonce'], 'metermaid-edit-settings' ) ) {
+					echo 'You are not authorized to edit the settings.';
+					wp_die();
+				}
+
+				if ( ! current_user_can( 'metermaid-edit-settings' ) ) {
+					echo 'You are not authorized to add these settings.';
+					wp_die();
+				}
+
+				update_option( 'METERMAID_TWILIO_NUMBER', $_POST['metermaid_twilio_number'] );
+				update_option( 'METERMAID_TWILIO_ACCOUNT_SID', $_POST['metermaid_twilio_account_sid'] );
+				update_option( 'METERMAID_TWILIO_AUTH_TOKEN', $_POST['metermaid_twilio_auth_token'] );
+				update_option( 'METERMAID_TWILIO_MESSAGING_SERVICE_SID', $_POST['metermaid_twilio_messaging_service_sid'] );
+			} else if ( 'edit_profile' == $_POST['metermaid_action'] ) {
+				if ( ! wp_verify_nonce( $_POST['metermaid_nonce'], 'metermaid-edit-profile' ) ) {
+					echo 'You are not authorized to edit a profile.';
+					wp_die();
+				}
+
+				update_user_meta( get_current_user_id(), 'nickname', $_POST['metermaid_profile_name'] );
+				update_user_meta( get_current_user_id(), 'metermaid_phone_number', METERMAID_SMS::standardize_phone_number( $_POST['metermaid_profile_phone'] ) );
+
+				if ( ! empty( $_POST['metermaid_profile_meter'] ) ) {
+					if ( current_user_can( 'metermaid-add-reading', $_POST['metermaid_profile_meter'] ) ) {
+						update_user_meta( get_current_user_id(), 'metermaid_meter_id', $_POST['metermaid_profile_meter'] );
+					}
+				}
+
+				?>
+				<div class="updated">
+					<p><?php echo esc_html( __( 'The profile has been updated.', 'metermaid' ) ); ?></p>
+				</div>
+				<?php
+			} else if ( 'add_system' == $_POST['metermaid_action'] ) {
 				if ( ! wp_verify_nonce( $_POST['metermaid_nonce'], 'metermaid-add-system' ) ) {
 					echo 'You are not authorized to add a system.';
 					wp_die();
@@ -551,12 +587,14 @@ class METERMAID {
 			<h1 class="wp-heading-inline">
 				<?php echo esc_html( __( 'Metermaid', 'metermaid' ) ); ?>
 				&raquo;
-				<?php echo esc_html( __( 'Your Systems', 'metermaid' ) ); ?>
+				<?php echo esc_html( __( 'Your Water Systems', 'metermaid' ) ); ?>
 			</h1>
 
 			<div class="metermaid-tabbed-content-container">
 				<nav class="nav-tab-wrapper">
 					<?php if ( current_user_can( 'metermaid-add-system' ) ) { ?><a href="#tab-add-system" class="nav-tab" data-metermaid-tab="add-system"><?php echo esc_html( __( 'Add System', 'metermaid' ) ); ?></a><?php } ?>
+					<?php if ( current_user_can( 'metermaid-edit-settings' ) ) { ?><a href="#tab-edit-settings" class="nav-tab" data-metermaid-tab="edit-settings"><?php echo esc_html( __( 'Configure Metermaid', 'metermaid' ) ); ?></a><?php } ?>
+					<a href="#tab-profile" class="nav-tab" data-metermaid-tab="profile"><?php echo esc_html( __( 'Edit Profile', 'metermaid' ) ); ?></a>
 				</nav>
 				<div class="metermaid-tabbed-content card">
 					<?php if ( current_user_can( 'metermaid-add-system' ) ) { ?>
@@ -564,6 +602,14 @@ class METERMAID {
 							<?php self::system_form(); ?>
 						</div>
 					<?php } ?>
+					<?php if ( current_user_can( 'metermaid-edit-settings' ) ) { ?>
+						<div data-metermaid-tab="edit-settings">
+							<?php self::settings_form(); ?>
+						</div>
+					<?php } ?>
+					<div data-metermaid-tab="profile">
+						<?php self::profile_form(); ?>
+					</div>
 				</div>
 			</div>
 
@@ -1510,54 +1556,49 @@ class METERMAID {
 		<?php
 	}
 
-	public static function add_reading_form( $system_id, $meter_id = null ) {
+	public static function settings_form() {
 		?>
-		<form method="post" action="" class="metermaid_add_reading_form">
-			<input type="hidden" name="metermaid_action" value="add_reading" />
-			<input type="hidden" name="metermaid_nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-add-reading' ) ); ?>" />
-
-			<?php if ( $meter_id ) { ?>
-				<input type="hidden" name="metermaid_meter_id" value="<?php echo esc_attr( $meter_id ); ?>" />
-			<?php } ?>
+		<form method="post" action="" class="metermaid_settings_form">
+			<input type="hidden" name="metermaid_action" value="edit_settings" />
+			<input type="hidden" name="metermaid_nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-edit-settings' ) ); ?>" />
 
 			<table class="form-table">
-				<?php
-
-				if ( ! $meter_id ) {
-					$system = new METERMAID_SYSTEM( $system_id );
-
-					// @todo Error handle if the system doesn't exist.
-
-					?>
-					<tr>
-						<th scope="row">
-							<?php echo esc_html( __( 'Meter', 'metermaid' ) ); ?>
-						</th>
-						<td>
-							<?php METERMAID::meter_list_selection( $system->id, 'metermaid_meter_id' ); ?>
-						</td>
-					</tr>
-				<?php } ?>
 				<tr>
 					<th scope="row">
-						<?php echo esc_html( __( 'Date', 'metermaid' ) ); ?>
+						<?php echo esc_html( __( 'Twilio Phone Number', 'metermaid' ) ); ?>
 					</th>
 					<td>
-						<input type="date" name="metermaid_reading_date" value="<?php echo esc_html( current_datetime()->format( 'Y-m-d' ) ); ?>" />
+						<input type="text" name="metermaid_twilio_number" value="<?php echo esc_attr( METERMAID_SMS::readable_phone_number( get_option( 'METERMAID_TWILIO_NUMBER' ) ) ); ?>" />
 					</td>
 				</tr>
 				<tr>
 					<th scope="row">
-						<?php echo esc_html( __( 'Reading', 'metermaid' ) ); ?>
+						<?php echo esc_html( __( 'Twilio Account SID', 'metermaid' ) ); ?>
 					</th>
 					<td>
-						<input type="number" name="metermaid_reading" value="" />
+						<input type="text" name="metermaid_twilio_account_sid" value="<?php echo esc_attr( get_option( 'METERMAID_TWILIO_ACCOUNT_SID' ) ); ?>" />
+					</td>
+				</tr>
+				<tr>
+					<th scope="row">
+						<?php echo esc_html( __( 'Twilio Auth Token', 'metermaid' ) ); ?>
+					</th>
+					<td>
+						<input type="text" name="metermaid_twilio_auth_token" value="<?php echo esc_attr( get_option( 'METERMAID_TWILIO_AUTH_TOKEN' ) ); ?>" />
+					</td>
+				</tr>
+				<tr>
+					<th scope="row">
+						<?php echo esc_html( __( 'Twilio Messaging Service SID', 'metermaid' ) ); ?>
+					</th>
+					<td>
+						<input type="text" name="metermaid_twilio_messaging_service_sid" value="<?php echo esc_attr( get_option( 'METERMAID_TWILIO_MESSAGING_SERVICE_SID' ) ); ?>" />
 					</td>
 				</tr>
 				<tr>
 					<th scope="row"></th>
 					<td>
-						<input class="button button-primary" type="submit" value="<?php echo esc_attr( __( 'Add Reading', 'metermaid' ) ); ?>" />
+						<input class="button button-primary" type="submit" value="<?php echo esc_attr( __( 'Save Configuration', 'metermaid' ) ); ?>" />
 					</td>
 				</tr>
 			</table>
