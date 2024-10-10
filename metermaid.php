@@ -1582,6 +1582,8 @@ class METERMAID {
 
 	public static function settings_form() {
 		?>
+		<p><?php echo esc_html( __( "To enable Metermaid's SMS integration, enter your Twilio settings below.", 'metermaid' ) ); ?></p>
+
 		<form method="post" action="" class="metermaid_settings_form">
 			<input type="hidden" name="metermaid_action" value="edit_settings" />
 			<input type="hidden" name="metermaid_nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-edit-settings' ) ); ?>" />
@@ -1866,7 +1868,7 @@ class METERMAID {
 
 								?>
 							</select>
-							<p class="description"><?php echo esc_html( __( 'Select your meter, and then you can submit meter readings by texting 251-MY-WATER (251-699-2837).' ) ); ?></p>
+							<p class="description"><?php echo esc_html( __( 'Select your meter, and then you can submit meter readings by texting the current reading to 251-MY-WATER (251-699-2837).' ) ); ?></p>
 						</td>
 					</tr>
 				<?php } ?>
