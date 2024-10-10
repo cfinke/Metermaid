@@ -1638,6 +1638,62 @@ class METERMAID {
 		<?php
 	}
 
+	public static function add_reading_form( $system_id, $meter_id = null ) {
+		?>
+		<form method="post" action="" class="metermaid_add_reading_form">
+			<input type="hidden" name="metermaid_action" value="add_reading" />
+			<input type="hidden" name="metermaid_nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-add-reading' ) ); ?>" />
+
+			<?php if ( $meter_id ) { ?>
+				<input type="hidden" name="metermaid_meter_id" value="<?php echo esc_attr( $meter_id ); ?>" />
+			<?php } ?>
+
+			<table class="form-table">
+				<?php
+
+				if ( ! $meter_id ) {
+					$system = new METERMAID_SYSTEM( $system_id );
+
+					// @todo Error handle if the system doesn't exist.
+
+					?>
+					<tr>
+						<th scope="row">
+							<?php echo esc_html( __( 'Meter', 'metermaid' ) ); ?>
+						</th>
+						<td>
+							<?php METERMAID::meter_list_selection( $system->id, 'metermaid_meter_id' ); ?>
+						</td>
+					</tr>
+				<?php } ?>
+				<tr>
+					<th scope="row">
+						<?php echo esc_html( __( 'Date', 'metermaid' ) ); ?>
+					</th>
+					<td>
+						<input type="date" name="metermaid_reading_date" value="<?php echo esc_html( current_datetime()->format( 'Y-m-d' ) ); ?>" />
+					</td>
+				</tr>
+				<tr>
+					<th scope="row">
+						<?php echo esc_html( __( 'Reading', 'metermaid' ) ); ?>
+					</th>
+					<td>
+						<input type="number" name="metermaid_reading" value="" />
+					</td>
+				</tr>
+				<tr>
+					<th scope="row"></th>
+					<td>
+						<input class="button button-primary" type="submit" value="<?php echo esc_attr( __( 'Add Reading', 'metermaid' ) ); ?>" />
+					</td>
+				</tr>
+			</table>
+		</form>
+		<?php
+	}
+
+
 	// Sort readings in reverse descending order.
 	public static function readings_sort( $a, $b ) {
 		if ( $a->reading_date < $b->reading_date ) {
