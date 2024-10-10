@@ -306,6 +306,12 @@ class METERMAID {
 				if ( $meter ) {
 					$title = 'Metermaid &raquo; ' . $meter->display_name();
 				}
+			} else if ( isset( $_GET['metermaid_system_id'] ) ) {
+				$system = new METERMAID_SYSTEM( $_GET['metermaid_system_id'] );
+
+				if ( $system ) {
+					$title = 'Metermaid &raquol ' . $system->display_name();
+				}
 			} else {
 				$title = 'Metermaid';
 			}
