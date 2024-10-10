@@ -49,6 +49,25 @@ class METERMAID_METER {
 		return $this->name . ( $this->location ? ' (' . $this->location . ')' : '' );
 	}
 
+	public function add_reading( $reading, $when, $user_id = null ) {
+		global $wpdb;
+
+		$reading_int = intval( str_replace( ',', '', $reading ) );
+		$when = date( "Y-m-d", strtotime( $when ) );
+
+		$wpdb->query( $wpdb->prepare(
+			"INSERT INTO " . $wpdb->prefix . "metermaid_readings SET meter_id=%s, reading=%d, reading_date=%s, added=NOW(), added_by=%d ON DUPLICATE KEY UPDATE reading=VALUES(reading)",
+			$this->id,
+			$reading_int,
+			$when,
+			$user_id ?? get_current_user_id()
+		) );
+
+		$this->recalculate_real_readings();
+
+		return true;
+	}
+
 	/**
 	 * A list of meter readings for this meter.
 	 */
