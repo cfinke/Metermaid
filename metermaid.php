@@ -1132,7 +1132,7 @@ class METERMAID {
 					<nav class="nav-tab-wrapper">
 						<?php if ( current_user_can( 'metermaid-add-reading', $meter->id ) ) { ?><a href="#tab-reading" class="nav-tab" data-metermaid-tab="reading"><?php echo esc_html( __( 'Add Reading', 'metermaid' ) ); ?></a><?php } ?>
 						<?php if ( current_user_can( 'metermaid-add-supplement', $meter->id ) ) { ?><a href="#tab-supplement" class="nav-tab" data-metermaid-tab="supplement"><?php echo esc_html( __( 'Add Supplement', 'metermaid' ) ); ?></a><?php } ?>
-						<?php if ( current_user_can( 'metermaid-edit-meter', $meter->id ) ) { ?><a href="#tab-settings" class="nav-tab" data-metermaid-tab="settings"><?php echo esc_html( __( 'Settings', 'metermaid' ) ); ?></a><?php } ?>
+						<?php if ( current_user_can( 'metermaid-edit-meter', $meter->id ) ) { ?><a href="#tab-settings" class="nav-tab" data-metermaid-tab="settings"><?php echo esc_html( __( 'Configure Meter', 'metermaid' ) ); ?></a><?php } ?>
 					</nav>
 					<div class="metermaid-tabbed-content card">
 						<?php if ( current_user_can( 'metermaid-add-reading', $meter->id ) ) { ?>
@@ -1456,19 +1456,11 @@ class METERMAID {
 		<?php
 	}
 
-	public static function meter_list_selection( $system_id, $field_name, $multiple = false, $selected = array() ) {
+	public static function meter_list_selection( $system_id, $field_name, $multiple = false, $selected = array(), $exclude = array() ) {
 		global $wpdb;
 
 		$system = new METERMAID_SYSTEM( $system_id );
 		// @todo Error handle invalid system.
-
-		$all_meters = array();
-
-		foreach ( $system->meters as $meter ) {
-			if ( current_user_can( 'metermaid-view-meter', $meter->id ) ) {
-				$all_meters[] = $meter;
-			}
-		}
 
 		if ( ! is_array( $selected ) ) {
 			$selected = array( $selected );
@@ -1478,7 +1470,7 @@ class METERMAID {
 		<select name="<?php echo esc_attr( $field_name ); ?><?php if ( $multiple ) { ?>[]<?php } ?>"<?php if ( $multiple ) { ?> multiple<?php } ?>>
 			<?php
 
-			if ( ! $multiple && count( $all_meters ) > 1 ) {
+			if ( ! $multiple && count( $system->accessible_meters ) > 1 ) {
 				?>
 				<option value=""><?php echo esc_html( __( '-- Select Meter --', 'metermaid' ) ); ?></option>
 				<?php
@@ -1486,7 +1478,11 @@ class METERMAID {
 
 			$last_was_parent = false;
 
-			foreach ( $system->meters as $meter ) {
+			foreach ( $system->accessible_meters as $meter ) {
+				if ( in_array( $meter->id, $exclude ) ) {
+					continue;
+				}
+
 				if ( $meter->is_parent() ) {
 					$last_was_parent = true;
 				} else if ( $last_was_parent ) {
@@ -1838,7 +1834,7 @@ class METERMAID {
 						<?php echo esc_html( __( 'Parent Meters', 'metermaid' ) ); ?>
 					</th>
 					<td>
-						<?php METERMAID::meter_list_selection( $system_id, 'metermaid_parent_meters', true, $meter->parents ); ?>
+						<?php METERMAID::meter_list_selection( $system_id, 'metermaid_parent_meters', true, $meter->parents, array( $meter->id ) ); ?>
 						<p class="description"><?php echo esc_html( __( 'A parent meter is a meter that is located upstream from this meter.', 'metermaid' ) ); ?></p>
 					</td>
 				</tr>
@@ -1847,7 +1843,7 @@ class METERMAID {
 						<?php echo esc_html( __( 'Child Meters', 'metermaid' ) ); ?>
 					</th>
 					<td>
-						<?php METERMAID::meter_list_selection( $system_id, 'metermaid_child_meters', true, $meter->children ); ?>
+						<?php METERMAID::meter_list_selection( $system_id, 'metermaid_child_meters', true, $meter->children, array( $meter->id ) ); ?>
 						<p class="description"><?php echo esc_html( __( 'A child meter is a meter that is located downstream from this meter.', 'metermaid' ) ); ?></p>
 					</td>
 				</tr>
