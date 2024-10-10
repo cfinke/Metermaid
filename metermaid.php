@@ -838,6 +838,7 @@ class METERMAID {
 						<?php if ( current_user_can( 'metermaid-add-reading' ) ) { ?><a href="#tab-reading" class="nav-tab" data-metermaid-tab="reading"><?php echo esc_html( __( 'Add Reading', 'metermaid' ) ); ?></a><?php } ?>
 						<?php if ( current_user_can( 'metermaid-add-meter' ) ) { ?><a href="#tab-add-meter" class="nav-tab" data-metermaid-tab="add-meter"><?php echo esc_html( __( 'Add Meter', 'metermaid' ) ); ?></a><?php } ?>
 						<?php if ( current_user_can( 'metermaid-edit-system', $system->id ) ) { ?><a href="#tab-settings" class="nav-tab" data-metermaid-tab="settings"><?php echo esc_html( __( 'Settings', 'metermaid' ) ); ?></a><?php } ?>
+						<a href="#tab-profile" class="nav-tab" data-metermaid-tab="profile"><?php echo esc_html( __( 'Edit Profile', 'metermaid' ) ); ?></a>
 					</nav>
 					<div class="metermaid-tabbed-content card">
 						<?php if ( current_user_can( 'metermaid-add-reading' ) ) { ?>
@@ -859,6 +860,9 @@ class METERMAID {
 								<?php self::system_form( $system->id ); ?>
 							</div>
 						<?php } ?>
+					</div>
+					<div data-metermaid-tab="profile">
+						<?php self::profile_form(); ?>
 					</div>
 				</div>
 
@@ -1795,6 +1799,75 @@ class METERMAID {
 					<th scope="row"></th>
 					<td>
 						<input class="button button-primary" type="submit" value="<?php echo esc_attr( $meter_id ? __( 'Update Meter', 'metermaid' ) : __( 'Add Meter', 'metermaid' ) ); ?>" />
+					</td>
+				</tr>
+			</table>
+		</form>
+		<?php
+	}
+
+	public static function profile_form() {
+		?>
+		<form method="post" action="">
+			<input type="hidden" name="metermaid_action" value="edit_profile" />
+			<input type="hidden" name="metermaid_nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-edit-profile' ) ); ?>" />
+
+			<table class="form-table">
+				<tr>
+					<th scope="row">
+						<?php echo esc_html( __( 'Name', 'metermaid' ) ); ?>
+					</th>
+					<td>
+						<input type="text" name="metermaid_profile_name" value="<?php echo esc_attr( get_user_meta( wp_get_current_user()->ID, 'nickname', true ) ); ?>" />
+					</td>
+				</tr>
+				<tr>
+					<th scope="row">
+						<?php echo esc_html( __( 'Phone', 'metermaid' ) ); ?>
+					</th>
+					<td>
+						<input type="text" name="metermaid_profile_phone" value="<?php echo esc_attr( METERMAID_SMS::readable_phone_number( get_user_meta( wp_get_current_user()->ID, 'metermaid_phone_number', true ) ) ); ?>" />
+					</td>
+				</tr>
+				<?php if ( current_user_can( 'metermaid-add-reading' ) ) { ?>
+					<tr>
+						<th scope="row">
+							<?php echo esc_html( __( 'Your Meter', 'metermaid' ) ); ?>
+						</th>
+						<td>
+							<select name="metermaid_profile_meter">
+								<option value=""><?php echo esc_html( __( '-- Select Meter --', 'metermaid' ) ); ?></option>
+								<?php
+
+								$all_systems = METERMAID::systems();
+								$user_meter = get_user_meta( get_current_user_id(), 'metermaid_meter_id', true );
+
+								foreach ( $all_systems as $system ) {
+									$meters = $system->accessible_meters;
+
+									if ( ! empty( $meters ) ) {
+										?>
+										<optgroup label="<?php echo esc_attr( $system->display_name() ); ?>">
+											<?php foreach ( $meters as $meter ) { ?>
+												<option value="<?php echo esc_attr( $meter->id ); ?>"<?php if ( $meter->id == $user_meter ) { ?> selected="selected"<?php } ?>>
+													<?php echo esc_html( $meter->display_name() ); ?>
+												</option>
+											<?php } ?>
+										</optgroup>
+										<?php
+									}
+								}
+
+								?>
+							</select>
+							<p class="description"><?php echo esc_html( __( 'Select your meter, and then you can submit meter readings by texting 251-MY-WATER (251-699-2837).' ) ); ?></p>
+						</td>
+					</tr>
+				<?php } ?>
+				<tr>
+					<th scope="row"></th>
+					<td>
+						<input class="button button-primary" type="submit" value="<?php echo esc_attr( __( 'Update Profile', 'metermaid' ) ); ?>" />
 					</td>
 				</tr>
 			</table>
