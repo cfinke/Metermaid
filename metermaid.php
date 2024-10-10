@@ -606,8 +606,8 @@ class METERMAID {
 			<div class="metermaid-tabbed-content-container">
 				<nav class="nav-tab-wrapper">
 					<?php if ( current_user_can( 'metermaid-add-system' ) ) { ?><a href="#tab-add-system" class="nav-tab" data-metermaid-tab="add-system"><?php echo esc_html( __( 'Add System', 'metermaid' ) ); ?></a><?php } ?>
-					<?php if ( current_user_can( 'metermaid-edit-settings' ) ) { ?><a href="#tab-edit-settings" class="nav-tab" data-metermaid-tab="edit-settings"><?php echo esc_html( __( 'Configure Metermaid', 'metermaid' ) ); ?></a><?php } ?>
 					<a href="#tab-profile" class="nav-tab" data-metermaid-tab="profile"><?php echo esc_html( __( 'Edit Profile', 'metermaid' ) ); ?></a>
+					<?php if ( current_user_can( 'metermaid-edit-settings' ) ) { ?><a href="#tab-edit-settings" class="nav-tab" data-metermaid-tab="edit-settings"><?php echo esc_html( __( 'Configure Metermaid', 'metermaid' ) ); ?></a><?php } ?>
 				</nav>
 				<div class="metermaid-tabbed-content card">
 					<?php if ( current_user_can( 'metermaid-add-system' ) ) { ?>
@@ -615,14 +615,14 @@ class METERMAID {
 							<?php self::system_form(); ?>
 						</div>
 					<?php } ?>
+					<div data-metermaid-tab="profile">
+						<?php self::profile_form(); ?>
+					</div>
 					<?php if ( current_user_can( 'metermaid-edit-settings' ) ) { ?>
 						<div data-metermaid-tab="edit-settings">
 							<?php self::settings_form(); ?>
 						</div>
 					<?php } ?>
-					<div data-metermaid-tab="profile">
-						<?php self::profile_form(); ?>
-					</div>
 				</div>
 			</div>
 
