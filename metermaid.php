@@ -41,6 +41,7 @@ class METERMAID {
 		$role->add_cap( 'metermaid-invite-system_manager', true );
 		$role->add_cap( 'metermaid-invite-meter_manager', true );
 		$role->add_cap( 'metermaid-invite-meter_viewer', true );
+		$role->add_cap( 'metermaid-manage-sms', true );
 
 		add_role(
 			'multisystem_manager',
@@ -502,7 +503,6 @@ class METERMAID {
 					wp_die();
 				}
 
-				update_option( 'METERMAID_TWILIO_NUMBER', $_POST['metermaid_twilio_number'] );
 				update_option( 'METERMAID_TWILIO_ACCOUNT_SID', $_POST['metermaid_twilio_account_sid'] );
 				update_option( 'METERMAID_TWILIO_AUTH_TOKEN', $_POST['metermaid_twilio_auth_token'] );
 				update_option( 'METERMAID_TWILIO_MESSAGING_SERVICE_SID', $_POST['metermaid_twilio_messaging_service_sid'] );
@@ -1597,14 +1597,6 @@ class METERMAID {
 			<table class="form-table">
 				<tr>
 					<th scope="row">
-						<?php echo esc_html( __( 'Twilio Phone Number', 'metermaid' ) ); ?>
-					</th>
-					<td>
-						<input type="text" name="metermaid_twilio_number" value="<?php echo esc_attr( METERMAID_SMS::readable_phone_number( get_option( 'METERMAID_TWILIO_NUMBER' ) ) ); ?>" />
-					</td>
-				</tr>
-				<tr>
-					<th scope="row">
 						<?php echo esc_html( __( 'Twilio Account SID', 'metermaid' ) ); ?>
 					</th>
 					<td>
@@ -1944,9 +1936,19 @@ class METERMAID {
 		</form>
 		<?php
 	}
+
+	public static function UTC_NOW() {
+		return gmdate( "Y-m-d H:i:s" );
+	}
+
+	public static function local_timestamp( $date, $format_string = "Y-m-d H:i:s" ) {
+		$timestamp = new DateTime( $date, new DateTimeZone( 'UTC' ) );
+		$timestamp->setTimezone( new DateTimeZone( 'America/Los_Angeles' ) );
+		return $timestamp->format( $format_string );
+	}
 }
 
-add_action( 'init', array( 'METERMAID', 'init' ) );
+add_action( 'init', array( 'METERMAID', 'init' ), 10 );
 add_action( 'plugins_loaded', array( 'METERMAID', 'db_setup' ) );
 
 register_activation_hook( __FILE__, array( 'METERMAID', 'sql' ) );

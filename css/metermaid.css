@@ -20,10 +20,13 @@
 	border-bottom-color: #fff;
 }
 
-.metermaid-tabbed-content.card {
-	margin-top: 0;
+.metermaid-card.card, .metermaid-tabbed-content.card {
 	width: 100%;
 	max-width: 100%;
-	border-top: 0;
 	margin-bottom: 20px;
+}
+
+.metermaid-tabbed-content.card {
+	margin-top: 0;
+	border-top: 0;
 }
