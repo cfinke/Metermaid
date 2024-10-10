@@ -201,7 +201,6 @@ class METERMAID {
 			$_GET['metermaid_system_id'] = $meter->system_id;
 		}
 
-
 		if ( ! isset( $_GET['metermaid_system_id'] ) ) {
 			if ( count( $all_systems ) == 1 ) {
 				if ( ! current_user_can( 'metermaid-add-system' ) ) {
@@ -785,6 +784,13 @@ class METERMAID {
 					$_POST['meter_id']
 				) );
 
+				/* // Is there value in keeping around the personnel entries?
+				$wpdb->query( $wpdb->prepare(
+					"DELETE FROM " . $wpdb->prefix . "metermaid_personnel WHERE meter_id=%s",
+					$_POST['meter_id']
+				) );
+				*/
+
 				?>
 				<div class="updated">
 					<p><?php echo esc_html( __( 'The meter has been deleted.', 'metermaid' ) ); ?></p>
@@ -1012,7 +1018,6 @@ class METERMAID {
 						echo 'You are not authorized to delete a supplement for this meter.';
 						wp_die();
 					}
-
 
 					$wpdb->query( $wpdb->prepare(
 						"DELETE FROM " . $wpdb->prefix . "metermaid_supplements WHERE metermaid_supplement_id=%s LIMIT 1",
@@ -1529,7 +1534,7 @@ class METERMAID {
 			<table class="form-table">
 				<tr>
 					<th scope="row">
-						<?php echo esc_html( __( 'Name', 'metermaid' ) ); ?>
+						<?php echo esc_html( __( 'Water System Name', 'metermaid' ) ); ?>
 					</th>
 					<td>
 						<input type="text" name="metermaid_system_name" value="<?php echo esc_attr( $system ? $system->name : '' ); ?>" />
@@ -1561,6 +1566,7 @@ class METERMAID {
 					</th>
 					<td>
 						<input type="number" name="metermaid_system_rate_interval" value="<?php echo esc_attr( $system ? $system->rate_interval : METERMAID_DEFAULT_RATE_INTERVAL ); ?>" />
+						<p class="description"><?php echo esc_html( __( 'What is the least number of days between which Metermaid should calculate average usage rates? A higher number means a more accurate result, but it will also be more likely to hide short-term trends.' ) ); ?></p>
 					</td>
 				</tr>
 				<tr>

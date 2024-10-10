@@ -9,7 +9,6 @@ class METERMAID_METER {
 
 	public $statuses = array();
 
-
 	private $_readings = null;
 	private $_children = null;
 	private $_parents = null;
@@ -19,6 +18,7 @@ class METERMAID_METER {
 	public function __construct( $meter_id_or_row = null ) {
 		global $wpdb;
 
+		// I'd rather just define these above, but you can't initially define a static class member as an array.
 		$this->statuses[ METERMAID_STATUS_ACTIVE ] = __( 'Active', 'metermaid' );
 		$this->statuses[ METERMAID_STATUS_INACTIVE ] = __( 'Inactive', 'metermaid' );
 
