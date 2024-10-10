@@ -18,6 +18,8 @@ define( 'METERMAID_STATUS_INACTIVE', 1 );
 define( 'METERMAID_DEFAULT_RATE_INTERVAL', 7 );
 
 class METERMAID {
+	public static $pending_notices = [];
+
 	public static function init() {
 		add_filter( 'not_a_blog_default_page', function ( $url ) {
 			return 'wp-admin/admin.php?page=metermaid-home';
@@ -222,6 +224,9 @@ class METERMAID {
 		}
 
 		add_action( 'admin_title', array( __CLASS__, 'edit_page_title' ) );
+		add_action( 'admin_notices', array( __CLASS__, 'admin_notices' ) );
+
+		METERMAID::process_form_submissions();
 	}
 
 	public static function user_has_cap( $allcaps, $caps, $args, $user ) {
@@ -489,9 +494,7 @@ class METERMAID {
 		wp_enqueue_script( 'metermaid-admin.js' );
 	}
 
-	public static function admin_page() {
-		global $wpdb;
-
+	public static function process_form_submissions() {
 		if ( isset( $_POST['metermaid_action'] ) ) {
 			if ( 'edit_settings' == $_POST['metermaid_action'] ) {
 				if ( ! wp_verify_nonce( $_POST['metermaid_nonce'], 'metermaid-edit-settings' ) ) {
@@ -507,6 +510,8 @@ class METERMAID {
 				update_option( 'METERMAID_TWILIO_ACCOUNT_SID', $_POST['metermaid_twilio_account_sid'] );
 				update_option( 'METERMAID_TWILIO_AUTH_TOKEN', $_POST['metermaid_twilio_auth_token'] );
 				update_option( 'METERMAID_TWILIO_MESSAGING_SERVICE_SID', $_POST['metermaid_twilio_messaging_service_sid'] );
+
+				METERMAID::save_pending_notice( 'success', __( 'The settings have been saved.', 'metermaid' ) );
 			} else if ( 'edit_profile' == $_POST['metermaid_action'] ) {
 				if ( ! wp_verify_nonce( $_POST['metermaid_nonce'], 'metermaid-edit-profile' ) ) {
 					echo 'You are not authorized to edit a profile.';
@@ -522,11 +527,7 @@ class METERMAID {
 					}
 				}
 
-				?>
-				<div class="updated">
-					<p><?php echo esc_html( __( 'The profile has been updated.', 'metermaid' ) ); ?></p>
-				</div>
-				<?php
+				METERMAID::save_pending_notice( 'success', __( 'The profile has been updated.', 'metermaid' ) );
 			} else if ( 'add_system' == $_POST['metermaid_action'] ) {
 				if ( ! wp_verify_nonce( $_POST['metermaid_nonce'], 'metermaid-add-system' ) ) {
 					echo 'You are not authorized to add a system.';
@@ -545,11 +546,7 @@ class METERMAID {
 					get_current_user_id()
 				) );
 
-				?>
-				<div class="updated">
-					<p><?php echo esc_html( __( 'The system has been added.', 'metermaid' ) ); ?></p>
-				</div>
-				<?php
+				METERMAID::save_pending_notice( 'success', __( 'The system has been added.', 'metermaid' ) );
 			} else if ( 'add_reading' == $_POST['metermaid_action'] ) {
 				if ( ! wp_verify_nonce( $_POST['metermaid_nonce'], 'metermaid-add-reading' ) ) {
 					echo 'You are not authorized to add a reading.';
@@ -574,13 +571,251 @@ class METERMAID {
 				$meter = new METERMAID_METER( $_POST['metermaid_meter_id'] );
 				$meter->recalculate_real_readings();
 
-				?>
-				<div class="updated">
-					<p><?php echo esc_html( __( 'The reading has been added.', 'metermaid' ) ); ?></p>
-				</div>
-				<?php
+				METERMAID::save_pending_notice( 'success', __( 'The reading has been added.', 'metermaid' ) );
+			} else if ( 'add_meter' == $_POST['metermaid_action'] ) {
+				if ( ! wp_verify_nonce( $_POST['metermaid_nonce'], 'metermaid-add-meter' ) ) {
+					echo 'You are not authorized to add a meter.';
+					wp_die();
+				}
+
+				if ( ! current_user_can( 'metermaid-add-meter', $_POST['metermaid_system_id'] ) ) {
+					echo 'You are not authorized to add a meter to this system.';
+					wp_die();
+				}
+
+				$wpdb->query( $wpdb->prepare(
+					"INSERT INTO " . $wpdb->prefix . "metermaid_meters SET metermaid_system_id=%d, name=%s, location=%s, added=NOW(), added_by=%d",
+					$_POST['metermaid_system_id'],
+					$_POST['metermaid_meter_name'],
+					$_POST['metermaid_meter_location'],
+					get_current_user_id()
+				) );
+
+				$meter_id = $wpdb->insert_id;
+
+				if ( ! empty( $_POST['metermaid_parent_meters'] ) ) {
+					foreach ( array_filter( $_POST['metermaid_parent_meters'] ) as $parent_meter_id ) {
+						$wpdb->query( $wpdb->prepare(
+							"INSERT INTO ".$wpdb->prefix."metermaid_relationships SET parent_meter_id=%s, child_meter_id=%s ON DUPLICATE KEY UPDATE parent_meter_id=VALUES(parent_meter_id)",
+							$parent_meter_id,
+							$meter_id
+						) );
+					}
+				}
+
+				if ( ! empty( $_POST['metermaid_child_meters'] ) ) {
+					foreach ( array_filter( $_POST['metermaid_child_meters'] ) as $child_meter_id ) {
+						$wpdb->query( $wpdb->prepare(
+							"INSERT INTO ".$wpdb->prefix."metermaid_relationships SET child_meter_id=%s, parent_meter_id=%s ON DUPLICATE KEY UPDATE child_meter_id=VALUES(child_meter_id)",
+							$child_meter_id,
+							$meter_id
+						) );
+					}
+				}
+
+				METERMAID::save_pending_notice( 'success', __( 'The meter has been added.', 'metermaid' ) );
+			} else if ( 'delete_meter' == $_POST['metermaid_action'] ) {
+				if ( ! wp_verify_nonce( $_POST['metermaid_nonce'], 'metermaid-delete-meter' ) ) {
+					echo 'You are not authorized to delete a meter.';
+					wp_die();
+				}
+
+				if ( ! current_user_can( 'metermaid-delete-meter', $_POST['meter_id'] ) ) {
+					echo 'You are not authorized to delete this meter.';
+					wp_die();
+				}
+
+				$wpdb->query( $wpdb->prepare(
+					"DELETE FROM " . $wpdb->prefix . "metermaid_meters WHERE metermaid_meter_id=%s LIMIT 1",
+					$_POST['meter_id'],
+				) );
+
+				$wpdb->query( $wpdb->prepare(
+					"DELETE FROM " . $wpdb->prefix . "metermaid_readings WHERE meter_id=%s",
+					$_POST['meter_id'],
+				) );
+
+				$wpdb->query( $wpdb->prepare(
+					"DELETE FROM " . $wpdb->prefix . "metermaid_relationships WHERE parent_meter_id=%s OR child_meter_id=%s",
+					$_POST['meter_id'],
+					$_POST['meter_id']
+				) );
+
+				/* // Is there value in keeping around the personnel entries?
+				$wpdb->query( $wpdb->prepare(
+					"DELETE FROM " . $wpdb->prefix . "metermaid_personnel WHERE meter_id=%s",
+					$_POST['meter_id']
+				) );
+				*/
+
+				METERMAID::save_pending_notice( 'success', __( 'The meter has been deleted.', 'metermaid' ) );
+			} else if ( 'edit_system' == $_POST['metermaid_action'] ) {
+				if ( ! wp_verify_nonce( $_POST['metermaid_nonce'], 'metermaid-edit-system' ) ) {
+					echo 'You are not authorized to edit a system.';
+					wp_die();
+				}
+
+				if ( ! current_user_can( 'metermaid-edit-system', $_POST['metermaid_system_id'] ) ) {
+					echo 'You are not authorized to edit this system.';
+					wp_die();
+				}
+
+				$wpdb->query( $wpdb->prepare(
+					"UPDATE " . $wpdb->prefix . "metermaid_systems SET name=%s, location=%s, unit=%s, rate_interval=%d WHERE metermaid_system_id=%d LIMIT 1",
+					$_POST['metermaid_system_name'],
+					$_POST['metermaid_system_location'],
+					$_POST['metermaid_system_unit'],
+					$_POST['metermaid_system_rate_interval'],
+					$_POST['metermaid_system_id']
+				) );
+
+				METERMAID::save_pending_notice( 'success', __( 'The system has been updated.', 'metermaid' ) );
+			} if ( 'delete_reading' == $_POST['metermaid_action'] ) {
+				if ( ! wp_verify_nonce( $_POST['metermaid_nonce'], 'metermaid-delete-reading' ) ) {
+					echo 'You are not authorized to delete a reading.';
+					wp_die();
+				}
+
+				// @todo Should meter managers only be able to delete their own readings?
+				// If so, the second arg of this should be the reading ID, not the meter.
+				if ( ! current_user_can( 'metermaid-delete-reading', $_GET['metermaid_meter_id'] ) ) {
+					echo 'You are not authorized to delete a reading for this meter.';
+					wp_die();
+				}
+
+				$wpdb->query( $wpdb->prepare(
+					"DELETE FROM " . $wpdb->prefix . "metermaid_readings WHERE metermaid_reading_id=%s LIMIT 1",
+					$_POST['reading_id'],
+				) );
+
+				$meter = new METERMAID_METER( $_GET['metermaid_meter_id'] );
+				$meter->recalculate_real_readings();
+
+				METERMAID::save_pending_notice( 'success', __( 'The reading has been deleted.', 'metermaid' ) );
+			} else if ( 'delete_supplement' == $_POST['metermaid_action'] ) {
+				if ( ! wp_verify_nonce( $_POST['metermaid_nonce'], 'metermaid-delete-supplement' ) ) {
+					echo 'You are not authorized to delete a supplement.';
+					wp_die();
+				}
+
+				if ( ! current_user_can( 'metermaid-delete-supplement', $_GET['metermaid_meter_id'] ) ) {
+					echo 'You are not authorized to delete a supplement for this meter.';
+					wp_die();
+				}
+
+				$wpdb->query( $wpdb->prepare(
+					"DELETE FROM " . $wpdb->prefix . "metermaid_supplements WHERE metermaid_supplement_id=%s LIMIT 1",
+					$_POST['supplement_id'],
+				) );
+
+				METERMAID::save_pending_notice( 'success', __( 'The supplement has been deleted.', 'metermaid' ) );
+			} else if ( 'add_supplement' == $_POST['metermaid_action'] ) {
+				if ( ! wp_verify_nonce( $_POST['metermaid_nonce'], 'metermaid-add-supplement' ) ) {
+					echo 'You are not authorized to add a supplement.';
+					wp_die();
+				}
+
+				if ( ! current_user_can( 'metermaid-add-supplement', $_GET['metermaid_meter_id'] ) ) {
+					echo 'You are not authorized to add a supplement for this meter.';
+					wp_die();
+				}
+
+				$amount_int = intval( str_replace( ',', '', $_POST['metermaid_supplement_amount'] ) );
+
+				$wpdb->query( $wpdb->prepare(
+					"INSERT INTO " . $wpdb->prefix . "metermaid_supplements SET meter_id=%s, amount=%d, supplement_date=%s, note=%s, added=NOW(), added_by=%d ON DUPLICATE KEY UPDATE amount=VALUES(amount)",
+					$_POST['metermaid_meter_id'],
+					$amount_int,
+					$_POST['metermaid_supplement_date'],
+					$_POST['metermaid_supplement_note'],
+					get_current_user_id()
+				) );
+
+				METERMAID::save_pending_notice( 'success', __( 'The suppplement has been added.', 'metermaid' ) );
+			} else if ( 'edit_meter' == $_POST['metermaid_action'] ) {
+				if ( ! wp_verify_nonce( $_POST['metermaid_nonce'], 'metermaid-edit-meter' ) ) {
+					echo 'You are not authorized to edit a meter.';
+					wp_die();
+				}
+
+				if ( ! current_user_can( 'metermaid-edit-meter', $_POST['metermaid_meter_id'] ) ) {
+					echo 'You are not authorized to edit this meter.';
+					wp_die();
+				}
+
+				$wpdb->query( $wpdb->prepare(
+					"UPDATE " . $wpdb->prefix . "metermaid_meters SET name=%s, location=%s, status=%d WHERE metermaid_meter_id=%d LIMIT 1",
+					$_POST['metermaid_meter_name'],
+					$_POST['metermaid_meter_location'],
+					$_POST['metermaid_meter_status'],
+					$_POST['metermaid_meter_id']
+				) );
+
+				$wpdb->query( $wpdb->prepare(
+					"DELETE FROM ".$wpdb->prefix."metermaid_relationships WHERE parent_meter_id=%d OR parent_meter_id=%d",
+					$_POST['metermaid_meter_id'],
+					$_POST['metermaid_meter_id']
+				) );
+
+				if ( ! empty( $_POST['metermaid_parent_meters'] ) ) {
+					foreach ( array_filter( $_POST['metermaid_parent_meters'] ) as $parent_meter_id ) {
+						if ( $parent_meter_id == $_POST['metermaid_meter_id'] ) {
+							// A meter can't be a parent of itself.
+							continue;
+						}
+
+						$wpdb->query( $wpdb->prepare(
+							"INSERT INTO ".$wpdb->prefix."metermaid_relationships SET parent_meter_id=%s, child_meter_id=%s ON DUPLICATE KEY UPDATE parent_meter_id=VALUES(parent_meter_id)",
+							$parent_meter_id,
+							$_POST['metermaid_meter_id']
+						) );
+					}
+				}
+
+				if ( ! empty( $_POST['metermaid_child_meters'] ) ) {
+					foreach ( array_filter( $_POST['metermaid_child_meters'] ) as $child_meter_id ) {
+						if ( $child_meter_id == $_POST['metermaid_meter_id'] ) {
+							// A meter can't be a child of itself.
+							continue;
+						}
+
+						$wpdb->query( $wpdb->prepare(
+							"INSERT INTO ".$wpdb->prefix."metermaid_relationships SET child_meter_id=%s, parent_meter_id=%s ON DUPLICATE KEY UPDATE child_meter_id=VALUES(child_meter_id)",
+							$child_meter_id,
+							$_POST['metermaid_meter_id']
+						) );
+					}
+				}
+
+				METERMAID::save_pending_notice( 'success', __( 'The meter has been updated.', 'metermaid' ) );
 			}
 		}
+	}
+
+	public static function save_pending_notice( $notice_type, $message ) {
+		if ( ! isset( METERMAID::$pending_notices[ $notice_type ] ) ) {
+			METERMAID::$pending_notices[ $notice_type ] = array();
+		}
+
+		METERMAID::$pending_notices[ $notice_type ][] = $message;
+	}
+
+	public static function admin_notices() {
+		if ( empty( METERMAID::$pending_notices ) ) {
+			return;
+		}
+
+		foreach ( METERMAID::$pending_notices as $notice_type => $messages ) {
+			foreach ( $messages as $message ) {
+				echo '<div class="notice notice-' . esc_attr( $notice_type ) . '"><p>' . esc_html( $message ) . '</p></div>';
+			}
+		}
+
+		METERMAID::$pending_notices = [];
+	}
+
+	public static function admin_page() {
+		global $wpdb;
 
 		if ( isset( $_GET['metermaid_meter_id'] ) ) {
 			if ( ! current_user_can( 'metermaid-view-meter', $_GET['metermaid_meter_id'] ) ) {
@@ -716,120 +951,6 @@ class METERMAID {
 		global $wpdb;
 
 		$system = new METERMAID_SYSTEM( $system_id );
-
-		if ( isset( $_POST['metermaid_action'] ) ) {
-			if ( 'add_meter' == $_POST['metermaid_action'] ) {
-				if ( ! wp_verify_nonce( $_POST['metermaid_nonce'], 'metermaid-add-meter' ) ) {
-					echo 'You are not authorized to add a meter.';
-					wp_die();
-				}
-
-				if ( ! current_user_can( 'metermaid-add-meter', $_POST['metermaid_system_id'] ) ) {
-					echo 'You are not authorized to add a meter to this system.';
-					wp_die();
-				}
-
-				$wpdb->query( $wpdb->prepare(
-					"INSERT INTO " . $wpdb->prefix . "metermaid_meters SET metermaid_system_id=%d, name=%s, location=%s, added=NOW(), added_by=%d",
-					$_POST['metermaid_system_id'],
-					$_POST['metermaid_meter_name'],
-					$_POST['metermaid_meter_location'],
-					get_current_user_id()
-				) );
-
-				$meter_id = $wpdb->insert_id;
-
-				if ( ! empty( $_POST['metermaid_parent_meters'] ) ) {
-					foreach ( array_filter( $_POST['metermaid_parent_meters'] ) as $parent_meter_id ) {
-						$wpdb->query( $wpdb->prepare(
-							"INSERT INTO ".$wpdb->prefix."metermaid_relationships SET parent_meter_id=%s, child_meter_id=%s ON DUPLICATE KEY UPDATE parent_meter_id=VALUES(parent_meter_id)",
-							$parent_meter_id,
-							$meter_id
-						) );
-					}
-				}
-
-				if ( ! empty( $_POST['metermaid_child_meters'] ) ) {
-					foreach ( array_filter( $_POST['metermaid_child_meters'] ) as $child_meter_id ) {
-						$wpdb->query( $wpdb->prepare(
-							"INSERT INTO ".$wpdb->prefix."metermaid_relationships SET child_meter_id=%s, parent_meter_id=%s ON DUPLICATE KEY UPDATE child_meter_id=VALUES(child_meter_id)",
-							$child_meter_id,
-							$meter_id
-						) );
-					}
-				}
-
-				?>
-				<div class="updated">
-					<p><?php echo esc_html( __( 'The meter has been added.', 'metermaid' ) ); ?></p>
-				</div>
-				<?php
-			} else if ( 'delete_meter' == $_POST['metermaid_action'] ) {
-				if ( ! wp_verify_nonce( $_POST['metermaid_nonce'], 'metermaid-delete-meter' ) ) {
-					echo 'You are not authorized to delete a meter.';
-					wp_die();
-				}
-
-				if ( ! current_user_can( 'metermaid-delete-meter', $_POST['meter_id'] ) ) {
-					echo 'You are not authorized to delete this meter.';
-					wp_die();
-				}
-
-				$wpdb->query( $wpdb->prepare(
-					"DELETE FROM " . $wpdb->prefix . "metermaid_meters WHERE metermaid_meter_id=%s LIMIT 1",
-					$_POST['meter_id'],
-				) );
-
-				$wpdb->query( $wpdb->prepare(
-					"DELETE FROM " . $wpdb->prefix . "metermaid_readings WHERE meter_id=%s",
-					$_POST['meter_id'],
-				) );
-
-				$wpdb->query( $wpdb->prepare(
-					"DELETE FROM " . $wpdb->prefix . "metermaid_relationships WHERE parent_meter_id=%s OR child_meter_id=%s",
-					$_POST['meter_id'],
-					$_POST['meter_id']
-				) );
-
-				/* // Is there value in keeping around the personnel entries?
-				$wpdb->query( $wpdb->prepare(
-					"DELETE FROM " . $wpdb->prefix . "metermaid_personnel WHERE meter_id=%s",
-					$_POST['meter_id']
-				) );
-				*/
-
-				?>
-				<div class="updated">
-					<p><?php echo esc_html( __( 'The meter has been deleted.', 'metermaid' ) ); ?></p>
-				</div>
-				<?php
-			} else if ( 'edit_system' == $_POST['metermaid_action'] ) {
-				if ( ! wp_verify_nonce( $_POST['metermaid_nonce'], 'metermaid-edit-system' ) ) {
-					echo 'You are not authorized to edit a system.';
-					wp_die();
-				}
-
-				if ( ! current_user_can( 'metermaid-edit-system', $_POST['metermaid_system_id'] ) ) {
-					echo 'You are not authorized to edit this system.';
-					wp_die();
-				}
-
-				$wpdb->query( $wpdb->prepare(
-					"UPDATE " . $wpdb->prefix . "metermaid_systems SET name=%s, location=%s, unit=%s, rate_interval=%d WHERE metermaid_system_id=%d LIMIT 1",
-					$_POST['metermaid_system_name'],
-					$_POST['metermaid_system_location'],
-					$_POST['metermaid_system_unit'],
-					$_POST['metermaid_system_rate_interval'],
-					$_POST['metermaid_system_id']
-				) );
-
-				?>
-				<div class="updated">
-					<p><?php echo esc_html( __( 'The system has been updated.', 'metermaid' ) ); ?></p>
-				</div>
-				<?php
-			}
-		}
 
 		?>
 		<div class="wrap">
@@ -987,144 +1108,6 @@ class METERMAID {
 		?>
 		<div class="wrap">
 			<?php
-
-			if ( isset( $_POST['metermaid_action'] ) ) {
-				if ( 'delete_reading' == $_POST['metermaid_action'] ) {
-					if ( ! wp_verify_nonce( $_POST['metermaid_nonce'], 'metermaid-delete-reading' ) ) {
-						echo 'You are not authorized to delete a reading.';
-						wp_die();
-					}
-
-					// @todo Should meter managers only be able to delete their own readings?
-					// If so, the second arg of this should be the reading ID, not the meter.
-					if ( ! current_user_can( 'metermaid-delete-reading', $_GET['metermaid_meter_id'] ) ) {
-						echo 'You are not authorized to delete a reading for this meter.';
-						wp_die();
-					}
-
-					$wpdb->query( $wpdb->prepare(
-						"DELETE FROM " . $wpdb->prefix . "metermaid_readings WHERE metermaid_reading_id=%s LIMIT 1",
-						$_POST['reading_id'],
-					) );
-
-					$meter = new METERMAID_METER( $_GET['metermaid_meter_id'] );
-					$meter->recalculate_real_readings();
-
-					?>
-					<div class="updated">
-						<p>The reading has been deleted.</p>
-					</div>
-					<?php
-				} else if ( 'delete_supplement' == $_POST['metermaid_action'] ) {
-					if ( ! wp_verify_nonce( $_POST['metermaid_nonce'], 'metermaid-delete-supplement' ) ) {
-						echo 'You are not authorized to delete a supplement.';
-						wp_die();
-					}
-
-					if ( ! current_user_can( 'metermaid-delete-supplement', $_GET['metermaid_meter_id'] ) ) {
-						echo 'You are not authorized to delete a supplement for this meter.';
-						wp_die();
-					}
-
-					$wpdb->query( $wpdb->prepare(
-						"DELETE FROM " . $wpdb->prefix . "metermaid_supplements WHERE metermaid_supplement_id=%s LIMIT 1",
-						$_POST['supplement_id'],
-					) );
-
-					?>
-					<div class="updated">
-						<p>The supplement has been deleted.</p>
-					</div>
-					<?php
-				} else if ( 'add_supplement' == $_POST['metermaid_action'] ) {
-					if ( ! wp_verify_nonce( $_POST['metermaid_nonce'], 'metermaid-add-supplement' ) ) {
-						echo 'You are not authorized to add a supplement.';
-						wp_die();
-					}
-
-					if ( ! current_user_can( 'metermaid-add-supplement', $_GET['metermaid_meter_id'] ) ) {
-						echo 'You are not authorized to add a supplement for this meter.';
-						wp_die();
-					}
-
-					$amount_int = intval( str_replace( ',', '', $_POST['metermaid_supplement_amount'] ) );
-
-					$wpdb->query( $wpdb->prepare(
-						"INSERT INTO " . $wpdb->prefix . "metermaid_supplements SET meter_id=%s, amount=%d, supplement_date=%s, note=%s, added=NOW(), added_by=%d ON DUPLICATE KEY UPDATE amount=VALUES(amount)",
-						$_POST['metermaid_meter_id'],
-						$amount_int,
-						$_POST['metermaid_supplement_date'],
-						$_POST['metermaid_supplement_note'],
-						get_current_user_id()
-					) );
-
-					?>
-					<div class="updated">
-						<p>The supplement has been added.</p>
-					</div>
-					<?php
-				} else if ( 'edit_meter' == $_POST['metermaid_action'] ) {
-					if ( ! wp_verify_nonce( $_POST['metermaid_nonce'], 'metermaid-edit-meter' ) ) {
-						echo 'You are not authorized to edit a meter.';
-						wp_die();
-					}
-
-					if ( ! current_user_can( 'metermaid-edit-meter', $_POST['metermaid_meter_id'] ) ) {
-						echo 'You are not authorized to edit this meter.';
-						wp_die();
-					}
-
-					$wpdb->query( $wpdb->prepare(
-						"UPDATE " . $wpdb->prefix . "metermaid_meters SET name=%s, location=%s, status=%d WHERE metermaid_meter_id=%d LIMIT 1",
-						$_POST['metermaid_meter_name'],
-						$_POST['metermaid_meter_location'],
-						$_POST['metermaid_meter_status'],
-						$_POST['metermaid_meter_id']
-					) );
-
-					$wpdb->query( $wpdb->prepare(
-						"DELETE FROM ".$wpdb->prefix."metermaid_relationships WHERE parent_meter_id=%d OR parent_meter_id=%d",
-						$_POST['metermaid_meter_id'],
-						$_POST['metermaid_meter_id']
-					) );
-
-					if ( ! empty( $_POST['metermaid_parent_meters'] ) ) {
-						foreach ( array_filter( $_POST['metermaid_parent_meters'] ) as $parent_meter_id ) {
-							if ( $parent_meter_id == $_POST['metermaid_meter_id'] ) {
-								// A meter can't be a parent of itself.
-								continue;
-							}
-
-							$wpdb->query( $wpdb->prepare(
-								"INSERT INTO ".$wpdb->prefix."metermaid_relationships SET parent_meter_id=%s, child_meter_id=%s ON DUPLICATE KEY UPDATE parent_meter_id=VALUES(parent_meter_id)",
-								$parent_meter_id,
-								$_POST['metermaid_meter_id']
-							) );
-						}
-					}
-
-					if ( ! empty( $_POST['metermaid_child_meters'] ) ) {
-						foreach ( array_filter( $_POST['metermaid_child_meters'] ) as $child_meter_id ) {
-							if ( $child_meter_id == $_POST['metermaid_meter_id'] ) {
-								// A meter can't be a child of itself.
-								continue;
-							}
-
-							$wpdb->query( $wpdb->prepare(
-								"INSERT INTO ".$wpdb->prefix."metermaid_relationships SET child_meter_id=%s, parent_meter_id=%s ON DUPLICATE KEY UPDATE child_meter_id=VALUES(child_meter_id)",
-								$child_meter_id,
-								$_POST['metermaid_meter_id']
-							) );
-						}
-					}
-
-					?>
-					<div class="updated">
-						<p><?php echo esc_html( __( 'The meter has been updated.', 'metermaid' ) ); ?></p>
-					</div>
-					<?php
-				}
-			}
 
 			if ( empty( $meter ) ) {
 				?><h1><?php echo esc_html( __( 'Meter Not Found', 'metermaid' ) ); ?></h1><?php
