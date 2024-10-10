@@ -322,6 +322,20 @@ class METERMAID {
 	public static function sql() {
 		global $wpdb;
 
+		$wpdb->query( "CREATE TABLE IF NOT EXISTS ".$wpdb->prefix."metermaid_systems
+			(
+				metermaid_system_id bigint NOT NULL AUTO_INCREMENT,
+				name varchar(100) NOT NULL,
+				location varchar(100) NOT NULL,
+				unit varchar(32) NOT NULL,
+				rate_interval int NOT NULL,
+				added datetime NOT NULL,
+				added_by bigint NOT NULL,
+				PRIMARY KEY (metermaid_system_id),
+				INDEX name (name)
+			) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
+		);
+
 		$wpdb->query( "CREATE TABLE IF NOT EXISTS ".$wpdb->prefix."metermaid_meters
 			(
 				metermaid_meter_id bigint NOT NULL AUTO_INCREMENT,
