@@ -872,9 +872,9 @@ class METERMAID {
 								<?php self::system_form( $system->id ); ?>
 							</div>
 						<?php } ?>
-					</div>
-					<div data-metermaid-tab="profile">
-						<?php self::profile_form(); ?>
+						<div data-metermaid-tab="profile">
+							<?php self::profile_form(); ?>
+						</div>
 					</div>
 				</div>
 
