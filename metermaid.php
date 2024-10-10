@@ -1663,12 +1663,6 @@ class METERMAID {
 		'minimum_rate_interval' => 7,
 	);
 
-	public static function get_option( $option_name ) {
-		$default_value = METERMAID::$defaults[ $option_name ] ?? '';
-
-		return get_option( 'metermaid_' . $option_name, $default_value );
-	}
-
 	public static function add_supplement_form( $meter_id ) {
 		?>
 		<form method="post" action="">

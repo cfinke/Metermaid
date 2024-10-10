@@ -236,7 +236,7 @@ class METERMAID_METER {
 			$data[ $date_label ] = $data_row;
 		}
 
-		$trailing_average_duration = METERMAID::get_option( 'minimum_rate_interval' ); // Number of days minimum to calculate gpd average.
+		$trailing_average_duration = $this->system->rate_interval; // Number of days minimum to calculate gpd average.
 
 		foreach ( $readings as $idx => $reading ) {
 			if ( $idx == 0 ) {
@@ -329,7 +329,7 @@ class METERMAID_METER {
 			$data[ $date_label ] = $data_row;
 		}
 
-		$trailing_average_duration = METERMAID::get_option( 'minimum_rate_interval' ); // Number of days minimum to calculate gpd average.
+		$trailing_average_duration = $this->system->rate_interval; // Number of days minimum to calculate gpd average.
 
 		$meters_to_chart = array();
 		$meters_to_chart[] = $this;
