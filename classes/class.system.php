@@ -7,6 +7,7 @@ class METERMAID_SYSTEM {
 	public $rate_interval;
 
 	private $_meters = null;
+	private $_accessible_meters = null;
 
 	public function __construct( $system_id_or_row = null ) {
 		global $wpdb;
@@ -56,6 +57,22 @@ class METERMAID_SYSTEM {
 			}
 
 			return $this->_meters;
+		} else if ( 'accessible_meters' == $key ) {
+			if ( ! is_null( $this->_accessible_meters ) ) {
+				return $this->_accessible_meters;
+			}
+
+			$meters = $this->meters;
+
+			$this->_accessible_meters = array();
+
+			foreach ( $meters as $meter ) {
+				if ( current_user_can( 'metermaid-add-reading', $meter->id ) ) {
+					$this->_accessible_meters[] = $meter;
+				}
+			}
+
+			return $this->_accessible_meters;
 		}
 
 		return null;
