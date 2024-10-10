@@ -849,7 +849,7 @@ class METERMAID {
 					<nav class="nav-tab-wrapper">
 						<?php if ( current_user_can( 'metermaid-add-reading' ) ) { ?><a href="#tab-reading" class="nav-tab" data-metermaid-tab="reading"><?php echo esc_html( __( 'Add Reading', 'metermaid' ) ); ?></a><?php } ?>
 						<?php if ( current_user_can( 'metermaid-add-meter' ) ) { ?><a href="#tab-add-meter" class="nav-tab" data-metermaid-tab="add-meter"><?php echo esc_html( __( 'Add Meter', 'metermaid' ) ); ?></a><?php } ?>
-						<?php if ( current_user_can( 'metermaid-edit-system', $system->id ) ) { ?><a href="#tab-settings" class="nav-tab" data-metermaid-tab="settings"><?php echo esc_html( __( 'Settings', 'metermaid' ) ); ?></a><?php } ?>
+						<?php if ( current_user_can( 'metermaid-edit-system', $system->id ) ) { ?><a href="#tab-settings" class="nav-tab" data-metermaid-tab="settings"><?php echo esc_html( __( 'Configure System', 'metermaid' ) ); ?></a><?php } ?>
 						<a href="#tab-profile" class="nav-tab" data-metermaid-tab="profile"><?php echo esc_html( __( 'Edit Profile', 'metermaid' ) ); ?></a>
 					</nav>
 					<div class="metermaid-tabbed-content card">
