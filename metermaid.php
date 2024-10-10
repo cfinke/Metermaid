@@ -310,7 +310,7 @@ class METERMAID {
 				$system = new METERMAID_SYSTEM( $_GET['metermaid_system_id'] );
 
 				if ( $system ) {
-					$title = 'Metermaid &raquol ' . $system->display_name();
+					$title = 'Metermaid &raquo; ' . $system->display_name();
 				}
 			} else {
 				$title = 'Metermaid';
@@ -612,8 +612,8 @@ class METERMAID {
 			<div class="metermaid-tabbed-content-container">
 				<nav class="nav-tab-wrapper">
 					<?php if ( current_user_can( 'metermaid-add-system' ) ) { ?><a href="#tab-add-system" class="nav-tab" data-metermaid-tab="add-system"><?php echo esc_html( __( 'Add System', 'metermaid' ) ); ?></a><?php } ?>
-					<a href="#tab-profile" class="nav-tab" data-metermaid-tab="profile"><?php echo esc_html( __( 'Edit Profile', 'metermaid' ) ); ?></a>
 					<?php if ( current_user_can( 'metermaid-edit-settings' ) ) { ?><a href="#tab-edit-settings" class="nav-tab" data-metermaid-tab="edit-settings"><?php echo esc_html( __( 'Configure Metermaid', 'metermaid' ) ); ?></a><?php } ?>
+					<a href="#tab-profile" class="nav-tab" data-metermaid-tab="profile"><?php echo esc_html( __( 'Edit Profile', 'metermaid' ) ); ?></a>
 				</nav>
 				<div class="metermaid-tabbed-content card">
 					<?php if ( current_user_can( 'metermaid-add-system' ) ) { ?>
@@ -1578,7 +1578,7 @@ class METERMAID {
 				<tr>
 					<th scope="row"></th>
 					<td>
-						<input class="button button-primary" type="submit" value="<?php echo esc_attr( $system_id ? __( 'Update System', 'metermaid' ) : __( 'Add System', 'metermaid' ) ); ?>" />
+						<input class="button button-primary" type="submit" value="<?php echo esc_attr( $system_id ? __( 'Save System Configuration', 'metermaid' ) : __( 'Add System', 'metermaid' ) ); ?>" />
 					</td>
 				</tr>
 			</table>
