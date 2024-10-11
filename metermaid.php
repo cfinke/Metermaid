@@ -41,9 +41,8 @@ class METERMAID {
 		$role->add_cap( 'metermaid-delete-reading', true );
 		$role->add_cap( 'metermaid-add-supplement', true );
 		$role->add_cap( 'metermaid-delete-supplement', true );
-		$role->add_cap( 'metermaid-invite-system_manager', true );
-		$role->add_cap( 'metermaid-invite-meter_manager', true );
-		$role->add_cap( 'metermaid-invite-meter_viewer', true );
+		$role->add_cap( 'metermaid-invite-system', true );
+		$role->add_cap( 'metermaid-invite-meter', true );
 		$role->add_cap( 'metermaid-manage-sms', true );
 
 		add_role(
@@ -64,9 +63,8 @@ class METERMAID {
 				'metermaid-delete-reading' => true,
 				'metermaid-add-supplement' => true,
 				'metermaid-delete-supplement' => true,
-				'metermaid-invite-system_manager' => true,
-				'metermaid-invite-meter_manager' => true,
-				'metermaid-invite-meter_viewer' => true,
+				'metermaid-invite-system' => true,
+				'metermaid-invite-meter' => true,
 			]
 		);
 
@@ -84,9 +82,8 @@ class METERMAID {
 		$role->add_cap( 'metermaid-delete-reading', true );
 		$role->add_cap( 'metermaid-add-supplement', true );
 		$role->add_cap( 'metermaid-delete-supplement', true );
-		$role->add_cap( 'metermaid-invite-system_manager', true );
-		$role->add_cap( 'metermaid-invite-meter_manager', true );
-		$role->add_cap( 'metermaid-invite-meter_viewer', true );
+		$role->add_cap( 'metermaid-invite-system', true );
+		$role->add_cap( 'metermaid-invite-meter', true );
 
 		add_role(
 			'system_manager',
@@ -105,9 +102,8 @@ class METERMAID {
 				'metermaid-delete-reading' => true,
 				'metermaid-add-supplement' => true,
 				'metermaid-delete-supplement' => true,
-				'metermaid-invite-system_manager' => true,
-				'metermaid-invite-meter_manager' => true,
-				'metermaid-invite-meter_viewer' => true,
+				'metermaid-invite-system' => true,
+				'metermaid-invite-meter' => true,
 			]
 		);
 
@@ -124,9 +120,30 @@ class METERMAID {
 		$role->add_cap( 'metermaid-delete-reading', true );
 		$role->add_cap( 'metermaid-add-supplement', true );
 		$role->add_cap( 'metermaid-delete-supplement', true );
-		$role->add_cap( 'metermaid-invite-system_manager', true );
-		$role->add_cap( 'metermaid-invite-meter_manager', true );
-		$role->add_cap( 'metermaid-invite-meter_viewer', true );
+		$role->add_cap( 'metermaid-invite-system', true );
+		$role->add_cap( 'metermaid-invite-meter', true );
+
+		add_role(
+			'system_viewer',
+			__( 'Metermaid: System Viewer', 'metermaid' ),
+			[
+				'read' => true,
+
+				'metermaid' => true,
+				'metermaid-access-system' => true,
+				'metermaid-view-meter' => true,
+				'metermaid-invite-system' => true,
+				'metermaid-invite-meter' => true,
+			]
+		);
+
+		$role = get_role( 'system_viewer' );
+		$role->add_cap( 'read', true );
+		$role->add_cap( 'metermaid', true );
+		$role->add_cap( 'metermaid-access-system', true );
+		$role->add_cap( 'metermaid-view-meter', true );
+		$role->add_cap( 'metermaid-invite-system', true );
+		$role->add_cap( 'metermaid-invite-meter', true );
 
 		add_role(
 			'meter_manager',
@@ -141,8 +158,7 @@ class METERMAID {
 				'metermaid-delete-reading' => true,
 				'metermaid-add-supplement' => true,
 				'metermaid-delete-supplement' => true,
-				'metermaid-invite-meter_manager' => true,
-				'metermaid-invite-meter_viewer' => true,
+				'metermaid-invite-meter' => true,
 			]
 		);
 
@@ -155,8 +171,7 @@ class METERMAID {
 		$role->add_cap( 'metermaid-delete-reading', true );
 		$role->add_cap( 'metermaid-add-supplement', true );
 		$role->add_cap( 'metermaid-delete-supplement', true );
-		$role->add_cap( 'metermaid-invite-meter_manager', true );
-		$role->add_cap( 'metermaid-invite-meter_viewer', true );
+		$role->add_cap( 'metermaid-invite-meter', true );
 
 		add_role(
 			'meter_viewer',
@@ -167,7 +182,7 @@ class METERMAID {
 				'metermaid' => true,
 				'metermaid-access-system' => true,
 				'metermaid-view-meter' => true,
-				'metermaid-invite-meter_viewer' => true,
+				'metermaid-invite-meter' => true,
 			]
 		);
 
@@ -176,7 +191,7 @@ class METERMAID {
 		$role->add_cap( 'metermaid', true );
 		$role->add_cap( 'metermaid-access-system', true );
 		$role->add_cap( 'metermaid-view-meter', true );
-		$role->add_cap( 'metermaid-invite-meter_viewer', true );
+		$role->add_cap( 'metermaid-invite-meter', true );
 
 		$all_systems = self::systems();
 
@@ -791,6 +806,63 @@ class METERMAID {
 				}
 
 				METERMAID::save_pending_notice( 'success', __( 'The meter has been updated.', 'metermaid' ) );
+			} else if ( 'invite' == $_POST['metermaid_action'] ) {
+				if ( ! wp_verify_nonce( $_POST['metermaid_nonce'], 'metermaid-invite' ) ) {
+					echo 'You are not authorized to invite anyone.';
+					wp_die();
+				}
+
+				// Confirm it's a valid email.
+				// @todo
+
+				$meter_id_to_insert = $_POST['metermaid_invite_meter_id'];
+
+				// Confirm this user is allowed to do what they're doing and prep the data for saving.
+				if ( $_POST['metermaid_invite_access_level'] == 'system' ) {
+					if ( ! current_user_can( 'metermaid-invite-system', $_POST['metermaid_invite_system_id'] ) ) {
+						echo 'You are not authorized to invite anyone to this meter.';
+						wp_die();
+					}
+
+					if ( $_POST['metermaid_invite_manage'] == '1' ) {
+						if ( ! current_user_can( 'metermaid-edit-system', $_POST['metermaid_invite_system_id'] ) ) {
+							echo 'You are not authorized to invite anyone to make changes to this system, since you do not have that authority yourself.';
+							wp_die();
+						}
+					}
+
+					$meter_id_to_insert = 0;
+				} else if ( $_POST['metermaid_invite_access_level'] == 'meter' ) {
+					if ( ! current_user_can( 'metermaid-invite-meter', $_POST['metermaid_invite_meter_id'] ) ) {
+						echo 'You are not authorized to invite anyone to this meter.';
+						wp_die();
+					}
+
+					if ( $_POST['metermaid_invite_manage'] == '1' ) {
+						if ( ! current_user_can( 'metermaid-add-reading', $_POST['metermaid_invite_meter_id'] ) ) {
+							echo 'You are not authorized to invite anyone to make changes to this meter, since you do not have that authority yourself.';
+							wp_die();
+						}
+					}
+				}
+
+				$wpdb->query( $wpdb->prepare( "INSERT INTO " . $wpdb->prefix . "metermaid_personnel SET
+					email=%s,
+					metermaid_system_id=%d,
+					metermaid_meter_id=%d,
+					manage=%d,
+					added=NOW(),
+					added_by=%d ON DUPLICATE KEY UPDATE added=added",
+					$_POST['metermaid_invite_email'],
+					$_POST['metermaid_invite_system_id'],
+					$meter_id_to_insert,
+					$_POST['metermaid_invite_manage'],
+					get_current_user_id()
+				) );
+
+				// @todo If the user already has an account, notify them that they have access.
+				// If they don't email and invite them.
+				METERMAID::save_pending_notice( 'success', sprintf( __( 'Invite sent to %s', 'metermaid' ), $_POST['metermaid_invite_email'] ) );
 			}
 		}
 	}
@@ -1135,6 +1207,7 @@ class METERMAID {
 						<?php if ( current_user_can( 'metermaid-add-reading', $meter->id ) ) { ?><a href="#tab-reading" class="nav-tab" data-metermaid-tab="reading"><?php echo esc_html( __( 'Add Reading', 'metermaid' ) ); ?></a><?php } ?>
 						<?php if ( current_user_can( 'metermaid-add-supplement', $meter->id ) ) { ?><a href="#tab-supplement" class="nav-tab" data-metermaid-tab="supplement"><?php echo esc_html( __( 'Add Supplement', 'metermaid' ) ); ?></a><?php } ?>
 						<?php if ( current_user_can( 'metermaid-edit-meter', $meter->id ) ) { ?><a href="#tab-settings" class="nav-tab" data-metermaid-tab="settings"><?php echo esc_html( __( 'Configure Meter', 'metermaid' ) ); ?></a><?php } ?>
+						<a href="#tab-invite" class="nav-tab" data-metermaid-tab="invite"><?php echo esc_html( __( 'Invite Others', 'metermaid' ) ); ?></a>
 					</nav>
 					<div class="metermaid-tabbed-content card">
 						<?php if ( current_user_can( 'metermaid-add-reading', $meter->id ) ) { ?>
@@ -1152,6 +1225,9 @@ class METERMAID {
 								<?php self::meter_form( $meter->system_id, $meter->id ); ?>
 							</div>
 						<?php } ?>
+						<div data-metermaid-tab="invite">
+							<?php self::invite_form( $meter->system_id, $meter->id ); ?>
+						</div>
 					</div>
 				</div>
 
@@ -1927,6 +2003,103 @@ class METERMAID {
 					<th scope="row"></th>
 					<td>
 						<input class="button button-primary" type="submit" value="<?php echo esc_attr( __( 'Update Profile', 'metermaid' ) ); ?>" />
+					</td>
+				</tr>
+			</table>
+		</form>
+		<?php
+	}
+
+	public static function invite_form( $system_id = null, $meter_id = null ) {
+		$meter = null;
+		$system = null;
+
+		if ( $meter_id ) {
+			$meter = new METERMAID_METER( $meter_id );
+
+			if ( ! $meter ) {
+				wp_die( 'Invalid meter id.' );
+			}
+		}
+
+		if ( $system_id ) {
+			$system = new METERMAID_SYSTEM( $system_id );
+
+			if ( ! $system ) {
+				wp_die( 'Invalid system id.' );
+			}
+
+			if ( $system->id != $meter->system_id ) {
+				wp_die( 'Mismatched system id.' );
+			}
+		}
+
+		?>
+		<form method="post" action="">
+			<input type="hidden" name="metermaid_action" value="invite" />
+			<input type="hidden" name="metermaid_nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-invite' ) ); ?>" />
+
+			<?php if ( $meter ) { ?>
+				<input type="hidden" name="metermaid_invite_meter_id" value="<?php echo esc_attr( $meter->id ); ?>" />
+			<?php } ?>
+
+			<?php if ( $system ) { ?>
+				<input type="hidden" name="metermaid_invite_system_id" value="<?php echo esc_attr( $system->id ); ?>" />
+			<?php } ?>
+
+			<table class="form-table">
+				<tr>
+					<th scope="row">
+						<?php echo esc_html( __( 'E-mail Address', 'metermaid' ) ); ?>
+					</th>
+					<td>
+						<input type="text" name="metermaid_invite_email" value="" />
+					</td>
+				</tr>
+				<tr>
+					<th scope="row">
+						<?php echo esc_html( __( 'Access', 'metermaid' ) ); ?>
+					</th>
+					<td>
+						<?php if ( current_user_can( 'metermaid-invite-meter', $meter_id ) ) { ?>
+							<p>
+								<label>
+									<input type="radio" name="metermaid_invite_access_level" value="meter" checked="checked" /> <?php echo esc_html( __( 'Just this meter', 'metermaid' ) ); ?>
+								</label>
+							</p>
+						<?php } ?>
+
+						<?php if ( $system && current_user_can( 'metermaid-invite-system', $system_id ) ) { ?>
+							<p>
+								<label>
+									<input type="radio" name="metermaid_invite_access_level" value="system" /> <?php echo esc_html( sprintf( __( 'The entire system: %s', 'metermaid' ), $system->display_name() ) ); ?>
+								</label>
+							</p>
+						<?php } ?>
+					</td>
+				</tr>
+				<tr>
+					<th scope="row">
+						<?php echo esc_html( __( 'Can they make changes to it?', 'metermaid' ) ); ?>
+					</th>
+					<td>
+						<p>
+							<label>
+								<input type="radio" name="metermaid_invite_manage" value="1" /> <?php echo esc_html( __( 'Yes', 'metermaid' ) ); ?>
+							</label>
+						</p>
+						<p>
+							<label>
+								<input type="radio" name="metermaid_invite_manage" value="0" checked="checked" /> <?php echo esc_html( __( 'No, but they can see all of the information', 'metermaid' ) ); ?>
+							</label>
+						</p>
+					</td>
+				</tr>
+
+				<tr>
+					<th scope="row"></th>
+					<td>
+						<input class="button button-primary" type="submit" value="<?php echo esc_attr( __( 'Send Invite', 'metermaid' ) ); ?>" />
 					</td>
 				</tr>
 			</table>
