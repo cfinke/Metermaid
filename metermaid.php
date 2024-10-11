@@ -495,6 +495,8 @@ class METERMAID {
 	}
 
 	public static function process_form_submissions() {
+		global $wpdb;
+
 		if ( isset( $_POST['metermaid_action'] ) ) {
 			if ( 'edit_settings' == $_POST['metermaid_action'] ) {
 				if ( ! wp_verify_nonce( $_POST['metermaid_nonce'], 'metermaid-edit-settings' ) ) {
@@ -1569,7 +1571,10 @@ class METERMAID {
 
 	public static function settings_form() {
 		?>
-		<p><?php echo esc_html( __( "To enable Metermaid's SMS integration, enter your Twilio settings below.", 'metermaid' ) ); ?></p>
+		<p>
+			<?php echo esc_html( __( "To enable Metermaid's SMS integration, enter your Twilio settings below.", 'metermaid' ) ); ?>
+			<a href="<?php echo esc_attr( add_query_arg( 'page', 'metermaid-sms', remove_query_arg( 'page' ) ) ); ?>"><?php echo esc_html( __( "(View SMS dashboard)", 'metermaid' ) ); ?></a>
+		</p>
 
 		<form method="post" action="" class="metermaid_settings_form">
 			<input type="hidden" name="metermaid_action" value="edit_settings" />
@@ -1582,7 +1587,7 @@ class METERMAID {
 					</th>
 					<td>
 						<input type="text" name="metermaid_twilio_phone_number" value="<?php echo esc_attr( get_option( 'METERMAID_TWILIO_PHONE_NUMBER' ) ); ?>" />
-						<p class="description"><?php echo esc_html( __( 'For display purposes only.', 'metermaid' ) ); ?></p>
+						<p class="description"><?php echo esc_html( __( 'For display purposes only, so you can enter a number like 555-MYWATER.', 'metermaid' ) ); ?></p>
 					</td>
 				</tr>
 				<tr>

@@ -71,13 +71,17 @@ class METERMAID_SMS {
 	}
 
 	public static function confirm_twilio_request_or_die() {
+		if ( ! METERMAID_SMS::is_configured() ) {
+			die( "SMS handling is not configured." );
+		}
+
 		if ( ! isset( $_SERVER["HTTP_X_TWILIO_SIGNATURE"] ) ) {
 			die( "Request did not come from Twilio." );
 		}
 
 		require_once __DIR__ . '/twilio-php-main/src/Twilio/autoload.php';
 
-		$validator = new Twilio\Security\RequestValidator( METERMAID_TWILIO_AUTH_TOKEN );
+		$validator = new Twilio\Security\RequestValidator( get_option( 'METERMAID_TWILIO_AUTH_TOKEN' ) );
 
 		if ( ! $validator->validate( $_SERVER["HTTP_X_TWILIO_SIGNATURE"], get_site_url() . $_SERVER['REQUEST_URI'], $_POST ) ) {
 			error_log( "confirm_twilio_request_or_die: " . print_r( array( 'SERVER' => $_SERVER, 'POST' => $_POST ), true ) );
