@@ -300,7 +300,7 @@ class METERMAID {
 							"SELECT * FROM " . $wpdb->prefix . "metermaid_personnel
 							WHERE email=%s
 								AND metermaid_system_id=%d
-								AND ( metermaid_meter_id IS NULL OR metermaid_meter_id=%d )
+								AND ( metermaid_meter_id=0 OR metermaid_meter_id=%d )
 							LIMIT 1",
 							$user->user_email,
 							$system_id,
@@ -425,7 +425,7 @@ class METERMAID {
 				metermaid_personnel_id bigint NOT NULL AUTO_INCREMENT,
 				email varchar(100) NOT NULL,
 				metermaid_system_id bigint NOT NULL,
-				metermaid_meter_id bigint NULL,
+				metermaid_meter_id bigint NOT NULL,
 				added DATETIME NOT NULL,
 				added_by bigint NOT NULL,
 				PRIMARY KEY (metermaid_personnel_id),
