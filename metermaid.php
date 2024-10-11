@@ -948,7 +948,7 @@ class METERMAID {
 
 				<table class="wp-list-table widefat striped">
 					<thead>
-						<th><?php echo esc_html( __( 'Name', 'metermaid' ) ); ?></th>
+						<th><?php echo esc_html( __( 'System Name', 'metermaid' ) ); ?></th>
 						<th><?php echo esc_html( __( 'Location', 'metermaid' ) ); ?></th>
 						<th><?php echo esc_html( __( 'Last Reading', 'metermaid' ) ); ?></th>
 						<th><?php echo esc_html( __( 'Last Reading Date', 'metermaid' ) ); ?></th>
@@ -1876,7 +1876,7 @@ class METERMAID {
 			<table class="form-table">
 				<tr>
 					<th scope="row">
-						<?php echo esc_html( __( 'Name', 'metermaid' ) ); ?>
+						<?php echo esc_html( __( 'Meter Name', 'metermaid' ) ); ?>
 					</th>
 					<td>
 						<input type="text" name="metermaid_meter_name" value="<?php echo esc_attr( $meter ? $meter->name : '' ); ?>" />
@@ -1948,7 +1948,7 @@ class METERMAID {
 			<table class="form-table">
 				<tr>
 					<th scope="row">
-						<?php echo esc_html( __( 'Name', 'metermaid' ) ); ?>
+						<?php echo esc_html( __( 'Your Name', 'metermaid' ) ); ?>
 					</th>
 					<td>
 						<input type="text" name="metermaid_profile_name" value="<?php echo esc_attr( get_user_meta( wp_get_current_user()->ID, 'nickname', true ) ); ?>" />
