@@ -345,6 +345,17 @@ class METERMAID_SMS {
 					$response->message( $message );
 
 					echo $response;
+
+					$wpdb->query( $wpdb->prepare(
+						"INSERT INTO " . $wpdb->prefix . "metermaid_sms_conversations
+						SET number=%s,
+							timestamp=%s,
+							to_or_from='to',
+							message=%s",
+						$number,
+						METERMAID::UTC_NOW(),
+						wp_encode_emoji( $message )
+					) );
 				}
 			}
 		}
