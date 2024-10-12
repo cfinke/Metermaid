@@ -1127,7 +1127,7 @@ class METERMAID {
 								<tr>
 									<td>
 										<?php if ( current_user_can( 'metermaid-delete-meter', $meter->id ) ) { ?>
-											<form method="post" action="" onsubmit="return confirm( metermaid_i18n.meter_delete_confirm ); ?> );">
+											<form method="post" action="" onsubmit="return confirm( metermaid_i18n.meter_delete_confirm );">
 												<input type="hidden" name="metermaid_action" value="delete_meter" />
 												<input type="hidden" name="metermaid_nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-delete-meter' ) ); ?>" />
 												<input type="hidden" name="meter_id" value="<?php echo esc_attr( $meter->id ); ?>" />
