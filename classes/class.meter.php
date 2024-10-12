@@ -2,12 +2,13 @@
 
 class METERMAID_METER {
 	public $id;
+	public $system_id;
 	public $name;
 	public $location;
 	public $status;
-	public $system_id;
-
-	public $statuses = array();
+	public $contact_name;
+	public $contact_email;
+	public $contact_phone;
 
 	private $_readings = null;
 	private $_children = null;
@@ -18,12 +19,10 @@ class METERMAID_METER {
 	public function __construct( $meter_id_or_row ) {
 		global $wpdb;
 
-		// I'd rather just define these above, but you can't initially define a static class member as an array.
-		$this->statuses[ METERMAID_STATUS_ACTIVE ] = __( 'Active', 'metermaid' );
-		$this->statuses[ METERMAID_STATUS_INACTIVE ] = __( 'Inactive', 'metermaid' );
-
-		// If we're just instantiating the object to use it for its methods, skip the rest of the initialization.
-		if ( is_null( $meter_id_or_row ) ) {
+		if ( ! $meter_id_or_row ) {
+			// It's possible this was called with a null meter ID because
+			// it was an optional argument to a function, and we instantiate
+			// a meter object to check if it exists no matter what.
 			return;
 		}
 
@@ -35,11 +34,14 @@ class METERMAID_METER {
 			}
 		}
 
-		$this->name = $meter_id_or_row->name;
-		$this->location = $meter_id_or_row->location;
 		$this->id = $meter_id_or_row->metermaid_meter_id;
 		$this->system_id = $meter_id_or_row->metermaid_system_id;
+		$this->name = $meter_id_or_row->name;
+		$this->location = $meter_id_or_row->location;
 		$this->status = $meter_id_or_row->status;
+		$this->contact_name = $meter_id_or_row->contact_name;
+		$this->contact_email = $meter_id_or_row->contact_email;
+		$this->contact_phone = $meter_id_or_row->contact_phone;
 	}
 
 	/**
@@ -688,5 +690,12 @@ class METERMAID_METER {
 		}
 
 		return null;
+	}
+
+	public static function statuses() {
+		return array(
+			METERMAID_STATUS_ACTIVE => __( 'Active', 'metermaid' ),
+			METERMAID_STATUS_INACTIVE => __( 'Inactive', 'metermaid' ),
+		);
 	}
 }

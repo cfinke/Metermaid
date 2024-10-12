@@ -602,10 +602,13 @@ class METERMAID {
 				}
 
 				$wpdb->query( $wpdb->prepare(
-					"INSERT INTO " . $wpdb->prefix . "metermaid_meters SET metermaid_system_id=%d, name=%s, location=%s, added=NOW(), added_by=%d",
+					"INSERT INTO " . $wpdb->prefix . "metermaid_meters SET metermaid_system_id=%d, name=%s, location=%s, contact_name=%s, contact_email=%s, contact_phone=%s, added=NOW(), added_by=%d",
 					$_POST['metermaid_system_id'],
 					$_POST['metermaid_meter_name'],
 					$_POST['metermaid_meter_location'],
+					$_POST['metermaid_meter_contact_name'],
+					$_POST['metermaid_meter_contact_email'],
+					METERMAID_SMS::standardize_phone_number( $_POST['metermaid_meter_contact_phone'] ),
 					get_current_user_id()
 				) );
 
@@ -762,10 +765,13 @@ class METERMAID {
 				}
 
 				$wpdb->query( $wpdb->prepare(
-					"UPDATE " . $wpdb->prefix . "metermaid_meters SET name=%s, location=%s, status=%d WHERE metermaid_meter_id=%d LIMIT 1",
+					"UPDATE " . $wpdb->prefix . "metermaid_meters SET name=%s, location=%s, status=%d, contact_name=%s, contact_email=%s, contact_phone=%s WHERE metermaid_meter_id=%d LIMIT 1",
 					$_POST['metermaid_meter_name'],
 					$_POST['metermaid_meter_location'],
 					$_POST['metermaid_meter_status'],
+					$_POST['metermaid_meter_contact_name'],
+					$_POST['metermaid_meter_contact_email'],
+					$_POST['metermaid_meter_contact_phone'],
 					$_POST['metermaid_meter_id']
 				) );
 
@@ -1910,6 +1916,30 @@ class METERMAID {
 							<?php } ?>
 						</select>
 						<p class="description"><?php echo esc_html( __( 'Inactive meters can either be meters that have been removed from the system or ones that can be assumed to have the same reading as their last reading.', 'metermaid' ) ); ?></p>
+					</td>
+				</tr>
+				<tr>
+					<th scope="row">
+						<?php echo esc_html( __( 'Contact Name', 'metermaid' ) ); ?>
+					</th>
+					<td>
+						<input type="text" name="metermaid_meter_contact_name" value="<?php echo esc_attr( $meter() ? $meter->contact_name : '' ); ?>" />
+					</td>
+				</tr>
+				<tr>
+					<th scope="row">
+						<?php echo esc_html( __( 'Contact Email', 'metermaid' ) ); ?>
+					</th>
+					<td>
+						<input type="text" name="metermaid_meter_contact_email" value="<?php echo esc_attr( $meter() ? $meter->contact_email : '' ); ?>" />
+					</td>
+				</tr>
+				<tr>
+					<th scope="row">
+						<?php echo esc_html( __( 'Contact Phone', 'metermaid' ) ); ?>
+					</th>
+					<td>
+						<input type="text" name="metermaid_meter_contact_phone" value="<?php echo esc_attr( $meter() ? METERMAID_SMS::readable_phone_number( $meter->contact_phone ) : '' ); ?>" />
 					</td>
 				</tr>
 				<tr>
