@@ -15,7 +15,7 @@ class METERMAID_METER {
 	private $_children_readings = null;
 	private $_system = null;
 
-	public function __construct( $meter_id_or_row = null ) {
+	public function __construct( $meter_id_or_row ) {
 		global $wpdb;
 
 		// I'd rather just define these above, but you can't initially define a static class member as an array.
@@ -40,6 +40,15 @@ class METERMAID_METER {
 		$this->id = $meter_id_or_row->metermaid_meter_id;
 		$this->system_id = $meter_id_or_row->metermaid_system_id;
 		$this->status = $meter_id_or_row->status;
+	}
+
+	/**
+	 * A nicer way than "if ( $meter->id )" to check for whether this object represents a found meter, or if the instantiation failed.
+	 *
+	 * Call $meter(), like a function, to run this method.
+	 */
+	public function __invoke() {
+		return !! $this->id;
 	}
 
 	/**

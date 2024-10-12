@@ -28,6 +28,15 @@ class METERMAID_SYSTEM {
 	}
 
 	/**
+	 * A nicer way than "if ( $system->id )" to check for whether this object represents a found system, or if the instantiation failed.
+	 *
+	 * Call $system(), like a function, to run this method.
+	 */
+	public function __invoke() {
+		return !! $this->id;
+	}
+
+	/**
 	 * Include the location (if set) when displaying the meter name.
 	 */
 	public function display_name() {

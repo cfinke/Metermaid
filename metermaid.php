@@ -325,13 +325,13 @@ class METERMAID {
 			if ( isset( $_GET['metermaid_meter_id'] ) ) {
 				$meter = new METERMAID_METER( $_GET['metermaid_meter_id'] );
 
-				if ( $meter ) {
+				if ( $meter() ) {
 					$title = 'Metermaid &raquo; ' . $meter->display_name();
 				}
 			} else if ( isset( $_GET['metermaid_system_id'] ) ) {
 				$system = new METERMAID_SYSTEM( $_GET['metermaid_system_id'] );
 
-				if ( $system ) {
+				if ( $system() ) {
 					$title = 'Metermaid &raquo; ' . $system->display_name();
 				}
 			} else {
@@ -1579,15 +1579,15 @@ class METERMAID {
 	}
 
 	public static function system_form( $system_id = null ) {
-		$system = null;
+		$system = new METERMAID_SYSTEM( $system_id );
 
-		if ( $system_id ) {
-			$system = new METERMAID_SYSTEM( $system_id );
+		if ( $system_id && ! $system() ) {
+			wp_die( 'Invalid system id.' );
 		}
 
 		?>
 		<form method="post" action="" class="metermaid_add_system_form">
-			<?php if ( $system_id ) { ?>
+			<?php if ( $system() ) { ?>
 				<input type="hidden" name="metermaid_action" value="edit_system" />
 				<input type="hidden" name="metermaid_system_id" value="<?php echo esc_attr( $system_id ); ?>" />
 				<input type="hidden" name="metermaid_nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-edit-system' ) ); ?>" />
@@ -1620,7 +1620,7 @@ class METERMAID {
 					<td>
 						<select name="metermaid_system_unit">
 							<?php foreach ( METERMAID::$units_of_measurement as $unit => $unit_meta ) { ?>
-								<option value="<?php echo esc_attr( $unit ); ?>" <?php if ( $system && ( $unit == $system->unit ) ) { ?> selected="selected"<?php } ?>><?php echo esc_html( $unit_meta['plural'] ); ?></option>
+								<option value="<?php echo esc_attr( $unit ); ?>" <?php if ( $system() && ( $unit == $system->unit ) ) { ?> selected="selected"<?php } ?>><?php echo esc_html( $unit_meta['plural'] ); ?></option>
 							<?php } ?>
 						</select>
 					</td>
@@ -1630,7 +1630,7 @@ class METERMAID {
 						<?php echo esc_html( __( 'Minimum rate interval (in days)', 'metermaid' ) ); ?>
 					</th>
 					<td>
-						<input type="number" name="metermaid_system_rate_interval" value="<?php echo esc_attr( $system ? $system->rate_interval : METERMAID_DEFAULT_RATE_INTERVAL ); ?>" />
+						<input type="number" name="metermaid_system_rate_interval" value="<?php echo esc_attr( $system() ? $system->rate_interval : METERMAID_DEFAULT_RATE_INTERVAL ); ?>" />
 						<p class="description"><?php echo esc_html( __( 'What is the least number of days between which Metermaid should calculate average usage rates? A higher number means a more accurate result, but it will also be more likely to hide short-term trends.' ) ); ?></p>
 					</td>
 				</tr>
@@ -1717,7 +1717,9 @@ class METERMAID {
 				if ( ! $meter_id ) {
 					$system = new METERMAID_SYSTEM( $system_id );
 
-					// @todo Error handle if the system doesn't exist.
+					if ( $system_id && ! $system() ) {
+						wp_die( 'Invalid system id.' );
+					}
 
 					?>
 					<tr>
@@ -1859,11 +1861,11 @@ class METERMAID {
 	}
 
 	public static function meter_form( $system_id, $meter_id = null ) {
-		$meter = new METERMAID_METER( $meter_id );
+		$meter = new METERMAID_METER( $meter_id, true );
 
 		?>
 		<form method="post" action="">
-			<?php if ( $meter_id ) { ?>
+			<?php if ( $meter() ) { ?>
 				<input type="hidden" name="metermaid_action" value="edit_meter" />
 				<input type="hidden" name="metermaid_meter_id" value="<?php echo esc_attr( $meter_id ); ?>" />
 				<input type="hidden" name="metermaid_nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-edit-meter' ) ); ?>" />
@@ -1879,7 +1881,7 @@ class METERMAID {
 						<?php echo esc_html( __( 'Meter Name', 'metermaid' ) ); ?>
 					</th>
 					<td>
-						<input type="text" name="metermaid_meter_name" value="<?php echo esc_attr( $meter ? $meter->name : '' ); ?>" />
+						<input type="text" name="metermaid_meter_name" value="<?php echo esc_attr( $meter() ? $meter->name : '' ); ?>" />
 					</td>
 				</tr>
 				<tr>
@@ -1887,7 +1889,7 @@ class METERMAID {
 						<?php echo esc_html( __( 'Location', 'metermaid' ) ); ?>
 					</th>
 					<td>
-						<input type="text" name="metermaid_meter_location" value="<?php echo esc_attr( $meter ? $meter->location : '' ); ?>" />
+						<input type="text" name="metermaid_meter_location" value="<?php echo esc_attr( $meter() ? $meter->location : '' ); ?>" />
 					</td>
 				</tr>
 				<tr>
@@ -1896,10 +1898,10 @@ class METERMAID {
 					</th>
 					<td>
 						<select name="metermaid_meter_status">
-							<?php foreach ( $meter->statuses as $status_value => $status_label ) { ?>
+							<?php foreach ( METERMAID_METER::statuses() as $status_value => $status_label ) { ?>
 								<option
 									value="<?php echo esc_attr( $status_value ); ?>"
-									<?php if ( $meter->status == $status_value ) { ?>
+									<?php if ( $meter() && ( $meter->status == $status_value ) ) { ?>
 										selected="selected"
 									<?php } ?>
 								>
@@ -1915,7 +1917,7 @@ class METERMAID {
 						<?php echo esc_html( __( 'Parent Meters', 'metermaid' ) ); ?>
 					</th>
 					<td>
-						<?php METERMAID::meter_list_selection( $system_id, 'metermaid_parent_meters', true, $meter->parents, array( $meter->id ) ); ?>
+						<?php METERMAID::meter_list_selection( $system_id, 'metermaid_parent_meters', true, $meter() ? $meter->parents : [], array( $meter->id ) ); ?>
 						<p class="description"><?php echo esc_html( __( 'A parent meter is a meter that is located upstream from this meter.', 'metermaid' ) ); ?></p>
 					</td>
 				</tr>
@@ -1924,14 +1926,14 @@ class METERMAID {
 						<?php echo esc_html( __( 'Child Meters', 'metermaid' ) ); ?>
 					</th>
 					<td>
-						<?php METERMAID::meter_list_selection( $system_id, 'metermaid_child_meters', true, $meter->children, array( $meter->id ) ); ?>
+						<?php METERMAID::meter_list_selection( $system_id, 'metermaid_child_meters', true, $meter() ? $meter->children : [], array( $meter->id ) ); ?>
 						<p class="description"><?php echo esc_html( __( 'A child meter is a meter that is located downstream from this meter.', 'metermaid' ) ); ?></p>
 					</td>
 				</tr>
 				<tr>
 					<th scope="row"></th>
 					<td>
-						<input class="button button-primary" type="submit" value="<?php echo esc_attr( $meter_id ? __( 'Update Meter', 'metermaid' ) : __( 'Add Meter', 'metermaid' ) ); ?>" />
+						<input class="button button-primary" type="submit" value="<?php echo esc_attr( $meter() ? __( 'Update Meter', 'metermaid' ) : __( 'Add Meter', 'metermaid' ) ); ?>" />
 					</td>
 				</tr>
 			</table>
@@ -2011,24 +2013,19 @@ class METERMAID {
 	}
 
 	public static function invite_form( $system_id = null, $meter_id = null ) {
-		$meter = null;
-		$system = null;
+		$meter = new METERMAID_METER( $meter_id );
 
-		if ( $meter_id ) {
-			$meter = new METERMAID_METER( $meter_id );
-
-			if ( ! $meter ) {
-				wp_die( 'Invalid meter id.' );
-			}
+		if ( $meter_id && ! $meter() ) {
+			wp_die( 'Invalid meter id.' );
 		}
 
-		if ( $system_id ) {
-			$system = new METERMAID_SYSTEM( $system_id );
+		$system = new METERMAID_SYSTEM( $system_id );
 
-			if ( ! $system ) {
-				wp_die( 'Invalid system id.' );
-			}
+		if ( $system_id && ! $system() ) {
+			wp_die( 'Invalid system id.' );
+		}
 
+		if ( $system() && $meter() ) {
 			if ( $system->id != $meter->system_id ) {
 				wp_die( 'Mismatched system id.' );
 			}
@@ -2039,11 +2036,11 @@ class METERMAID {
 			<input type="hidden" name="metermaid_action" value="invite" />
 			<input type="hidden" name="metermaid_nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-invite' ) ); ?>" />
 
-			<?php if ( $meter ) { ?>
+			<?php if ( $meter() ) { ?>
 				<input type="hidden" name="metermaid_invite_meter_id" value="<?php echo esc_attr( $meter->id ); ?>" />
 			<?php } ?>
 
-			<?php if ( $system ) { ?>
+			<?php if ( $system() ) { ?>
 				<input type="hidden" name="metermaid_invite_system_id" value="<?php echo esc_attr( $system->id ); ?>" />
 			<?php } ?>
 
@@ -2069,7 +2066,7 @@ class METERMAID {
 							</p>
 						<?php } ?>
 
-						<?php if ( $system && current_user_can( 'metermaid-invite-system', $system_id ) ) { ?>
+						<?php if ( $system() && current_user_can( 'metermaid-invite-system', $system_id ) ) { ?>
 							<p>
 								<label>
 									<input type="radio" name="metermaid_invite_access_level" value="system" /> <?php echo esc_html( sprintf( __( 'The entire system: %s', 'metermaid' ), $system->display_name() ) ); ?>
