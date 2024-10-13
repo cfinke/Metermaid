@@ -342,11 +342,14 @@ class METERMAID {
 					// Now confirm that they have the right to take it on this specific system/meter/etc.
 
 					// System-level actions
-					if ( in_array( $cap_to_check, array(
-							'metermaid-access-system',
-							'metermaid-edit-system',
-							'metermaid-add-meter',
-							), true )
+					if ( in_array(
+							$cap_to_check,
+							array(
+								'metermaid-access-system',
+								'metermaid-edit-system',
+								'metermaid-add-meter',
+							),
+							true )
 						) {
 						$system_id = $args[2];
 
@@ -366,13 +369,16 @@ class METERMAID {
 						}
 
 					// Meter-level-actions
-					} else if ( in_array( $cap_to_check, array(
-							'metermaid-add-reading',
-							'metermaid-view-meter',
-							'metermaid-delete-reading',
-							'metermaid-delete-meter',
-							'metermaid-edit-meter',
-							), true )
+					} else if ( in_array(
+							$cap_to_check,
+							array(
+								'metermaid-add-reading',
+								'metermaid-view-meter',
+								'metermaid-delete-reading',
+								'metermaid-delete-meter',
+								'metermaid-edit-meter',
+							),
+							true )
 						) {
 						$meter_id = $args[2];
 
