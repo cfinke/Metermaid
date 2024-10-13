@@ -900,6 +900,7 @@ class METERMAID {
 				// @todo
 
 				$meter_id_to_insert = $_POST['metermaid_invite_meter_id'];
+				$manage_value = 0;
 
 				// Confirm this user is allowed to do what they're doing and prep the data for saving.
 				if ( $_POST['metermaid_invite_access_level'] == 'system' ) {
@@ -908,11 +909,13 @@ class METERMAID {
 						wp_die();
 					}
 
-					if ( $_POST['metermaid_invite_manage'] == '1' ) {
+					if ( $_POST['metermaid_invite_manage_system'] == '1' ) {
 						if ( ! current_user_can( 'metermaid-edit-system', $_POST['metermaid_invite_system_id'] ) ) {
 							echo 'You are not authorized to invite anyone to make changes to this system, since you do not have that authority yourself.';
 							wp_die();
 						}
+
+						$manage_value = 1;
 					}
 
 					$meter_id_to_insert = 0;
@@ -922,12 +925,14 @@ class METERMAID {
 						wp_die();
 					}
 
-					if ( $_POST['metermaid_invite_manage'] == '1' ) {
+					if ( $_POST['metermaid_invite_manage_meter'] == '1' ) {
 						if ( ! current_user_can( 'metermaid-add-reading', $_POST['metermaid_invite_meter_id'] ) ) {
 							echo 'You are not authorized to invite anyone to make changes to this meter, since you do not have that authority yourself.';
 							wp_die();
 						}
 					}
+
+					$manage_value = 1;
 				}
 
 				$wpdb->query( $wpdb->prepare( "INSERT INTO " . $wpdb->prefix . "metermaid_personnel SET
@@ -940,7 +945,7 @@ class METERMAID {
 					$_POST['metermaid_invite_email'],
 					$_POST['metermaid_invite_system_id'],
 					$meter_id_to_insert,
-					$_POST['metermaid_invite_manage'],
+					$manage_value,
 					get_current_user_id()
 				) );
 
@@ -1129,6 +1134,7 @@ class METERMAID {
 						<?php if ( current_user_can( 'metermaid-add-reading' ) ) { ?><a href="#tab-reading" class="nav-tab" data-metermaid-tab="reading"><?php echo esc_html( __( 'Add Reading', 'metermaid' ) ); ?></a><?php } ?>
 						<?php if ( current_user_can( 'metermaid-add-meter' ) ) { ?><a href="#tab-add-meter" class="nav-tab" data-metermaid-tab="add-meter"><?php echo esc_html( __( 'Add Meter', 'metermaid' ) ); ?></a><?php } ?>
 						<?php if ( current_user_can( 'metermaid-edit-system', $system->id ) ) { ?><a href="#tab-settings" class="nav-tab" data-metermaid-tab="settings"><?php echo esc_html( __( 'Configure System', 'metermaid' ) ); ?></a><?php } ?>
+						<?php if ( current_user_can( 'metermaid-invite-system', $system->id ) ) { ?><a href="#tab-invite" class="nav-tab" data-metermaid-tab="invite"><?php echo esc_html( __( 'Invite Others', 'metermaid' ) ); ?></a><?php } ?>
 						<a href="#tab-profile" class="nav-tab" data-metermaid-tab="profile"><?php echo esc_html( __( 'Edit Profile', 'metermaid' ) ); ?></a>
 					</nav>
 					<div class="metermaid-tabbed-content card">
@@ -1149,6 +1155,11 @@ class METERMAID {
 						<?php if ( current_user_can( 'metermaid-edit-system', $system->id ) ) { ?>
 							<div data-metermaid-tab="settings">
 								<?php self::system_form( $system->id ); ?>
+							</div>
+						<?php } ?>
+						<?php if ( current_user_can( 'metermaid-invite-system', $system->id ) ) { ?>
+							<div data-metermaid-tab="invite">
+								<?php self::invite_form( $system->id ); ?>
 							</div>
 						<?php } ?>
 						<div data-metermaid-tab="profile">
@@ -2123,6 +2134,31 @@ class METERMAID {
 			}
 		}
 
+		if ( ! $system() ) {
+			wp_die( 'Invite form requires a system.' );
+		}
+
+		$show_meter = false;
+		$show_system = false;
+		$show_manage_meter = false;
+		$show_manage_system = false;
+
+		if ( $meter() && current_user_can( 'metermaid-invite-meter', $meter->id ) ) {
+			$show_meter = true;
+
+			if ( current_user_can( 'metermaid-edit-meter', $meter->id ) ) {
+				$show_manage_meter = true;
+			}
+		}
+
+		if ( current_user_can( 'metermaid-invite-system', $system->id ) ) {
+			$show_system = true;
+
+			if ( current_user_can( 'metermaid-edit-system', $system->id ) ) {
+				$show_manage_system = true;
+			}
+		}
+
 		?>
 		<form method="post" action="">
 			<input type="hidden" name="metermaid_action" value="invite" />
@@ -2132,9 +2168,7 @@ class METERMAID {
 				<input type="hidden" name="metermaid_invite_meter_id" value="<?php echo esc_attr( $meter->id ); ?>" />
 			<?php } ?>
 
-			<?php if ( $system() ) { ?>
-				<input type="hidden" name="metermaid_invite_system_id" value="<?php echo esc_attr( $system->id ); ?>" />
-			<?php } ?>
+			<input type="hidden" name="metermaid_invite_system_id" value="<?php echo esc_attr( $system->id ); ?>" />
 
 			<table class="form-table">
 				<tr>
@@ -2150,41 +2184,70 @@ class METERMAID {
 						<?php echo esc_html( __( 'Access', 'metermaid' ) ); ?>
 					</th>
 					<td>
-						<?php if ( current_user_can( 'metermaid-invite-meter', $meter_id ) ) { ?>
+						<?php if ( $show_meter ) { ?>
 							<p>
 								<label>
 									<input type="radio" name="metermaid_invite_access_level" value="meter" checked="checked" /> <?php echo esc_html( __( 'Just this meter', 'metermaid' ) ); ?>
 								</label>
 							</p>
 						<?php } ?>
-
-						<?php if ( $system() && current_user_can( 'metermaid-invite-system', $system_id ) ) { ?>
+						<?php if ( $show_system ) { ?>
 							<p>
 								<label>
-									<input type="radio" name="metermaid_invite_access_level" value="system" /> <?php echo esc_html( sprintf( __( 'The entire system: %s', 'metermaid' ), $system->display_name() ) ); ?>
+									<input type="radio" name="metermaid_invite_access_level" value="system" <?php
+
+									if ( ! $meter() || ! current_user_can( 'metermaid-invite-meter', $meter->id ) ) {
+										echo ' checked="checked" ';
+									}
+
+									?> /> <?php echo esc_html( sprintf( __( 'The entire system: %s', 'metermaid' ), $system->name ) ); ?>
 								</label>
 							</p>
 						<?php } ?>
 					</td>
 				</tr>
-				<tr>
-					<th scope="row">
-						<?php echo esc_html( __( 'Can they make changes to it?', 'metermaid' ) ); ?>
-					</th>
-					<td>
-						<p>
-							<label>
-								<input type="radio" name="metermaid_invite_manage" value="1" /> <?php echo esc_html( __( 'Yes', 'metermaid' ) ); ?>
-							</label>
-						</p>
-						<p>
-							<label>
-								<input type="radio" name="metermaid_invite_manage" value="0" checked="checked" /> <?php echo esc_html( __( 'No, but they can see all of the information', 'metermaid' ) ); ?>
-							</label>
-						</p>
-					</td>
-				</tr>
-
+				<?php if ( $show_meter ) { ?>
+					<tr class="metermaid_invite_manage_meter">
+						<th scope="row">
+							<?php echo esc_html( __( 'Can they make changes to it?', 'metermaid' ) ); ?>
+						</th>
+						<td>
+							<?php if ( $show_manage_meter ) { ?>
+								<p>
+									<label>
+										<input type="radio" name="metermaid_invite_manage_meter" value="1" /> <?php echo esc_html( __( 'Yes', 'metermaid' ) ); ?>
+									</label>
+								</p>
+							<?php } ?>
+							<p>
+								<label>
+									<input type="radio" name="metermaid_invite_manage_meter" value="0" checked="checked" /> <?php echo esc_html( __( 'No, but they can see all of the information', 'metermaid' ) ); ?>
+								</label>
+							</p>
+						</td>
+					</tr>
+				<?php } ?>
+				<?php if ( $show_system ) { ?>
+					<tr class="metermaid_invite_manage_system">
+						<th scope="row">
+							<?php echo esc_html( __( 'Can they make changes to it?', 'metermaid' ) ); ?>
+						</th>
+						<td>
+							<?php if ( $show_manage_system ) { ?>
+								<p>
+									<label>
+										<input type="radio" name="metermaid_invite_manage_system" value="1" /> <?php echo esc_html( __( 'Yes', 'metermaid' ) ); ?>
+									</label>
+								</p>
+							<?php } ?>
+							<p>
+								<label>
+									<input type="radio" name="metermaid_invite_manage_system" value="0" checked="checked" /> <?php echo esc_html( __( 'No, but they can see all of the information', 'metermaid' ) ); ?>
+								</label>
+							</p>
+						</td>
+					</tr>
+				<?php } ?>
 				<tr>
 					<th scope="row"></th>
 					<td>

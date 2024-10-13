@@ -82,6 +82,20 @@ jQuery( function ( $ ) {
 		metermaid.updateSelectedTab( $ );
 	} );
 
+	$( 'input[name=metermaid_invite_access_level]' ).on( 'change', function () {
+		var selectedValue = $( 'input[name=metermaid_invite_access_level]:checked' ).val();
+
+		if ( selectedValue == 'meter' ) {
+			$( '.metermaid_invite_manage_system' ).hide();
+			$( '.metermaid_invite_manage_meter' ).show();
+		} else if ( selectedValue == 'system' ) {
+			$( '.metermaid_invite_manage_system' ).show();
+			$( '.metermaid_invite_manage_meter' ).hide();
+		}
+	} );
+
+	$( 'input[name=metermaid_invite_access_level]' ).change();
+
 	if ( ! metermaid.tabsAreBlocked() ) {
 		// Things like Google Charts get drawn at the wrong scale if they're hidden
 		// when drawn, so don't hide the tab contents until all of the charts have
