@@ -1288,6 +1288,7 @@ class METERMAID {
 						<?php if ( current_user_can( 'metermaid-add-supplement', $meter->id ) ) { ?><a href="#tab-supplement" class="nav-tab" data-metermaid-tab="supplement"><?php echo esc_html( __( 'Add Supplement', 'metermaid' ) ); ?></a><?php } ?>
 						<?php if ( current_user_can( 'metermaid-edit-meter', $meter->id ) ) { ?><a href="#tab-settings" class="nav-tab" data-metermaid-tab="settings"><?php echo esc_html( __( 'Configure Meter', 'metermaid' ) ); ?></a><?php } ?>
 						<a href="#tab-invite" class="nav-tab" data-metermaid-tab="invite"><?php echo esc_html( __( 'Invite Others', 'metermaid' ) ); ?></a>
+						<a href="#tab-profile" class="nav-tab" data-metermaid-tab="profile"><?php echo esc_html( __( 'Edit Profile', 'metermaid' ) ); ?></a>
 					</nav>
 					<div class="metermaid-tabbed-content card">
 						<?php if ( current_user_can( 'metermaid-add-reading', $meter->id ) ) { ?>
@@ -1307,6 +1308,9 @@ class METERMAID {
 						<?php } ?>
 						<div data-metermaid-tab="invite">
 							<?php self::invite_form( $meter->system_id, $meter->id ); ?>
+						</div>
+						<div data-metermaid-tab="profile">
+							<?php self::profile_form(); ?>
 						</div>
 					</div>
 				</div>
