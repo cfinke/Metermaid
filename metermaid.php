@@ -2167,7 +2167,7 @@ class METERMAID {
 		if ( $meter() && current_user_can( 'metermaid-invite-meter', $meter->id ) ) {
 			$show_meter = true;
 
-			if ( current_user_can( 'metermaid-edit-meter', $meter->id ) ) {
+			if ( current_user_can( 'metermaid-add-reading', $meter->id ) ) {
 				$show_manage_meter = true;
 			}
 		}
