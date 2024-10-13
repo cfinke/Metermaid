@@ -12,6 +12,10 @@ class METERMAID_SYSTEM {
 	public function __construct( $system_id_or_row = null ) {
 		global $wpdb;
 
+		if ( ! $system_id_or_row ) {
+			return false;
+		}
+
 		if ( is_numeric( $system_id_or_row ) ) {
 			$system_id_or_row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM " . $wpdb->prefix . "metermaid_systems WHERE metermaid_system_id=%s LIMIT 1", $system_id_or_row ) );
 
