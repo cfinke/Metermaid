@@ -326,13 +326,13 @@ class METERMAID {
 				$meter = new METERMAID_METER( $_GET['metermaid_meter_id'] );
 
 				if ( $meter() ) {
-					$title = 'Metermaid &raquo; ' . $meter->display_name();
+					$title = 'Metermaid &raquo; ' . $meter->name;
 				}
 			} else if ( isset( $_GET['metermaid_system_id'] ) ) {
 				$system = new METERMAID_SYSTEM( $_GET['metermaid_system_id'] );
 
 				if ( $system() ) {
-					$title = 'Metermaid &raquo; ' . $system->display_name();
+					$title = 'Metermaid &raquo; ' . $system->name;
 				}
 			} else {
 				$title = 'Metermaid';
@@ -353,7 +353,6 @@ class METERMAID {
 			(
 				metermaid_system_id bigint NOT NULL AUTO_INCREMENT,
 				name varchar(100) NOT NULL,
-				location varchar(100) NOT NULL,
 				unit varchar(32) NOT NULL,
 				rate_interval int NOT NULL,
 				added datetime NOT NULL,
@@ -368,7 +367,6 @@ class METERMAID {
 				metermaid_meter_id bigint NOT NULL AUTO_INCREMENT,
 				metermaid_system_id bigint NOT NULL,
 				name varchar(100) NOT NULL,
-				location varchar(100) NOT NULL,
 				status int NOT NULL,
 				added DATETIME,
 				added_by VARCHAR(100),
@@ -558,9 +556,8 @@ class METERMAID {
 				}
 
 				$wpdb->query( $wpdb->prepare(
-					"INSERT INTO " . $wpdb->prefix . "metermaid_systems SET name=%s, location=%s, added=NOW(), added_by=%d",
+					"INSERT INTO " . $wpdb->prefix . "metermaid_systems SET name=%s, added=NOW(), added_by=%d",
 					$_POST['metermaid_system_name'],
-					$_POST['metermaid_system_location'],
 					get_current_user_id()
 				) );
 
@@ -602,10 +599,9 @@ class METERMAID {
 				}
 
 				$wpdb->query( $wpdb->prepare(
-					"INSERT INTO " . $wpdb->prefix . "metermaid_meters SET metermaid_system_id=%d, name=%s, location=%s, contact_name=%s, contact_email=%s, contact_phone=%s, added=NOW(), added_by=%d",
+					"INSERT INTO " . $wpdb->prefix . "metermaid_meters SET metermaid_system_id=%d, name=%s, contact_name=%s, contact_email=%s, contact_phone=%s, added=NOW(), added_by=%d",
 					$_POST['metermaid_system_id'],
 					$_POST['metermaid_meter_name'],
-					$_POST['metermaid_meter_location'],
 					$_POST['metermaid_meter_contact_name'],
 					$_POST['metermaid_meter_contact_email'],
 					METERMAID_SMS::standardize_phone_number( $_POST['metermaid_meter_contact_phone'] ),
@@ -682,9 +678,8 @@ class METERMAID {
 				}
 
 				$wpdb->query( $wpdb->prepare(
-					"UPDATE " . $wpdb->prefix . "metermaid_systems SET name=%s, location=%s, unit=%s, rate_interval=%d WHERE metermaid_system_id=%d LIMIT 1",
+					"UPDATE " . $wpdb->prefix . "metermaid_systems SET name=%s, unit=%s, rate_interval=%d WHERE metermaid_system_id=%d LIMIT 1",
 					$_POST['metermaid_system_name'],
-					$_POST['metermaid_system_location'],
 					$_POST['metermaid_system_unit'],
 					$_POST['metermaid_system_rate_interval'],
 					$_POST['metermaid_system_id']
@@ -765,9 +760,8 @@ class METERMAID {
 				}
 
 				$wpdb->query( $wpdb->prepare(
-					"UPDATE " . $wpdb->prefix . "metermaid_meters SET name=%s, location=%s, status=%d, contact_name=%s, contact_email=%s, contact_phone=%s WHERE metermaid_meter_id=%d LIMIT 1",
+					"UPDATE " . $wpdb->prefix . "metermaid_meters SET name=%s, status=%d, contact_name=%s, contact_email=%s, contact_phone=%s WHERE metermaid_meter_id=%d LIMIT 1",
 					$_POST['metermaid_meter_name'],
-					$_POST['metermaid_meter_location'],
 					$_POST['metermaid_meter_status'],
 					$_POST['metermaid_meter_contact_name'],
 					$_POST['metermaid_meter_contact_email'],
@@ -950,12 +944,11 @@ class METERMAID {
 			</div>
 
 			<?php foreach ( $all_systems as $system ) { ?>
-				<h2 class="wp-heading-inline"><a href="<?php echo esc_attr( add_query_arg( 'metermaid_system_id', $system->id ) ); ?>"><?php echo esc_html( $system->display_name() ); ?></a></h2>
+				<h2 class="wp-heading-inline"><a href="<?php echo esc_attr( add_query_arg( 'metermaid_system_id', $system->id ) ); ?>"><?php echo esc_html( $system->name ); ?></a></h2>
 
 				<table class="wp-list-table widefat striped">
 					<thead>
 						<th><?php echo esc_html( __( 'System Name', 'metermaid' ) ); ?></th>
-						<th><?php echo esc_html( __( 'Location', 'metermaid' ) ); ?></th>
 						<th><?php echo esc_html( __( 'Last Reading', 'metermaid' ) ); ?></th>
 						<th><?php echo esc_html( __( 'Last Reading Date', 'metermaid' ) ); ?></th>
 						<th><?php echo esc_html( sprintf( __( '%s YTD', 'metermaid' ), $system->measurement()['plural'] ) ); ?></th>
@@ -987,7 +980,6 @@ class METERMAID {
 							?>
 							<tr>
 								<td><a href="<?php echo esc_url( add_query_arg( 'metermaid_meter_id', $meter->id ) ); ?>"><?php echo esc_html( $meter->name ?: __( '[Unnamed]' ) ); ?></a></td>
-								<td><?php echo esc_html( $meter->location ); ?></td>
 								<td>
 									<?php if ( ! empty( $readings ) ) { ?>
 										<?php echo esc_html( number_format( $readings[0]->reading, 0 ) ); ?>
@@ -1045,7 +1037,7 @@ class METERMAID {
 				<h1 class="wp-heading-inline">
 					<a href="<?php echo esc_url( remove_query_arg( array( 'metermaid_system_id', 'metermaid_meter_id' ) ) ); ?>"><?php echo esc_html( __( 'Metermaid', 'metermaid' ) ); ?></a>
 					&raquo;
-					<?php echo esc_html( $system->display_name() ); ?>
+					<?php echo esc_html( $system->name ); ?>
 				</h1>
 
 				<div class="metermaid-tabbed-content-container">
@@ -1098,8 +1090,7 @@ class METERMAID {
 					<table class="wp-list-table widefat striped">
 						<thead>
 							<th></th>
-							<th><?php echo esc_html( __( 'Name', 'metermaid' ) ); ?></th>
-							<th><?php echo esc_html( __( 'Location', 'metermaid' ) ); ?></th>
+							<th><?php echo esc_html( __( 'Meter', 'metermaid' ) ); ?></th>
 							<th><?php echo esc_html( __( 'Last Reading', 'metermaid' ) ); ?></th>
 							<th><?php echo esc_html( __( 'Last Reading Date', 'metermaid' ) ); ?></th>
 							<th>
@@ -1136,7 +1127,6 @@ class METERMAID {
 										<?php } ?>
 									</td>
 									<td><a href="<?php echo esc_url( add_query_arg( 'metermaid_meter_id', $meter->id ) ); ?>"><?php echo esc_html( $meter->name ?: __( '[Unnamed]' ) ); ?></a></td>
-									<td><?php echo esc_html( $meter->location ); ?></td>
 									<td>
 										<?php if ( ! empty( $readings ) ) { ?>
 											<?php echo esc_html( number_format( $readings[0]->reading, 0 ) ); ?>
@@ -1203,7 +1193,7 @@ class METERMAID {
 					&raquo;
 					<?php
 
-					echo sprintf( esc_html(	__( 'Meter Details: %s', 'metermaid' ) ), esc_html( $meter->display_name() ) );
+					echo sprintf( esc_html(	__( 'Meter Details: %s', 'metermaid' ) ), esc_html( $meter->name ) );
 
 					?>
 				</h1>
@@ -1456,7 +1446,7 @@ class METERMAID {
 									<td></td>
 									<td>
 										<a href="<?php echo esc_attr( add_query_arg( 'metermaid_meter_id', $child->id ) ); ?>">
-											<?php echo esc_html( $child->display_name() ); ?>
+											<?php echo esc_html( $child->name ); ?>
 										</a>
 									</td>
 								</tr>
@@ -1479,7 +1469,7 @@ class METERMAID {
 		global $wpdb;
 
 		$system_rows = $wpdb->get_results(
-			"SELECT * FROM " . $wpdb->prefix . "metermaid_systems ORDER BY name ASC, location ASC"
+			"SELECT * FROM " . $wpdb->prefix . "metermaid_systems ORDER BY name ASC"
 		);
 
 		$all_systems = array();
@@ -1531,7 +1521,7 @@ class METERMAID {
 
 			foreach ( $all_systems as $system ) {
 				?>
-				<option value="<?php echo esc_attr( $system->id ); ?>"<?php if ( in_array( $system->id, $selected ) ) { ?> selected="selected"<?php } ?>><?php echo esc_html( $system->display_name() ); ?></option>
+				<option value="<?php echo esc_attr( $system->id ); ?>"<?php if ( in_array( $system->id, $selected ) ) { ?> selected="selected"<?php } ?>><?php echo esc_html( $system->name ); ?></option>
 				<?php
 			}
 
@@ -1575,7 +1565,7 @@ class METERMAID {
 				}
 
 				?>
-				<option data-metermaid-system-id="<?php echo esc_attr( $system->id ); ?>" value="<?php echo esc_attr( $meter->id ); ?>"<?php if ( in_array( $meter->id, $selected ) ) { ?> selected="selected"<?php } ?>><?php echo esc_html( $meter->display_name() ); ?></option>
+				<option data-metermaid-system-id="<?php echo esc_attr( $system->id ); ?>" value="<?php echo esc_attr( $meter->id ); ?>"<?php if ( in_array( $meter->id, $selected ) ) { ?> selected="selected"<?php } ?>><?php echo esc_html( $meter->name ); ?></option>
 				<?php
 			}
 
@@ -1609,14 +1599,6 @@ class METERMAID {
 					</th>
 					<td>
 						<input type="text" name="metermaid_system_name" value="<?php echo esc_attr( $system ? $system->name : '' ); ?>" />
-					</td>
-				</tr>
-				<tr>
-					<th scope="row">
-						<?php echo esc_html( __( 'Location', 'metermaid' ) ); ?>
-					</th>
-					<td>
-						<input type="text" name="metermaid_system_location" value="<?php echo esc_attr( $system ? $system->location : '' ); ?>" />
 					</td>
 				</tr>
 				<tr>
@@ -1884,18 +1866,10 @@ class METERMAID {
 			<table class="form-table">
 				<tr>
 					<th scope="row">
-						<?php echo esc_html( __( 'Meter Name', 'metermaid' ) ); ?>
+						<?php echo esc_html( __( 'Meter Name, ID, or Location', 'metermaid' ) ); ?>
 					</th>
 					<td>
 						<input type="text" name="metermaid_meter_name" value="<?php echo esc_attr( $meter() ? $meter->name : '' ); ?>" />
-					</td>
-				</tr>
-				<tr>
-					<th scope="row">
-						<?php echo esc_html( __( 'Location', 'metermaid' ) ); ?>
-					</th>
-					<td>
-						<input type="text" name="metermaid_meter_location" value="<?php echo esc_attr( $meter() ? $meter->location : '' ); ?>" />
 					</td>
 				</tr>
 				<tr>
@@ -2012,10 +1986,10 @@ class METERMAID {
 
 									if ( ! empty( $meters ) ) {
 										?>
-										<optgroup label="<?php echo esc_attr( $system->display_name() ); ?>">
+										<optgroup label="<?php echo esc_attr( $system->name ); ?>">
 											<?php foreach ( $meters as $meter ) { ?>
 												<option value="<?php echo esc_attr( $meter->id ); ?>"<?php if ( $meter->id == $user_meter ) { ?> selected="selected"<?php } ?>>
-													<?php echo esc_html( $meter->display_name() ); ?>
+													<?php echo esc_html( $meter->name ); ?>
 												</option>
 											<?php } ?>
 										</optgroup>

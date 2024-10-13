@@ -22,7 +22,6 @@ class METERMAID_SYSTEM {
 
 		$this->id = $system_id_or_row->metermaid_system_id;
 		$this->name = $system_id_or_row->name;
-		$this->location = $system_id_or_row->location;
 		$this->unit = $system_id_or_row->unit;
 		$this->rate_interval = $system_id_or_row->rate_interval;
 	}
@@ -37,13 +36,6 @@ class METERMAID_SYSTEM {
 	}
 
 	/**
-	 * Include the location (if set) when displaying the meter name.
-	 */
-	public function display_name() {
-		return $this->name . ( $this->location ? ' (' . $this->location . ')' : '' );
-	}
-
-	/**
 	 * Hide some expensive calls behind a cached __get().
 	 */
 	public function __get( $key ) {
@@ -55,7 +47,7 @@ class METERMAID_SYSTEM {
 			}
 
 			$meter_rows = $wpdb->get_results( $wpdb->prepare(
-				"SELECT m.*, r.parent_meter_id AS is_parent FROM " . $wpdb->prefix . "metermaid_meters m LEFT JOIN " . $wpdb->prefix . "metermaid_relationships r ON m.metermaid_meter_id=r.parent_meter_id WHERE m.metermaid_system_id=%s GROUP BY m.metermaid_meter_id ORDER BY is_parent DESC, m.name ASC, m.location ASC",
+				"SELECT m.*, r.parent_meter_id AS is_parent FROM " . $wpdb->prefix . "metermaid_meters m LEFT JOIN " . $wpdb->prefix . "metermaid_relationships r ON m.metermaid_meter_id=r.parent_meter_id WHERE m.metermaid_system_id=%s GROUP BY m.metermaid_meter_id ORDER BY is_parent DESC, m.name ASC",
 				$this->id
 			) );
 

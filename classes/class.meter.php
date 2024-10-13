@@ -4,7 +4,6 @@ class METERMAID_METER {
 	public $id;
 	public $system_id;
 	public $name;
-	public $location;
 	public $status;
 	public $contact_name;
 	public $contact_email;
@@ -37,7 +36,6 @@ class METERMAID_METER {
 		$this->id = $meter_id_or_row->metermaid_meter_id;
 		$this->system_id = $meter_id_or_row->metermaid_system_id;
 		$this->name = $meter_id_or_row->name;
-		$this->location = $meter_id_or_row->location;
 		$this->status = $meter_id_or_row->status;
 		$this->contact_name = $meter_id_or_row->contact_name;
 		$this->contact_email = $meter_id_or_row->contact_email;
@@ -51,13 +49,6 @@ class METERMAID_METER {
 	 */
 	public function __invoke() {
 		return !! $this->id;
-	}
-
-	/**
-	 * Include the location (if set) when displaying the meter name.
-	 */
-	public function display_name() {
-		return $this->name . ( $this->location ? ' (' . $this->location . ')' : '' );
 	}
 
 	public function add_reading( $reading, $when, $user_id = null ) {

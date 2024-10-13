@@ -8,7 +8,7 @@ To get started, install Metermaid and then open the "Metermaid" menu item:
 
 Click "Add Meter" to add your meters.
 
-![The "Add Meter" form. It has fields for meter name, location, parent meters, and child meters.](screenshots/add-meter.png)
+![The "Add Meter" form. It has fields for meter name, parent meters, and child meters.](screenshots/add-meter.png)
 
 Once you enter meter readings, you will see charts showing gallons per day compared across years and gallons YTD compared across years.
 
