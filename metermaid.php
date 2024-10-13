@@ -21,6 +21,8 @@ class METERMAID {
 	public static $pending_notices = [];
 
 	public static function init() {
+		global $wpdb;
+
 		add_action( 'user_register', array( 'METERMAID', 'set_default_user_role' ), 10, 2 );
 
 		add_filter( 'not_a_blog_default_page', function ( $url ) {
@@ -220,6 +222,23 @@ class METERMAID {
 		if ( isset( $_GET['metermaid_meter_id'] ) && ! isset( $_GET['metermaid_system_id'] ) ) {
 			$meter = new METERMAID_METER( $_GET['metermaid_meter_id'] );
 			$_GET['metermaid_system_id'] = $meter->system_id;
+		}
+
+		if ( isset( $_GET['metermaid_system_id'] ) && ! isset( $_GET['metermaid_meter_id'] ) ) {
+			// If the user only has access to a single meter, then redirect them to the meter detail page.
+			$accesses = $wpdb->get_results( $wpdb->prepare(
+				"SELECT *
+				FROM " . $wpdb->prefix . "metermaid_personnel
+				WHERE email=%s",
+				wp_get_current_user()->user_email
+			) );
+
+			if ( count( $accesses ) == 1 ) {
+				if ( $accesses[0]->metermaid_meter_id != 0 ) {
+					wp_safe_redirect( add_query_arg( 'metermaid_meter_id', $accesses[0]->metermaid_meter_id ) );
+					exit;
+				}
+			}
 		}
 
 		if ( ! isset( $_GET['metermaid_system_id'] ) ) {
