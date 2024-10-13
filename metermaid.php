@@ -21,6 +21,8 @@ class METERMAID {
 	public static $pending_notices = [];
 
 	public static function init() {
+		add_action( 'user_register', array( 'METERMAID', 'set_default_user_role' ), 10, 2 );
+
 		add_filter( 'not_a_blog_default_page', function ( $url ) {
 			return 'wp-admin/admin.php?page=metermaid-home';
 		} );
@@ -242,6 +244,69 @@ class METERMAID {
 		add_action( 'admin_notices', array( __CLASS__, 'admin_notices' ) );
 
 		METERMAID::process_form_submissions();
+	}
+
+	public static function set_default_user_role( $user_id, $userdata ) {
+		// If someone signs up with no invites, make them a sytem manager.
+		// If someone has an invite to manage a system, make them a system manager.
+		// If someone has an invite to view a system, make them a system viewer.
+		// If someone has an invite to manage a meter, make them a meter manager.
+		// If someone has an invite to view a meter, make them a meter viewer.
+
+		global $wpdb;
+
+		$user = new WP_User( $user_id );
+
+		if ( ! $user ) {
+			return;
+		}
+
+		$email_address = $user->user_email;
+
+		$invites = $wpdb->get_results( $wpdb->prepare(
+			"SELECT * FROM " . $wpdb->prefix . "metermaid_personnel WHERE email=%s",
+			$email_address
+		) );
+
+		if ( empty( $invites ) ) {
+			// Do nothing and leave the signup with the default role of system manager.
+		} else {
+			$priority = array(
+				'meter_viewer' => 1,
+				'meter_manager' => 2,
+				'system_viewer' => 3,
+				'system_manager' => 4,
+			);
+
+
+			$top_role = 'meter_viewer';
+
+			foreach ( $invites as $invite ) {
+				if ( $invite->metermaid_meter_id ) {
+					if ( $invite->manage ) {
+						if ( $priority['meter_manager'] > $priority[ $top_role ] ) {
+							$top_role = 'meter_manager';
+						}
+					} else {
+						if ( $priority['meter_viewer'] > $priority[ $top_role ] ) {
+							$top_role = 'meter_viewer';
+						}
+					}
+				} else if ( $invite->metermaid_system_id ) {
+					if ( $invite->manage ) {
+						if ( $priority['system_manager'] > $priority[ $top_role ] ) {
+							$top_role = 'system_manager';
+						}
+					} else {
+						if ( $priority['system_viewer'] > $priority[ $top_role ] ) {
+							$top_role = 'system_viewer';
+						}
+					}
+				}
+			}
+
+			$user->set_role( $top_role );
+		}
 	}
 
 	public static function user_has_cap( $allcaps, $caps, $args, $user ) {
