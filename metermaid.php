@@ -1185,7 +1185,7 @@ class METERMAID {
 							<?php $last_was_parent = false; ?>
 							<?php
 
-							foreach ( $system->meters as $meter ) {
+							foreach ( $meters as $meter ) {
 								if ( $meter->is_parent() ) {
 									$last_was_parent = true;
 								} else if ( $last_was_parent ) {
