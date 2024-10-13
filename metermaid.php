@@ -374,7 +374,6 @@ class METERMAID {
 							array(
 								'metermaid-add-reading',
 								'metermaid-view-meter',
-								'metermaid-delete-reading',
 								'metermaid-delete-meter',
 								'metermaid-edit-meter',
 							),
@@ -399,6 +398,20 @@ class METERMAID {
 
 						if ( ! $row ) {
 							unset( $allcaps[ $cap_to_check ] );
+						}
+					} else if ( 'metermaid-delete-reading' == $cap_to_check ) {
+						$reading_id = $args[2];
+
+						$reading = new METERMAID_READING( $reading_id );
+
+						if ( $reading() && ( $reading->added_by == get_current_user_id() ) ) {
+							// Yes, they can delete it, since they added it.
+						} else {
+							if ( $reading() && current_user_can( 'metermaid-edit-system', $meter->system_id ) ) {
+								// Yes, they can delete it, since they manage the system.
+							} else {
+								unset( $allcaps[ $cap_to_check ] );
+							}
 						}
 					}
 				}
@@ -782,16 +795,14 @@ class METERMAID {
 					wp_die();
 				}
 
-				// @todo Should meter managers only be able to delete their own readings?
-				// If so, the second arg of this should be the reading ID, not the meter.
-				if ( ! current_user_can( 'metermaid-delete-reading', $_GET['metermaid_meter_id'] ) ) {
-					echo 'You are not authorized to delete a reading for this meter.';
+				if ( ! current_user_can( 'metermaid-delete-reading', $_POST['metermaid_reading_id'] ) ) {
+					echo 'You are not authorized to delete this reading.';
 					wp_die();
 				}
 
 				$wpdb->query( $wpdb->prepare(
 					"DELETE FROM " . $wpdb->prefix . "metermaid_readings WHERE metermaid_reading_id=%s LIMIT 1",
-					$_POST['reading_id'],
+					$_POST['metermaid_reading_id'],
 				) );
 
 				$meter = new METERMAID_METER( $_GET['metermaid_meter_id'] );
@@ -1375,15 +1386,11 @@ class METERMAID {
 												?>
 												<tr>
 													<td>
-														<?php
-
-														/* todo Only allow readings to be deleted by the user that created it, or the system manager. */
-
-														if ( $reading->id && current_user_can( 'metermaid-delete-reading', $meter->id ) ) { ?>
+														<?php if ( $reading->id && current_user_can( 'metermaid-delete-reading', $reading->id ) ) { ?>
 															<form method="post" action="" onsubmit="return confirm( metermaid_i18n.reading_delete_confirm );">
 																<input type="hidden" name="metermaid_action" value="delete_reading" />
 																<input type="hidden" name="metermaid_nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-delete-reading' ) ); ?>" />
-																<input type="hidden" name="reading_id" value="<?php echo esc_attr( $reading->id ); ?>" />
+																<input type="hidden" name="metermaid_reading_id" value="<?php echo esc_attr( $reading->id ); ?>" />
 																<input type="submit" class="button button-secondary" value="Delete" />
 															</form>
 														<?php } ?>
@@ -2118,9 +2125,6 @@ class METERMAID {
 							</select>
 							<?php if ( METERMAID_SMS::is_configured() && get_option( 'METERMAID_TWILIO_PHONE_NUMBER' ) ) { ?>
 								<p class="description"><?php echo esc_html( sprintf( __( 'Enter your phone number, select your meter, and then you can log meter readings by texting the current reading to %s.' ), get_option( 'METERMAID_TWILIO_PHONE_NUMBER' ) ) ); ?></p>
-							<?php } else { ?>
-								<?php var_dump( METERMAID_SMS::is_configured() ); ?>
-								<?php var_dump( get_option( 'METERMAID_TWILIO_PHONE_NUMBER' ) ); ?>
 							<?php } ?>
 						</td>
 					</tr>
