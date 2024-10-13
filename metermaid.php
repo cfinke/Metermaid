@@ -2117,7 +2117,10 @@ class METERMAID {
 								?>
 							</select>
 							<?php if ( METERMAID_SMS::is_configured() && get_option( 'METERMAID_TWILIO_PHONE_NUMBER' ) ) { ?>
-								<p class="description"><?php echo esc_html( sprintf( __( 'Select your meter, and then you can submit meter readings by texting the current reading to %s.' ), get_option( 'METERMAID_TWILIO_PHONE_NUMBER' ) ) ); ?></p>
+								<p class="description"><?php echo esc_html( sprintf( __( 'Enter your phone number, select your meter, and then you can log meter readings by texting the current reading to %s.' ), get_option( 'METERMAID_TWILIO_PHONE_NUMBER' ) ) ); ?></p>
+							<?php } else { ?>
+								<?php var_dump( METERMAID_SMS::is_configured() ); ?>
+								<?php var_dump( get_option( 'METERMAID_TWILIO_PHONE_NUMBER' ) ); ?>
 							<?php } ?>
 						</td>
 					</tr>
