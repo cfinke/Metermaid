@@ -337,7 +337,7 @@ class METERMAID_SMS {
 				} else {
 					$meter_id = get_user_meta( $users[0]->ID, 'metermaid_meter_id', true );
 					$meter = new METERMAID_METER( $meter_id );
-					$meter->add_reading( $reading_value, METERMAID::local_timestamp( date( "Y-m-d" ), "Y-m-d" ), $users[0]->ID );
+					$meter->add_reading( $reading_value, METERMAID::local_timestamp( date( "Y-m-d H:i:s" ), "Y-m-d" ), $users[0]->ID );
 
 					$message = "Thanks! Your meter reading has been recorded.";
 				}
