@@ -316,6 +316,12 @@ class METERMAID {
 			}
 
 			$user->set_role( $top_role );
+
+			if ( count( $invites ) == 1 ) {
+				if ( $top_role == 'meter_manager' || $top_role == 'meter_viewer' ) {
+					update_user_meta( $user_id, 'metermaid_meter_id', $invites[0]->metermaid_meter_id );
+				}
+			}
 		}
 	}
 
