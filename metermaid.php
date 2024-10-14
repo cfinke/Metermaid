@@ -670,8 +670,10 @@ class METERMAID {
 				}
 
 				$wpdb->query( $wpdb->prepare(
-					"INSERT INTO " . $wpdb->prefix . "metermaid_systems SET name=%s, added=NOW(), added_by=%d",
+					"INSERT INTO " . $wpdb->prefix . "metermaid_systems SET name=%s, unit=%s, rate_interval=%d, added=NOW(), added_by=%d",
 					$_POST['metermaid_system_name'],
+					$_POST['metermaid_system_unit'],
+					$_POST['metermaid_system_rate_interval'],
 					get_current_user_id()
 				) );
 
