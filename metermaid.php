@@ -204,40 +204,23 @@ class METERMAID {
 		 * add_submenu_page() doesn't let us deep-link, so manage that redirection here.
 		 */
 		if ( count( $all_systems ) == 1 && isset( $_GET['page'] ) && 'metermaid-add-meter' === $_GET['page'] ) {
-			wp_safe_redirect( METERMAID::get_dashboard_url() . '#tab-add-meter' );
+			wp_safe_redirect( site_url( 'wp-admin/admin.php?page=metermaid-home' ) . '#tab-add-meter' );
 			exit;
 		}
 
 		if ( isset( $_GET['page'] ) && 'metermaid-add-system' === $_GET['page'] ) {
-			wp_safe_redirect( METERMAID::get_dashboard_url() . '#tab-add-system' );
+			wp_safe_redirect( site_url( 'wp-admin/admin.php?page=metermaid-home' ) . '#tab-add-system' );
 			exit;
 		}
 
 		if ( isset( $_GET['page'] ) && 'metermaid-edit-profile' === $_GET['page'] ) {
-			wp_safe_redirect( METERMAID::get_dashboard_url() . '#tab-profile' );
+			wp_safe_redirect( site_url( 'wp-admin/admin.php?page=metermaid-home' ) . '#tab-profile' );
 			exit;
 		}
 
 		if ( isset( $_GET['metermaid_meter_id'] ) && ! isset( $_GET['metermaid_system_id'] ) ) {
 			$meter = new METERMAID_METER( $_GET['metermaid_meter_id'] );
 			$_GET['metermaid_system_id'] = $meter->system_id;
-		}
-
-		if ( isset( $_GET['metermaid_system_id'] ) && ! isset( $_GET['metermaid_meter_id'] ) ) {
-			// If the user only has access to a single meter, then redirect them to the meter detail page.
-			$accesses = $wpdb->get_results( $wpdb->prepare(
-				"SELECT *
-				FROM " . $wpdb->prefix . "metermaid_personnel
-				WHERE email=%s",
-				wp_get_current_user()->user_email
-			) );
-
-			if ( count( $accesses ) == 1 ) {
-				if ( $accesses[0]->metermaid_meter_id != 0 ) {
-					wp_safe_redirect( add_query_arg( 'metermaid_meter_id', $accesses[0]->metermaid_meter_id ) );
-					exit;
-				}
-			}
 		}
 
 		if ( ! in_array( 'administrator', wp_get_current_user()->roles ) ) {
@@ -272,40 +255,6 @@ class METERMAID {
 		add_action( 'admin_notices', array( __CLASS__, 'admin_notices' ) );
 
 		METERMAID::process_form_submissions();
-	}
-
-	public static function get_dashboard_url() {
-		// If they can add a system, they should always go to the top level.
-		if ( current_user_can( 'metermaid-add-system' ) ) {
-			return site_url( 'wp-admin/admin.php?page=metermaid-home' );
-		}
-
-		// If they can't add a system, but they are a member of multiple systems, still go to the top.
-		$accessible_systems = self::systems();
-
-		if ( count( $accessible_systems ) > 1 ) {
-			return site_url( 'wp-admin/admin.php?page=metermaid-home' );
-		}
-
-		// If they can't add a system and aren't a member of any systems, then good luck to them.
-		if ( count( $accessible_systems ) == 0 ) {
-			return site_url( 'wp-admin/admin.php?page=metermaid-home' );
-		}
-
-		// If they can't add a system, are not members of more than one system, but can add a meter, they should go to the system dashboard.
-		if ( current_user_can( 'metermaid-add-meter', $accessible_systems[0]->id ) ) {
-			return site_url( 'wp-admin/admin.php?page=metermaid-home&metermaid_system_id=' . urlencode( $accessible_systems[0]->id ) );
-		}
-
-		// So they can't add a system, are a member of only one system, and can't add a meter.
-		// If they can view more than one meter, they need to go to the system detail page.
-		if ( count( $accessible_systems[0]->readable_meters ) > 1 ) {
-			return site_url( 'wp-admin/admin.php?page=metermaid-home&metermaid_system_id=' . urlencode( $accessible_systems[0]->readable_meters[0]->id ) );
-		}
-
-		// At this point, they can't add a system, are a member of one system, can't add a meter, and are a member of only one meter.
-		// Send them to the meter detail page.
-		return site_url( 'wp-admin/admin.php?page=metermaid-home&metermaid_system_id=' . urlencode( $accessible_systems[0]->id ) . '&metermaid_meter_id=' . urlencode( $accessible_systems[0]->readable_meters[0]->id ) );
 	}
 
 	public static function set_default_user_role( $user_id, $userdata ) {
@@ -1237,6 +1186,10 @@ class METERMAID {
 		global $wpdb;
 
 		$system = new METERMAID_SYSTEM( $system_id );
+
+		if ( count( $system->readable_meters ) == 1 ) {
+			return METERMAID::meter_detail_page( $system->readable_meters[0]->id );
+		}
 
 		?>
 		<div class="wrap">
