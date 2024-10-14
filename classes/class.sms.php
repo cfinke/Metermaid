@@ -327,7 +327,9 @@ class METERMAID_SMS {
 
 				$message = '';
 
-				if ( empty( $users ) ) {
+				if ( empty( $users ) && ! empty( $potential_users ) ) {
+					$message = "You haven't chosen your default meter, so you can't submit readings by text just yet. Edit your profile on metermaid.org to enable this feature.";
+				} else if ( empty( $users ) ) {
 					$message = "This phone number hasn't registered for Metermaid. Visit metermaid.org today to start logging your water meter readings.";
 				} else if ( count( $users ) > 1 ) {
 					// @todo Check if all the users have a chosen meter. If only one does, use that.
