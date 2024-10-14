@@ -986,11 +986,27 @@ class METERMAID {
 					wp_die();
 				}
 
+				$system = new METERMAID_SYSTEM( $_POST['metermaid_invite_system_id'] );
+
+				if ( ! $system() ) {
+					echo 'Invalid system ID.';
+					wp_die();
+				}
+
 				// Confirm it's a valid email.
 				// @todo
 
 				$meter_id_to_insert = $_POST['metermaid_invite_meter_id'];
 				$manage_value = 0;
+
+				$email_subject = __( 'You have been invited to use Metermaid', 'metermaid' );
+				$email_body = __( 'Hello!', 'metermaid' );
+				$email_body .= "\n\n";
+				$email_body .= sprintf(
+					__( '%s has invited you to use Metermaid, an online tool for managing water meters and meter readings.', 'metermaid' ),
+					get_user_meta( wp_get_current_user()->ID, 'nickname', true )
+				);
+				$email_body .= "\n\n";
 
 				// Confirm this user is allowed to do what they're doing and prep the data for saving.
 				if ( $_POST['metermaid_invite_access_level'] == 'system' ) {
@@ -1006,10 +1022,23 @@ class METERMAID {
 						}
 
 						$manage_value = 1;
+
+						$email_body .= sprintf( __( "You've been given access to manage this system: %s", 'metermaid' ), $system->name );
+						$email_body .= "\n\n";
+					} else {
+						$email_body .= sprintf( __( "You've been given access to view this system: %s", 'metermaid' ), $system->name );
+						$email_body .= "\n\n";
 					}
 
 					$meter_id_to_insert = 0;
 				} else if ( $_POST['metermaid_invite_access_level'] == 'meter' ) {
+					$meter = new METERMAID_METER( $_POST['metermaid_invite_meter_id'] );
+
+					if ( ! $meter() ) {
+						echo 'Invalid meter ID.';
+						wp_die();
+					}
+
 					if ( ! current_user_can( 'metermaid-invite-meter', $_POST['metermaid_invite_meter_id'] ) ) {
 						echo 'You are not authorized to invite anyone to this meter.';
 						wp_die();
@@ -1020,10 +1049,28 @@ class METERMAID {
 							echo 'You are not authorized to invite anyone to make changes to this meter, since you do not have that authority yourself.';
 							wp_die();
 						}
-					}
 
-					$manage_value = 1;
+						$email_body .= sprintf( __( "You've been given access to manage this meter: %s", 'metermaid' ), $meter->name );
+						$email_body .= "\n\n";
+
+						$manage_value = 1;
+					} else {
+						$email_body .= sprintf( __( "You've been given access to view this meter: %s", 'metermaid' ), $meter->name );
+						$email_body .= "\n\n";
+					}
 				}
+
+				$email_body .= sprintf(
+					__( 'Visit %1$s to register for free using the address that this email was sent to (%2$s).', 'metermaid' ),
+					site_url( 'wp-login.php?action=register' ),
+					$_POST['metermaid_invite_email']
+				);
+				$email_body .= "\n\n";
+				$email_body .= __( 'If you have any questions, email me at help@metermaid.org!' );
+				$email_body .= "\n\n";
+				$email_body .= 'Chris at Metermaid';
+
+				wp_mail( $_POST['metermaid_invite_email'], $email_subject, $email_body, array( 'Bcc: help@metermaid.org' ) );
 
 				$wpdb->query( $wpdb->prepare( "INSERT INTO " . $wpdb->prefix . "metermaid_personnel SET
 					email=%s,
