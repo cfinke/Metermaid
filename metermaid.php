@@ -295,28 +295,15 @@ class METERMAID {
 			return site_url( 'wp-admin/admin.php?page=metermaid-home&metermaid_system_id=' . urlencode( $accessible_systems[0]->id ) );
 		}
 
-		// So they can't add a system, are a member of only one system, and can't add a meter, check how many meters they can access.
-		$meters = $accessible_systems[0]->meters;
-		$accessible_meters = [];
-
-		foreach ( $meters as $meter ) {
-			if ( current_user_can( 'metermaid-view-meter', $meter->id ) ) {
-				$accessible_meters[] = $meter;
-
-				if ( count( $accessible_meters ) > 1 ) {
-					break;
-				}
-			}
-		}
-
+		// So they can't add a system, are a member of only one system, and can't add a meter.
 		// If they can view more than one meter, they need to go to the system detail page.
-		if ( count( $accessible_meters ) > 1 ) {
-			return site_url( 'wp-admin/admin.php?page=metermaid-home&metermaid_system_id=' . urlencode( $accessible_systems[0]->id ) );
+		if ( count( $accessible_systems[0]->readable_meters ) > 1 ) {
+			return site_url( 'wp-admin/admin.php?page=metermaid-home&metermaid_system_id=' . urlencode( $accessible_systems[0]->readable_meters[0]->id ) );
 		}
 
 		// At this point, they can't add a system, are a member of one system, can't add a meter, and are a member of only one meter.
 		// Send them to the meter detail page.
-		return site_url( 'wp-admin/admin.php?page=metermaid-home&metermaid_system_id=' . urlencode( $accessible_systems[0]->id ) . '&metermaid_meter_id=' . urlencode( $accessible_meters[0]->id ) );
+		return site_url( 'wp-admin/admin.php?page=metermaid-home&metermaid_system_id=' . urlencode( $accessible_systems[0]->id ) . '&metermaid_meter_id=' . urlencode( $accessible_systems[0]->readable_meters[0]->id ) );
 	}
 
 	public static function set_default_user_role( $user_id, $userdata ) {
@@ -1781,7 +1768,7 @@ class METERMAID {
 		<select name="<?php echo esc_attr( $field_name ); ?><?php if ( $multiple ) { ?>[]<?php } ?>"<?php if ( $multiple ) { ?> multiple<?php } ?>>
 			<?php
 
-			if ( ! $multiple && count( $system->accessible_meters ) > 1 ) {
+			if ( ! $multiple && count( $system->writeable_meters ) > 1 ) {
 				?>
 				<option value=""><?php echo esc_html( __( '-- Select Meter --', 'metermaid' ) ); ?></option>
 				<?php
@@ -1789,7 +1776,7 @@ class METERMAID {
 
 			$last_was_parent = false;
 
-			foreach ( $system->accessible_meters as $meter ) {
+			foreach ( $system->writeable_meters as $meter ) {
 				if ( in_array( $meter->id, $exclude ) ) {
 					continue;
 				}
@@ -2219,7 +2206,7 @@ class METERMAID {
 								$user_meter = get_user_meta( get_current_user_id(), 'metermaid_meter_id', true );
 
 								foreach ( $all_systems as $system ) {
-									$meters = $system->accessible_meters;
+									$meters = $system->writeable_meters;
 
 									if ( ! empty( $meters ) ) {
 										?>

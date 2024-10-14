@@ -7,7 +7,7 @@ class METERMAID_SYSTEM {
 	public $rate_interval;
 
 	private $_meters = null;
-	private $_accessible_meters = null;
+	private $_readable_meters = null;
 
 	public function __construct( $system_id_or_row = null ) {
 		global $wpdb;
@@ -62,22 +62,38 @@ class METERMAID_SYSTEM {
 			}
 
 			return $this->_meters;
-		} else if ( 'accessible_meters' == $key ) {
-			if ( ! is_null( $this->_accessible_meters ) ) {
-				return $this->_accessible_meters;
+		} else if ( 'readable_meters' == $key ) {
+			if ( ! is_null( $this->_readable_meters ) ) {
+				return $this->_readable_meters;
 			}
 
 			$meters = $this->meters;
 
-			$this->_accessible_meters = array();
+			$this->_readable_meters = array();
 
 			foreach ( $meters as $meter ) {
-				if ( current_user_can( 'metermaid-add-reading', $meter->id ) ) {
-					$this->_accessible_meters[] = $meter;
+				if ( current_user_can( 'metermaid-view-meter', $meter->id ) ) {
+					$this->_readable_meters[] = $meter;
 				}
 			}
 
-			return $this->_accessible_meters;
+			return $this->_readable_meters;
+		} else if ( 'writeable_meters' == $key ) {
+			if ( ! is_null( $this->_writeable_meters ) ) {
+				return $this->_writeable_meters;
+			}
+
+			$meters = $this->meters;
+
+			$this->_writeable_meters = array();
+
+			foreach ( $meters as $meter ) {
+				if ( current_user_can( 'metermaid-add-reading', $meter->id ) ) {
+					$this->_writeable_meters[] = $meter;
+				}
+			}
+
+			return $this->_writeable_meters;
 		}
 
 		return null;
