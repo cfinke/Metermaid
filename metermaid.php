@@ -1116,7 +1116,7 @@ class METERMAID {
 
 				<table class="wp-list-table widefat striped">
 					<thead>
-						<th><?php echo esc_html( __( 'System Name', 'metermaid' ) ); ?></th>
+						<th><?php echo esc_html( __( 'Meter', 'metermaid' ) ); ?></th>
 						<th><?php echo esc_html( __( 'Last Reading', 'metermaid' ) ); ?></th>
 						<th><?php echo esc_html( __( 'Last Reading Date', 'metermaid' ) ); ?></th>
 						<th><?php echo esc_html( sprintf( __( '%s YTD', 'metermaid' ), $system->measurement()['plural'] ) ); ?></th>
@@ -1935,7 +1935,6 @@ class METERMAID {
 		</form>
 		<?php
 	}
-
 
 	// Sort readings in reverse descending order.
 	public static function readings_sort( $a, $b ) {
