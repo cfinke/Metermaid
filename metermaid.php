@@ -22,6 +22,7 @@ class METERMAID {
 
 	public static function init() {
 		global $wpdb;
+		global $pagenow;
 
 		add_action( 'user_register', array( 'METERMAID', 'set_default_user_role' ), 10, 2 );
 
@@ -203,19 +204,17 @@ class METERMAID {
 		 * add_submenu_page() doesn't let us deep-link, so manage that redirection here.
 		 */
 		if ( count( $all_systems ) == 1 && isset( $_GET['page'] ) && 'metermaid-add-meter' === $_GET['page'] ) {
-			$redirect_url = remove_query_arg( 'page' );
-			$redirect_url = add_query_arg( 'page', 'metermaid-home', $redirect_url );
-			$redirect_url = add_query_arg( 'metermaid_system_id', $all_systems[0]->id );
-			$redirect_url .= '#tab-add-meter';
-			wp_safe_redirect( $redirect_url );
+			wp_safe_redirect( METERMAID::get_dashboard_url() . '#tab-add-meter' );
 			exit;
 		}
 
 		if ( isset( $_GET['page'] ) && 'metermaid-add-system' === $_GET['page'] ) {
-			$redirect_url = remove_query_arg( 'page' );
-			$redirect_url = add_query_arg( 'page', 'metermaid-home', $redirect_url );
-			$redirect_url .= '#tab-add-system';
-			wp_safe_redirect( $redirect_url );
+			wp_safe_redirect( METERMAID::get_dashboard_url() . '#tab-add-system' );
+			exit;
+		}
+
+		if ( isset( $_GET['page'] ) && 'metermaid-edit-profile' === $_GET['page'] ) {
+			wp_safe_redirect( METERMAID::get_dashboard_url() . '#tab-profile' );
 			exit;
 		}
 
@@ -241,17 +240,36 @@ class METERMAID {
 			}
 		}
 
-		if ( ! isset( $_GET['metermaid_system_id'] ) ) {
-			if ( count( $all_systems ) == 1 ) {
-				if ( ! current_user_can( 'metermaid-add-system' ) ) {
-					$redirect_url = add_query_arg( 'metermaid_system_id', $all_systems[0]->id );
-					wp_safe_redirect( $redirect_url );
-					exit;
+		if ( strpos( $pagenow, 'metermaid' ) !== false ) {
+			if ( ! isset( $_GET['metermaid_system_id'] ) ) {
+				if ( count( $all_systems ) == 1 ) {
+					if ( ! current_user_can( 'metermaid-add-system' ) ) {
+						wp_safe_redirect( site_url( 'wp-admin/admin.php?page=metermaid-home&metermaid_system_id=' . urlencode( $all_systems[0]->id ) ) );
+						exit;
+					}
 				}
 			}
 		}
 
-		// @todo If the user only has permissions on one meter and can't add any, redirect them to that meter.
+		if ( ! in_array( 'administrator', wp_get_current_user()->roles ) ) {
+			if ( in_array(
+				$pagenow,
+				array( 'profile.php', )
+			) ) {
+				wp_safe_redirect( site_url( 'wp-admin/admin.php?page=metermaid-home#tab-profile' ) );
+
+				exit;
+			}
+
+			if ( in_array(
+				$pagenow,
+				array( 'about.php', 'index.php', )
+			) ) {
+				wp_safe_redirect( site_url( 'wp-admin/admin.php?page=metermaid-home' ) );
+
+				exit;
+			}
+		}
 
 		add_action( 'admin_menu', array( __CLASS__, 'add_options_menu' ) );
 
@@ -263,6 +281,53 @@ class METERMAID {
 		add_action( 'admin_notices', array( __CLASS__, 'admin_notices' ) );
 
 		METERMAID::process_form_submissions();
+	}
+
+	public static function get_dashboard_url() {
+		// If they can add a system, they should always go to the top level.
+		if ( current_user_can( 'metermaid-add-system' ) ) {
+			return site_url( 'wp-admin/admin.php?page=metermaid-home' );
+		}
+
+		// If they can't add a system, but they are a member of multiple systems, still go to the top.
+		$accessible_systems = self::systems();
+
+		if ( count( $accessible_systems ) > 1 ) {
+			return site_url( 'wp-admin/admin.php?page=metermaid-home' );
+		}
+
+		// If they can't add a system and aren't a member of any systems, then good luck to them.
+		if ( count( $accessible_systems ) == 0 ) {
+			return site_url( 'wp-admin/admin.php?page=metermaid-home' );
+		}
+
+		// If they can't add a system, are not members of more than one system, but can add a meter, they should go to the system dashboard.
+		if ( current_user_can( 'metermaid-add-meter', $accessible_systems[0]->id ) ) {
+			return site_url( 'wp-admin/admin.php?page=metermaid-home&metermaid_system_id=' . urlencode( $accessible_systems[0]->id ) );
+		}
+
+		// So they can't add a system, are a member of only one system, and can't add a meter, check how many meters they can access.
+		$meters = $accessible_systems[0]->meters;
+		$accessible_meters = [];
+
+		foreach ( $meters as $meter ) {
+			if ( current_user_can( 'metermaid-view-meter', $meter->id ) ) {
+				$accessible_meters[] = $meter;
+
+				if ( count( $accessible_meters ) > 1 ) {
+					break;
+				}
+			}
+		}
+
+		// If they can view more than one meter, they need to go to the system detail page.
+		if ( count( $accessible_meters ) > 1 ) {
+			return site_url( 'wp-admin/admin.php?page=metermaid-home&metermaid_system_id=' . urlencode( $accessible_systems[0]->id ) );
+		}
+
+		// At this point, they can't add a system, are a member of one system, can't add a meter, and are a member of only one meter.
+		// Send them to the meter detail page.
+		return site_url( 'wp-admin/admin.php?page=metermaid-home&metermaid_system_id=' . urlencode( $accessible_systems[0]->id ) . '&metermaid_meter_id=' . urlencode( $accessible_meters[0]->id ) );
 	}
 
 	public static function set_default_user_role( $user_id, $userdata ) {
@@ -296,7 +361,6 @@ class METERMAID {
 				'system_viewer' => 3,
 				'system_manager' => 4,
 			);
-
 
 			$top_role = 'meter_viewer';
 
@@ -587,6 +651,15 @@ class METERMAID {
 			);
 		}
 
+		add_submenu_page(
+			'metermaid',
+			__( 'Edit Profile', 'metermaid' ),
+			__( 'Edit Profile', 'metermaid' ),
+			'metermaid',
+			'metermaid-edit-profile',
+			array( 'METERMAID', 'admin_page' ),
+			4
+		);
 		// Remove the auto-generated "Metermaid" submenu item.
 		remove_submenu_page( 'metermaid', 'metermaid' );
 	}
