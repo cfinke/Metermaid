@@ -1417,12 +1417,14 @@ class METERMAID {
 							<a href="#tab-readings" class="nav-tab" data-metermaid-tab="readings">
 								<?php echo esc_html( __( 'Readings', 'metermaid' ) ); ?>
 							</a>
-							<a href="#tab-year-chart" class="nav-tab" data-metermaid-tab="year-chart">
-								<?php echo esc_html( strtoupper( $meter->system->measurement()['rate_abbreviation'] ) ); ?>
-							</a>
-							<a href="#tab-supplement-chart" class="nav-tab" data-metermaid-tab="supplement-chart">
-								<?php echo esc_html( __( 'YTD', 'metermaid' ) ); ?>
-							</a>
+							<?php if ( count( $meter_readings ) > 1 ) { ?>
+								<a href="#tab-year-chart" class="nav-tab" data-metermaid-tab="year-chart">
+									<?php echo esc_html( sprintf( __( '%s Chart', 'metermaid' ), strtoupper( $meter->system->measurement()['rate_abbreviation'] ) ) ); ?>
+								</a>
+								<a href="#tab-supplement-chart" class="nav-tab" data-metermaid-tab="supplement-chart">
+									<?php echo esc_html( __( 'YTD Chart', 'metermaid' ) ); ?>
+								</a>
+							<?php } ?>
 							<?php if ( $meter->is_parent() ) { ?>
 								<a href="#tab-children-chart" class="nav-tab" data-metermaid-tab="children-chart"><?php echo esc_html( __( 'Children', 'metermaid' ) ); ?></a>
 							<?php } ?>
@@ -1548,12 +1550,14 @@ class METERMAID {
 									</table>
 								<?php } ?>
 							</div>
-							<div data-metermaid-tab="year-chart">
-								<?php $meter->output_year_chart(); ?>
-							</div>
-							<div data-metermaid-tab="supplement-chart">
-								<?php $meter->output_ytd_chart(); ?>
-							</div>
+							<?php if ( count( $meter_readings ) > 1 ) { ?>
+								<div data-metermaid-tab="year-chart">
+									<?php $meter->output_year_chart(); ?>
+								</div>
+								<div data-metermaid-tab="supplement-chart">
+									<?php $meter->output_ytd_chart(); ?>
+								</div>
+							<?php } ?>
 							<?php if ( $meter->is_parent() ) { ?>
 								<div data-metermaid-tab="children-chart">
 									<?php $meter->output_children_chart(); ?>
