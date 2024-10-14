@@ -240,17 +240,6 @@ class METERMAID {
 			}
 		}
 
-		if ( strpos( $pagenow, 'metermaid' ) !== false ) {
-			if ( ! isset( $_GET['metermaid_system_id'] ) ) {
-				if ( count( $all_systems ) == 1 ) {
-					if ( ! current_user_can( 'metermaid-add-system' ) ) {
-						wp_safe_redirect( site_url( 'wp-admin/admin.php?page=metermaid-home&metermaid_system_id=' . urlencode( $all_systems[0]->id ) ) );
-						exit;
-					}
-				}
-			}
-		}
-
 		if ( ! in_array( 'administrator', wp_get_current_user()->roles ) ) {
 			if ( in_array(
 				$pagenow,
@@ -1137,6 +1126,10 @@ class METERMAID {
 		}
 
 		$all_systems = self::systems();
+
+		if ( count( $all_systems ) == 1 && ! current_user_can( 'metermaid-add-system' ) ) {
+			return self::system_detail_page( $all_systems[0]->id );
+		}
 
 		?>
 		<div class="wrap">
