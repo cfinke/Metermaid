@@ -1195,7 +1195,7 @@ class METERMAID {
 
 		$system = new METERMAID_SYSTEM( $system_id );
 
-		if ( count( $system->readable_meters ) == 1 ) {
+		if ( ! current_user_can( 'metermaid-add-meter', $system_id ) && count( $system->readable_meters ) == 1 ) {
 			return METERMAID::meter_detail_page( $system->readable_meters[0]->id );
 		}
 
