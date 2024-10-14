@@ -404,7 +404,7 @@ class METERMAID {
 						if ( $reading() && ( $reading->added_by == get_current_user_id() ) ) {
 							// Yes, they can delete it, since they added it.
 						} else {
-							if ( $reading() && current_user_can( 'metermaid-edit-system', $meter->system_id ) ) {
+							if ( $reading() && current_user_can( 'metermaid-edit-system', $reading->meter->system_id ) ) {
 								// Yes, they can delete it, since they manage the system.
 							} else {
 								unset( $allcaps[ $cap_to_check ] );
