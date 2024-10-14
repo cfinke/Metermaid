@@ -266,6 +266,8 @@ class METERMAID {
 			add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_scripts' ) );
 		}
 
+		add_action( 'login_enqueue_scripts', array( __CLASS__, 'login_enqueue_scripts' ) );
+
 		add_action( 'admin_title', array( __CLASS__, 'edit_page_title' ) );
 		add_action( 'admin_notices', array( __CLASS__, 'admin_notices' ) );
 
@@ -657,6 +659,11 @@ class METERMAID {
 		wp_localize_script( 'metermaid-admin.js', 'metermaid_i18n', $metermaid_i18n );
 
 		wp_enqueue_script( 'metermaid-admin.js' );
+	}
+
+	public static function login_enqueue_scripts() {
+		wp_register_style( 'metermaid-login-css', plugin_dir_url( __FILE__ ) . '/css/metermaid-login.css', array(), time() );
+		wp_enqueue_style( 'metermaid-login-css' );
 	}
 
 	public static function process_form_submissions() {
