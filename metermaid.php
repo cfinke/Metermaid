@@ -1126,6 +1126,7 @@ class METERMAID {
 						<th><?php echo esc_html( __( 'Last Reading', 'metermaid' ) ); ?></th>
 						<th><?php echo esc_html( __( 'Last Reading Date', 'metermaid' ) ); ?></th>
 						<th><?php echo esc_html( sprintf( __( '%s YTD', 'metermaid' ), $system->measurement()['plural'] ) ); ?></th>
+						<th><?php echo esc_html( sprintf( __( '%1$s in %2$s', 'metermaid' ), $system->measurement()['plural'], date( "Y" ) - 1 ) ); ?></th>
 						<th>
 							<?php echo esc_html( sprintf( __( '%s All Time', 'metermaid' ), strtoupper( $system->measurement()['rate_abbreviation'] ) ) ); ?>
 						</th>
@@ -1165,6 +1166,7 @@ class METERMAID {
 									<?php } ?>
 								</td>
 								<td><?php echo esc_html( number_format( $meter->gallons_ytd() ?? 0 ) ); ?></td>
+								<td><?php echo esc_html( number_format( $meter->gallons_last_year() ?? 0 ) ); ?></td>
 								<td>
 									<?php if ( count( $readings ) > 1 ) { ?>
 										<?php echo esc_html(
@@ -1277,6 +1279,8 @@ class METERMAID {
 							<th><?php echo esc_html( __( 'Meter', 'metermaid' ) ); ?></th>
 							<th><?php echo esc_html( __( 'Last Reading', 'metermaid' ) ); ?></th>
 							<th><?php echo esc_html( __( 'Last Reading Date', 'metermaid' ) ); ?></th>
+							<th><?php echo esc_html( sprintf( __( '%s YTD', 'metermaid' ), $system->measurement()['plural'] ) ); ?></th>
+							<th><?php echo esc_html( sprintf( __( '%1$s in %2$s', 'metermaid' ), $system->measurement()['plural'], date( "Y" ) - 1 ) ); ?></th>
 							<th>
 								<?php echo esc_html( sprintf( __( '%s All Time', 'metermaid' ), strtoupper( $system->measurement()['rate_abbreviation'] ) ) ); ?>
 							</th>
@@ -1321,6 +1325,8 @@ class METERMAID {
 											<?php echo esc_html( date( get_option( 'date_format' ), strtotime( $readings[0]->reading_date ) ) ); ?>
 										<?php } ?>
 									</td>
+									<td><?php echo esc_html( number_format( $meter->gallons_ytd() ?? 0 ) ); ?></td>
+									<td><?php echo esc_html( number_format( $meter->gallons_last_year() ?? 0 ) ); ?></td>
 									<td>
 										<?php if ( count( $readings ) > 1 ) { ?>
 											<?php echo esc_html(

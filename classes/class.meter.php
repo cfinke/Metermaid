@@ -684,6 +684,68 @@ class METERMAID_METER {
 		return null;
 	}
 
+	public function gallons_last_year() {
+		$this_january_real_reading = $this->estimate_real_reading_at_date( date( "Y" ) . "-01-01" );
+
+		$last_january_real_reading = $this->estimate_real_reading_at_date( ( date( "Y" ) - 1 ) . "-01-01" );
+
+		if ( $this_january_real_reading !== false && $last_january_real_reading !== false ) {
+			return $this_january_real_reading - $last_january_real_reading;
+		}
+
+		if ( $this_january_real_reading !== false ) {
+			// If we didn't get a reading from last January but we did from this one, then all of the gallons happened in that year.
+			return $this_january_real_reading;
+		}
+
+		return false;
+	}
+
+	/**
+	 * $date must be Y-m-d
+	 */
+	public function estimate_real_reading_at_date( $date ) {
+		$date_time = strtotime( $date );
+
+		$readings = $this->readings();
+
+		$last_reading = null;
+
+		foreach ( $readings as $reading ) {
+			if ( $reading->reading_date == $date ) {
+				// We lucked out and found the exact date.
+				return $reading->real_reading;
+			}
+
+			if ( $reading->reading_date < $date ) {
+				// This is where the magic happens.
+				if ( ! $last_reading ) {
+					// The most recent reading was still before this date.
+					// We could extrapolate based on the next reading X days out...
+					return false;
+				} else {
+					$reading_before = $reading;
+					$reading_after = $last_reading;
+
+					$days_before = round( ( $date_time - strtotime( $reading_before->reading_date ) ) / 60 / 60 / 24 );
+
+					$after_time = strtotime( $reading_after->reading_date );
+
+					$days_after = round( ( $after_time - $date_time ) / 60 / 60 / 24 );
+
+					$gallon_difference = $reading_after->real_reading - $reading_before->real_reading;
+					$estimated_gallons = $reading_before->real_reading + ( $gallon_difference * ( $days_before / ( $days_before + $days_after ) ) );
+
+					return $estimated_gallons;
+				}
+			}
+
+			$last_reading = $reading;
+		}
+
+		return false;
+	}
+
 	public static function statuses() {
 		return array(
 			METERMAID_STATUS_ACTIVE => __( 'Active', 'metermaid' ),
