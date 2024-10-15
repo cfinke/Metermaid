@@ -736,7 +736,7 @@ class METERMAID_METER {
 					$gallon_difference = $reading_after->real_reading - $reading_before->real_reading;
 					$estimated_gallons = $reading_before->real_reading + ( $gallon_difference * ( $days_before / ( $days_before + $days_after ) ) );
 
-					return $estimated_gallons;
+					return round( $estimated_gallons );
 				}
 			}
 
