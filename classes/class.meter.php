@@ -57,8 +57,9 @@ class METERMAID_METER {
 		$reading_int = intval( str_replace( ',', '', $reading ) );
 		$when = date( "Y-m-d", strtotime( $when ) );
 
+		// @todo Don't allow one user to overwrite another user's reading.
 		$wpdb->query( $wpdb->prepare(
-			"INSERT INTO " . $wpdb->prefix . "metermaid_readings SET meter_id=%s, reading=%d, reading_date=%s, added=NOW(), added_by=%d ON DUPLICATE KEY UPDATE reading=VALUES(reading)",
+			"INSERT INTO " . $wpdb->prefix . "metermaid_readings SET metermaid_meter_id=%s, reading=%d, reading_date=%s, added=NOW(), added_by=%d ON DUPLICATE KEY UPDATE reading=VALUES(reading), added=NOW()",
 			$this->id,
 			$reading_int,
 			$when,
@@ -81,7 +82,7 @@ class METERMAID_METER {
 		}
 
 		$readings = $wpdb->get_results( $wpdb->prepare(
-			"SELECT * FROM " . $wpdb->prefix . "metermaid_readings WHERE meter_id=%s ORDER BY reading_date DESC",
+			"SELECT * FROM " . $wpdb->prefix . "metermaid_readings WHERE metermaid_meter_id=%s ORDER BY reading_date DESC",
 			$this->id
 		) );
 
@@ -607,7 +608,7 @@ class METERMAID_METER {
 		global $wpdb;
 
 		$all_readings = $wpdb->get_results( $wpdb->prepare(
-			"SELECT * FROM " . $wpdb->prefix . "metermaid_readings WHERE meter_id=%s ORDER BY reading_date ASC",
+			"SELECT * FROM " . $wpdb->prefix . "metermaid_readings WHERE metermaid_meter_id=%s ORDER BY reading_date ASC",
 			$this->id
 		) );
 

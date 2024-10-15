@@ -491,30 +491,30 @@ class METERMAID {
 		$wpdb->query( "CREATE TABLE IF NOT EXISTS ".$wpdb->prefix."metermaid_readings
 			(
 				metermaid_reading_id bigint NOT NULL AUTO_INCREMENT,
-				meter_id bigint NOT NULL,
+				metermaid_meter_id bigint NOT NULL,
 				reading int NOT NULL,
 				real_reading int NOT NULL,
 				reading_date date NOT NULL,
 				added DATETIME,
 				added_by VARCHAR(100),
 				PRIMARY KEY (metermaid_reading_id),
-				INDEX meter_id (meter_id),
-				UNIQUE KEY reading_date (reading_date, meter_id)
+				INDEX metermaid_meter_id (metermaid_meter_id),
+				UNIQUE KEY reading_date (reading_date, metermaid_meter_id)
 			) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
 		);
 
 		$wpdb->query( "CREATE TABLE IF NOT EXISTS ".$wpdb->prefix."metermaid_supplements
 			(
 				metermaid_supplement_id bigint NOT NULL AUTO_INCREMENT,
-				meter_id bigint NOT NULL,
+				metermaid_meter_id bigint NOT NULL,
 				amount int NOT NULL,
 				supplement_date date NOT NULL,
 				note TEXT,
 				added DATETIME,
 				added_by VARCHAR(100),
 				PRIMARY KEY (metermaid_supplement_id),
-				INDEX meter_id (meter_id),
-				UNIQUE KEY supplement_date (supplement_date, meter_id)
+				INDEX metermaid_meter_id (metermaid_meter_id),
+				UNIQUE KEY supplement_date (supplement_date, metermaid_meter_id)
 			) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
 		);
 
@@ -692,7 +692,7 @@ class METERMAID {
 				$reading_int = intval( str_replace( ',', '', $_POST['metermaid_reading'] ) );
 
 				$wpdb->query( $wpdb->prepare(
-					"INSERT INTO " . $wpdb->prefix . "metermaid_readings SET meter_id=%s, reading=%d, reading_date=%s, added=NOW(), added_by=%d ON DUPLICATE KEY UPDATE reading=VALUES(reading)",
+					"INSERT INTO " . $wpdb->prefix . "metermaid_readings SET metermaid_meter_id=%s, reading=%d, reading_date=%s, added=NOW(), added_by=%d ON DUPLICATE KEY UPDATE reading=VALUES(reading)",
 					$_POST['metermaid_meter_id'],
 					$reading_int,
 					$_POST['metermaid_reading_date'],
@@ -753,31 +753,31 @@ class METERMAID {
 					wp_die();
 				}
 
-				if ( ! current_user_can( 'metermaid-delete-meter', $_POST['meter_id'] ) ) {
+				if ( ! current_user_can( 'metermaid-delete-meter', $_POST['metermaid_meter_id'] ) ) {
 					echo 'You are not authorized to delete this meter.';
 					wp_die();
 				}
 
 				$wpdb->query( $wpdb->prepare(
 					"DELETE FROM " . $wpdb->prefix . "metermaid_meters WHERE metermaid_meter_id=%s LIMIT 1",
-					$_POST['meter_id'],
+					$_POST['metermaid_meter_id'],
 				) );
 
 				$wpdb->query( $wpdb->prepare(
-					"DELETE FROM " . $wpdb->prefix . "metermaid_readings WHERE meter_id=%s",
-					$_POST['meter_id'],
+					"DELETE FROM " . $wpdb->prefix . "metermaid_readings WHERE metermaid_meter_id=%s",
+					$_POST['metermaid_meter_id'],
 				) );
 
 				$wpdb->query( $wpdb->prepare(
 					"DELETE FROM " . $wpdb->prefix . "metermaid_relationships WHERE parent_meter_id=%s OR child_meter_id=%s",
-					$_POST['meter_id'],
-					$_POST['meter_id']
+					$_POST['metermaid_meter_id'],
+					$_POST['metermaid_meter_id']
 				) );
 
 				/* // Is there value in keeping around the personnel entries?
 				$wpdb->query( $wpdb->prepare(
-					"DELETE FROM " . $wpdb->prefix . "metermaid_personnel WHERE meter_id=%s",
-					$_POST['meter_id']
+					"DELETE FROM " . $wpdb->prefix . "metermaid_personnel WHERE metermaid_meter_id=%s",
+					$_POST['metermaid_meter_id']
 				) );
 				*/
 
@@ -853,7 +853,7 @@ class METERMAID {
 				$amount_int = intval( str_replace( ',', '', $_POST['metermaid_supplement_amount'] ) );
 
 				$wpdb->query( $wpdb->prepare(
-					"INSERT INTO " . $wpdb->prefix . "metermaid_supplements SET meter_id=%s, amount=%d, supplement_date=%s, note=%s, added=NOW(), added_by=%d ON DUPLICATE KEY UPDATE amount=VALUES(amount)",
+					"INSERT INTO " . $wpdb->prefix . "metermaid_supplements SET metermaid_meter_id=%s, amount=%d, supplement_date=%s, note=%s, added=NOW(), added_by=%d ON DUPLICATE KEY UPDATE amount=VALUES(amount)",
 					$_POST['metermaid_meter_id'],
 					$amount_int,
 					$_POST['metermaid_supplement_date'],
@@ -1143,7 +1143,7 @@ class METERMAID {
 							}
 
 							$readings = $wpdb->get_results( $wpdb->prepare(
-								"SELECT * FROM " . $wpdb->prefix . "metermaid_readings WHERE meter_id=%s ORDER BY reading_date DESC",
+								"SELECT * FROM " . $wpdb->prefix . "metermaid_readings WHERE metermaid_meter_id=%s ORDER BY reading_date DESC",
 								$meter->id
 							) );
 
@@ -1290,7 +1290,7 @@ class METERMAID {
 								}
 
 								$readings = $wpdb->get_results( $wpdb->prepare(
-									"SELECT * FROM " . $wpdb->prefix . "metermaid_readings WHERE meter_id=%s ORDER BY reading_date DESC",
+									"SELECT * FROM " . $wpdb->prefix . "metermaid_readings WHERE metermaid_meter_id=%s ORDER BY reading_date DESC",
 									$meter->id
 								) );
 
@@ -1301,7 +1301,7 @@ class METERMAID {
 											<form method="post" action="" onsubmit="return confirm( metermaid_i18n.meter_delete_confirm );">
 												<input type="hidden" name="metermaid_action" value="delete_meter" />
 												<input type="hidden" name="metermaid_nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-delete-meter' ) ); ?>" />
-												<input type="hidden" name="meter_id" value="<?php echo esc_attr( $meter->id ); ?>" />
+												<input type="hidden" name="metermaid_meter_id" value="<?php echo esc_attr( $meter->id ); ?>" />
 												<input type="submit" class="button button-secondary" value="<?php echo esc_attr( __( 'Delete Meter', 'metermaid' ) ); ?>" />
 											</form>
 										<?php } ?>
@@ -1570,7 +1570,7 @@ class METERMAID {
 				<?php
 
 				$supplements = $wpdb->get_results( $wpdb->prepare(
-					"SELECT * FROM " . $wpdb->prefix . "metermaid_supplements WHERE meter_id=%d ORDER BY supplement_date DESC",
+					"SELECT * FROM " . $wpdb->prefix . "metermaid_supplements WHERE metermaid_meter_id=%d ORDER BY supplement_date DESC",
 					$meter->id
 				) );
 				$children_readings = $meter->children_readings();
