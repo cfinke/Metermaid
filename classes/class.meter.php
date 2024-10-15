@@ -746,6 +746,35 @@ class METERMAID_METER {
 		return false;
 	}
 
+	public function estimate_real_reading_on_this_date_last_year() {
+		// "This date" is the date of the last meter reading.
+		$readings = $this->readings();
+
+		if ( count( $readings ) <= 1 ) {
+			return null;
+		}
+
+		$date = $readings[0]->reading_date;
+		$date_parts = explode( "-", $date );
+		$last_year_today = $date_parts[0] - 1 . "-" . $date_parts[1] . "-" . $date_parts[2];
+		$last_year_january = $date_parts[0] - 1 . "-01-01";
+
+		$last_year_today_real_reading = $this->estimate_real_reading_at_date( $last_year_today );
+		$last_january_real_reading = $this->estimate_real_reading_at_date( $last_year_january );
+
+		if ( $last_year_today_real_reading !== false && $last_january_real_reading !== false ) {
+			return $last_year_today_real_reading - $last_january_real_reading;
+		}
+
+		if ( $last_year_today_real_reading !== false ) {
+			// If we didn't get a reading from last January but we did from this one, then all of the gallons happened in that year.
+			return $last_year_today_real_reading;
+		}
+
+		return false;
+
+	}
+
 	public static function statuses() {
 		return array(
 			METERMAID_STATUS_ACTIVE => __( 'Active', 'metermaid' ),

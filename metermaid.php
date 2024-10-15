@@ -1120,77 +1120,7 @@ class METERMAID {
 			<?php foreach ( $all_systems as $system ) { ?>
 				<h2 class="wp-heading-inline"><a href="<?php echo esc_attr( add_query_arg( 'metermaid_system_id', $system->id ) ); ?>"><?php echo esc_html( $system->name ); ?></a></h2>
 
-				<table class="wp-list-table widefat striped">
-					<thead>
-						<th><?php echo esc_html( __( 'Meter', 'metermaid' ) ); ?></th>
-						<th><?php echo esc_html( __( 'Last Reading', 'metermaid' ) ); ?></th>
-						<th><?php echo esc_html( __( 'Last Reading Date', 'metermaid' ) ); ?></th>
-						<th><?php echo esc_html( sprintf( __( '%s YTD', 'metermaid' ), $system->measurement()['plural'] ) ); ?></th>
-						<th><?php echo esc_html( sprintf( __( '%1$s in %2$s', 'metermaid' ), $system->measurement()['plural'], date( "Y" ) - 1 ) ); ?></th>
-						<th>
-							<?php echo esc_html( sprintf( __( '%s All Time', 'metermaid' ), strtoupper( $system->measurement()['rate_abbreviation'] ) ) ); ?>
-						</th>
-					</thead>
-					<tbody>
-						<?php $last_was_parent = false; ?>
-						<?php
-
-						foreach ( $system->meters as $meter ) {
-							if ( ! current_user_can( 'metermaid-view-meter', $meter->id ) ) {
-								continue;
-							}
-
-							if ( $meter->is_parent() ) {
-								$last_was_parent = true;
-							} else if ( $last_was_parent ) {
-								?><tr><td colspan="100"><hr /></td></tr><?php
-								$last_was_parent = false;
-							}
-
-							$readings = $wpdb->get_results( $wpdb->prepare(
-								"SELECT * FROM " . $wpdb->prefix . "metermaid_readings WHERE metermaid_meter_id=%s ORDER BY reading_date DESC",
-								$meter->id
-							) );
-
-							?>
-							<tr>
-								<td><a href="<?php echo esc_url( add_query_arg( 'metermaid_meter_id', $meter->id ) ); ?>"><?php echo esc_html( $meter->name ?: __( '[Unnamed]' ) ); ?></a></td>
-								<td>
-									<?php if ( ! empty( $readings ) ) { ?>
-										<?php echo esc_html( number_format( $readings[0]->reading, 0 ) ); ?>
-									<?php } ?>
-								</td>
-								<td>
-									<?php if ( ! empty( $readings ) ) { ?>
-										<?php echo esc_html( date( get_option( 'date_format' ), strtotime( $readings[0]->reading_date ) ) ); ?>
-									<?php } ?>
-								</td>
-								<td><?php echo esc_html( number_format( $meter->gallons_ytd() ?? 0 ) ); ?></td>
-								<td><?php echo esc_html( number_format( $meter->gallons_last_year() ?? 0 ) ); ?></td>
-								<td>
-									<?php if ( count( $readings ) > 1 ) { ?>
-										<?php echo esc_html(
-											number_format(
-												round(
-													( $readings[0]->real_reading - $readings[ count( $readings ) - 1 ]->real_reading ) // total gallons
-													/
-													(
-														(
-															  strtotime( $readings[0]->reading_date )
-															- strtotime( $readings[ count( $readings ) - 1 ]->reading_date )
-														)
-														/ ( 24 * 60 * 60 )
-													) // total days between first and last readings
-												),
-												0
-											)
-										); ?>
-									<?php } ?>
-								</td>
-							</tr>
-						<?php } ?>
-					</tbody>
-				</table>
+				<?php $system->display_meter_table( false ); ?>
 			<?php } ?>
 		</div>
 		<?php
@@ -1209,7 +1139,7 @@ class METERMAID {
 		<div class="wrap">
 			<?php
 
-			if ( ! $system ) {
+			if ( ! $system() ) {
 				?><h1><?php echo esc_html( __( 'System Not Found', 'metermaid' ) ); ?></h1><?php
 			} else {
 				?>
@@ -1259,99 +1189,7 @@ class METERMAID {
 					</div>
 				</div>
 
-				<?php
-
-				$meters = [];
-
-				foreach ( $system->meters as $meter ) {
-					if ( ! current_user_can( 'metermaid-view-meter', $meter->id ) ) {
-						continue;
-					}
-
-					$meters[] = $meter;
-				}
-
-				if ( ! empty( $meters ) ) {
-					?>
-					<table class="wp-list-table widefat striped">
-						<thead>
-							<th></th>
-							<th><?php echo esc_html( __( 'Meter', 'metermaid' ) ); ?></th>
-							<th><?php echo esc_html( __( 'Last Reading', 'metermaid' ) ); ?></th>
-							<th><?php echo esc_html( __( 'Last Reading Date', 'metermaid' ) ); ?></th>
-							<th><?php echo esc_html( sprintf( __( '%s YTD', 'metermaid' ), $system->measurement()['plural'] ) ); ?></th>
-							<th><?php echo esc_html( sprintf( __( '%1$s in %2$s', 'metermaid' ), $system->measurement()['plural'], date( "Y" ) - 1 ) ); ?></th>
-							<th>
-								<?php echo esc_html( sprintf( __( '%s All Time', 'metermaid' ), strtoupper( $system->measurement()['rate_abbreviation'] ) ) ); ?>
-							</th>
-						</thead>
-						<tbody>
-							<?php $last_was_parent = false; ?>
-							<?php
-
-							foreach ( $meters as $meter ) {
-								if ( $meter->is_parent() ) {
-									$last_was_parent = true;
-								} else if ( $last_was_parent ) {
-									?><tr><td colspan="100"><hr /></td></tr><?php
-									$last_was_parent = false;
-								}
-
-								$readings = $wpdb->get_results( $wpdb->prepare(
-									"SELECT * FROM " . $wpdb->prefix . "metermaid_readings WHERE metermaid_meter_id=%s ORDER BY reading_date DESC",
-									$meter->id
-								) );
-
-								?>
-								<tr>
-									<td>
-										<?php if ( current_user_can( 'metermaid-delete-meter', $meter->id ) ) { ?>
-											<form method="post" action="" onsubmit="return confirm( metermaid_i18n.meter_delete_confirm );">
-												<input type="hidden" name="metermaid_action" value="delete_meter" />
-												<input type="hidden" name="metermaid_nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-delete-meter' ) ); ?>" />
-												<input type="hidden" name="metermaid_meter_id" value="<?php echo esc_attr( $meter->id ); ?>" />
-												<input type="submit" class="button button-secondary" value="<?php echo esc_attr( __( 'Delete Meter', 'metermaid' ) ); ?>" />
-											</form>
-										<?php } ?>
-									</td>
-									<td><a href="<?php echo esc_url( add_query_arg( 'metermaid_meter_id', $meter->id ) ); ?>"><?php echo esc_html( $meter->name ?: __( '[Unnamed]' ) ); ?></a></td>
-									<td>
-										<?php if ( ! empty( $readings ) ) { ?>
-											<?php echo esc_html( number_format( $readings[0]->reading, 0 ) ); ?>
-										<?php } ?>
-									</td>
-									<td>
-										<?php if ( ! empty( $readings ) ) { ?>
-											<?php echo esc_html( date( get_option( 'date_format' ), strtotime( $readings[0]->reading_date ) ) ); ?>
-										<?php } ?>
-									</td>
-									<td><?php echo esc_html( number_format( $meter->gallons_ytd() ?? 0 ) ); ?></td>
-									<td><?php echo esc_html( number_format( $meter->gallons_last_year() ?? 0 ) ); ?></td>
-									<td>
-										<?php if ( count( $readings ) > 1 ) { ?>
-											<?php echo esc_html(
-												number_format(
-													round(
-														( $readings[0]->real_reading - $readings[ count( $readings ) - 1 ]->real_reading ) // total gallons
-														/
-														(
-															(
-																  strtotime( $readings[0]->reading_date )
-																- strtotime( $readings[ count( $readings ) - 1 ]->reading_date )
-															)
-															/ ( 24 * 60 * 60 )
-														) // total days between first and last readings
-													),
-													0
-												)
-											); ?>
-										<?php } ?>
-									</td>
-								</tr>
-							<?php } ?>
-						</tbody>
-					</table>
-				<?php } ?>
+				<?php $system->display_meter_table( true ); ?>
 			<?php } ?>
 		</div>
 		<?php
