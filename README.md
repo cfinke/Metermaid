@@ -4,11 +4,11 @@ Metermaid is a WordPress plugin that creates a dashboard for tracking water mete
 
 To get started, install Metermaid and then open the "Metermaid" menu item:
 
-![The two main forms on the Metermaid dashboard: "Add reading" and "Settings"](screenshots/dashboard.png)
+![The Metermaid dashboard](screenshots/dashboard.png)
 
 Click "Add Meter" to add your meters.
 
-![The "Add Meter" form. It has fields for meter name, parent meters, and child meters.](screenshots/add-meter.png)
+![The "Add Meter" form. It has fields for meter name, contact info, and parent meters and child meters if you've already added other meters.](screenshots/add-meter.png)
 
 Once you enter meter readings, you will see charts showing gallons per day compared across years and gallons YTD compared across years.
 
