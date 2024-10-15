@@ -34,10 +34,15 @@
 /**
  * Hide various UI elements that are not useful in this single-plugin context.
  */
-#wpadminbar > * {
-	display: none !important;
-}
 
 #adminmenu {
 	margin-top: 0 !important;
+}
+
+#wp-admin-bar-wp-logo {
+	display: none;
+}
+
+#wp-admin-bar-site-name .ab-sub-wrapper {
+	display: none !important;
 }
