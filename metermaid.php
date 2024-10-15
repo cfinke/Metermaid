@@ -34,6 +34,9 @@ class METERMAID {
 
 		$role = get_role( 'administrator' );
 		$role->add_cap( 'metermaid', true );
+
+		$role->add_cap( 'metermaid-system-delete', true );
+
 		$role->add_cap( 'metermaid-edit-settings', true );
 		$role->add_cap( 'metermaid-add-system', true );
 		$role->add_cap( 'metermaid-access-system', true );
@@ -57,6 +60,9 @@ class METERMAID {
 				'read' => true,
 
 				'metermaid' => true,
+
+				'metermaid-system-delete' => true,
+
 				'metermaid-add-system' => true,
 				'metermaid-access-system' => true,
 				'metermaid-edit-system' => true,
@@ -76,6 +82,9 @@ class METERMAID {
 		$role = get_role( 'multisystem_manager' );
 		$role->add_cap( 'read', true );
 		$role->add_cap( 'metermaid', true );
+
+		$role->add_cap( 'metermaid-system-delete', true );
+
 		$role->add_cap( 'metermaid-add-system', true );
 		$role->add_cap( 'metermaid-access-system', true );
 		$role->add_cap( 'metermaid-edit-system', true );
@@ -97,6 +106,9 @@ class METERMAID {
 				'read' => true,
 
 				'metermaid' => true,
+
+				'metermaid-system-delete' => true,
+
 				'metermaid-access-system' => true,
 				'metermaid-edit-system' => true,
 				'metermaid-add-meter' => true,
@@ -115,6 +127,9 @@ class METERMAID {
 		$role = get_role( 'system_manager' );
 		$role->add_cap( 'read', true );
 		$role->add_cap( 'metermaid', true );
+
+		$role->add_cap( 'metermaid-system-delete', true );
+
 		$role->add_cap( 'metermaid-access-system', true );
 		$role->add_cap( 'metermaid-edit-system', true );
 		$role->add_cap( 'metermaid-add-meter', true );
@@ -410,6 +425,16 @@ class METERMAID {
 								unset( $allcaps[ $cap_to_check ] );
 							}
 						}
+					} else if ( 'metermaid-system-delete' == $cap_to_check ) {
+						// They can only delete a system that they added.
+
+						$system_id = $args[2];
+
+						$system = new METERMAID_SYSTEM( $system_id );
+
+						if ( ! $system() || $system->added_by != get_current_user_id() ) {
+							unset( $allcaps[ $cap_to_check ] );
+						}
 					}
 				}
 			}
@@ -609,6 +634,7 @@ class METERMAID {
 			'meter_delete_confirm' => __( 'Are you sure you want to delete this meter?', 'metermaid' ),
 			'reading_delete_confirm' => __( 'Are you sure you want to delete this reading?', 'metermaid' ),
 			'supplement_delete_confirm' => __( 'Are you sure you want to delete this supplement?', 'metermaid' ),
+			'system_delete_confirm' => __( 'Are you sure you want to delete this system? All meters and readings in it will be deleted as well.', 'metermaid' ),
 		);
 
 		wp_localize_script( 'metermaid-admin.js', 'metermaid_i18n', $metermaid_i18n );
@@ -1033,6 +1059,52 @@ class METERMAID {
 				// @todo If the user already has an account, notify them that they have access.
 				// If they don't email and invite them.
 				METERMAID::save_pending_notice( 'success', sprintf( __( 'Invite sent to %s', 'metermaid' ), $_POST['metermaid_invite_email'] ) );
+			} else if ( 'delete_system' == $_POST['metermaid_action'] ) {
+				if ( ! wp_verify_nonce( $_POST['metermaid_nonce'], 'metermaid-delete-system' ) ) {
+					echo 'You are not authorized to delete a system.';
+					wp_die();
+				}
+
+				if ( ! current_user_can( 'metermaid-system-delete', $_POST['metermaid_system_id'] ) ) {
+					echo 'You are not authorized to delete this system.';
+					wp_die();
+				}
+
+				$system = new METERMAID_SYSTEM( $_POST['metermaid_system_id'] );
+
+				if ( ! $system() ) {
+					echo 'Invalid system ID.';
+					wp_die();
+				}
+
+				$meter_ids = $wpdb->get_col( $wpdb->prepare(
+					"SELECT metermaid_meter_id
+					FROM " . $wpdb->prefix . "metermaid_meters
+					WHERE metermaid_system_id=%d",
+					$_POST['metermaid_system_id']
+				) );
+
+				foreach ( $meter_ids as $meter_id ) {
+					// Delete all readings.
+					$wpdb->query( $wpdb->prepare( "DELETE FROM " . $wpdb->prefix . "metermaid_readings WHERE metermaid_meter_id=%d", $meter_id ) );
+
+					// Delete any parent/child relationships.
+					$wpdb->query( $wpdb->prepare( "DELETE FROM " . $wpdb->prefix . "metermaid_relationships WHERE parent_meter_id=%d OR child_meter_id=%d", $meter_id, $meter_id ) );
+
+					// Delete any supplements.
+					$wpdb->query( $wpdb->prepare( "DELETE FROM " . $wpdb->prefix . "metermaid_supplements WHERE parent_meter_id=%d OR child_meter_id=%d", $meter_id, $meter_id ) );
+
+					// Delete the meter.
+					$wpdb->query( $wpdb->prepare( "DELETE FROM " . $wpdb->prefix . "metermaid_meters WHERE metermaid_meter_id=%d", $meter_id ) );
+				}
+
+				// Delete any personnel.
+				$wpdb->query( $wpdb->prepare( "DELETE FROM " . $wpdb->prefix . "metermaid_personnel WHERE metermaid_system_id=%d", $_POST['metermaid_system_id'] ) );
+
+				// Delete the system entry.
+				$wpdb->query( $wpdb->prepare( "DELETE FROM " . $wpdb->prefix . "metermaid_systems WHERE metermaid_system_id=%d LIMIT 1", $_POST['metermaid_system_id'] ) );
+
+				METERMAID::save_pending_notice( 'success', __( 'The system was deleted.', 'metermaid' ) );
 			}
 		}
 	}
@@ -1674,6 +1746,26 @@ class METERMAID {
 				</tr>
 			</table>
 		</form>
+		<?php if ( $system() && current_user_can( 'metermaid-system-delete', $system->id ) ) { ?>
+			<hr />
+			<table class="form-table">
+				<tr>
+					<th scope="row"><?php echo esc_html( __( 'Delete This System', 'metermaid' ) ); ?></th>
+					<td>
+						<p><?php echo esc_html( __( 'Deleting this system will remove all of its meters and its readings.' ) ); ?></p>
+
+						<form method="post" action="<?php echo esc_attr( site_url( 'wp-admin/admin.php?page=metermaid-home' ) ); ?>" onsubmit="return confirm( metermaid_i18n.system_delete_confirm );">
+							<input type="hidden" name="metermaid_action" value="delete_system" />
+							<input type="hidden" name="metermaid_system_id" value="<?php echo esc_attr( $system_id ); ?>" />
+							<input type="hidden" name="metermaid_nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-delete-system' ) ); ?>" />
+							<p>
+								<input type="submit" class="button button-delete" value="<?php echo esc_attr( sprintf( __( 'Delete %s', 'metermaid' ), $system->name ) ); ?>" />
+							</p>
+						</form>
+					</td>
+				</tr>
+			</table>
+		<?php } ?>
 		<?php
 	}
 

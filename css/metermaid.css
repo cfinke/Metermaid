@@ -31,6 +31,11 @@
 	border-top: 0;
 }
 
+.button-delete {
+	border-color: #b32d2e !important;
+	color: #b32d2e !important;
+}
+
 /**
  * Hide various UI elements that are not useful in this single-plugin context.
  */

@@ -5,6 +5,7 @@ class METERMAID_SYSTEM {
 	public $name;
 	public $unit;
 	public $rate_interval;
+	public $added_by;
 
 	private $_meters = null;
 	private $_readable_meters = null;
@@ -29,6 +30,7 @@ class METERMAID_SYSTEM {
 		$this->name = $system_id_or_row->name;
 		$this->unit = $system_id_or_row->unit;
 		$this->rate_interval = $system_id_or_row->rate_interval;
+		$this->added_by = $system_id_or_row->added_by;
 	}
 
 	/**
