@@ -475,7 +475,7 @@ class METERMAID {
 			) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
 		);
 
-		$wpdb->query( "CREATE TABLE IF NOT EXISTS " . $wpdb->table_prefix . "metermaid_relationships
+		$wpdb->query( "CREATE TABLE IF NOT EXISTS " . $wpdb->prefix . "metermaid_relationships
 			(
 				metermaid_relationship_id bigint NOT NULL AUTO_INCREMENT,
 				parent_meter_id bigint NOT NULL,
