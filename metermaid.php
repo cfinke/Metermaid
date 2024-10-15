@@ -2115,24 +2115,37 @@ class METERMAID {
 						<input type="text" name="metermaid_meter_contact_phone" value="<?php echo esc_attr( $meter() ? METERMAID_SMS::readable_phone_number( $meter->contact_phone ) : '' ); ?>" />
 					</td>
 				</tr>
-				<tr>
-					<th scope="row">
-						<?php echo esc_html( __( 'Parent Meters', 'metermaid' ) ); ?>
-					</th>
-					<td>
-						<?php METERMAID::meter_list_selection( $system_id, 'metermaid_parent_meters', true, $meter() ? $meter->parents : [], array( $meter->id ) ); ?>
-						<p class="description"><?php echo esc_html( __( 'A parent meter is a meter that is located upstream from this meter.', 'metermaid' ) ); ?></p>
-					</td>
-				</tr>
-				<tr>
-					<th scope="row">
-						<?php echo esc_html( __( 'Child Meters', 'metermaid' ) ); ?>
-					</th>
-					<td>
-						<?php METERMAID::meter_list_selection( $system_id, 'metermaid_child_meters', true, $meter() ? $meter->children : [], array( $meter->id ) ); ?>
-						<p class="description"><?php echo esc_html( __( 'A child meter is a meter that is located downstream from this meter.', 'metermaid' ) ); ?></p>
-					</td>
-				</tr>
+				<?php
+
+				if (
+					( $meter() && count( $meter->system->readable_meters ) > 1 ) ||
+					( ! $meter() && count( $meter->system->readable_meters ) > 0 )
+					) {
+
+					?>
+					<tr>
+						<th scope="row">
+							<?php echo esc_html( __( 'Parent Meters', 'metermaid' ) ); ?>
+						</th>
+						<td>
+							<?php METERMAID::meter_list_selection( $system_id, 'metermaid_parent_meters', true, $meter() ? $meter->parents : [], array( $meter->id ) ); ?>
+							<p class="description"><?php echo esc_html( __( 'A parent meter is a meter that is located upstream from this meter.', 'metermaid' ) ); ?></p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row">
+							<?php echo esc_html( __( 'Child Meters', 'metermaid' ) ); ?>
+						</th>
+						<td>
+							<?php METERMAID::meter_list_selection( $system_id, 'metermaid_child_meters', true, $meter() ? $meter->children : [], array( $meter->id ) ); ?>
+							<p class="description"><?php echo esc_html( __( 'A child meter is a meter that is located downstream from this meter.', 'metermaid' ) ); ?></p>
+						</td>
+					</tr>
+					<?php
+
+				}
+
+				?>
 				<tr>
 					<th scope="row"></th>
 					<td>
