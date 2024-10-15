@@ -2054,7 +2054,8 @@ class METERMAID {
 	}
 
 	public static function meter_form( $system_id, $meter_id = null ) {
-		$meter = new METERMAID_METER( $meter_id, true );
+		$system = new METERMAID_SYSTEM( $system_id );
+		$meter = new METERMAID_METER( $meter_id );
 
 		?>
 		<form method="post" action="">
@@ -2124,8 +2125,8 @@ class METERMAID {
 				<?php
 
 				if (
-					( $meter() && count( $meter->system->readable_meters ) > 1 ) ||
-					( ! $meter() && count( $meter->system->readable_meters ) > 0 )
+					( $meter() && count( $system->writeable_meters ) > 1 ) ||
+					( ! $meter() && count( $system->writeable_meters ) > 0 )
 					) {
 
 					?>
