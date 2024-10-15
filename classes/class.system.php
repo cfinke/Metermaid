@@ -8,6 +8,7 @@ class METERMAID_SYSTEM {
 
 	private $_meters = null;
 	private $_readable_meters = null;
+	private $_writeable_meters = null;
 
 	public function __construct( $system_id_or_row = null ) {
 		global $wpdb;
