@@ -703,6 +703,9 @@ class METERMAID {
 					get_current_user_id()
 				) );
 
+				$system_id = $wpdb->insert_id;
+				$_GET['metermaid_system_id'] = $system_id;
+
 				METERMAID::save_pending_notice( 'success', __( 'The system has been added.', 'metermaid' ) );
 			} else if ( 'add_reading' == $_POST['metermaid_action'] ) {
 				if ( ! wp_verify_nonce( $_POST['metermaid_nonce'], 'metermaid-add-reading' ) ) {
