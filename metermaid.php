@@ -972,14 +972,19 @@ class METERMAID {
 				$meter_id_to_insert = $_POST['metermaid_invite_meter_id'];
 				$manage_value = 0;
 
-				$email_subject = __( 'You have been invited to use Metermaid', 'metermaid' );
-				$email_body = __( 'Hello!', 'metermaid' );
-				$email_body .= "\n\n";
-				$email_body .= sprintf(
+				$new_user_email_subject = __( 'You have been invited to use Metermaid', 'metermaid' );
+				$existing_user_email_subject = __( 'You have been given more access on Metermaid', 'metermaid' );
+
+				$new_user_email_body = __( 'Hello!', 'metermaid' );
+				$new_user_email_body .= "\n\n";
+				$new_user_email_body .= sprintf(
 					__( '%s has invited you to use Metermaid, an online tool for managing water meters and meter readings.', 'metermaid' ),
 					get_user_meta( wp_get_current_user()->ID, 'nickname', true )
 				);
-				$email_body .= "\n\n";
+				$new_user_email_body .= "\n\n";
+
+				$existing_user_email_body = __( 'Hello!', 'metermaid' );
+				$existing_user_email_body .= "\n\n";
 
 				// Confirm this user is allowed to do what they're doing and prep the data for saving.
 				if ( $_POST['metermaid_invite_access_level'] == 'system' ) {
@@ -996,11 +1001,26 @@ class METERMAID {
 
 						$manage_value = 1;
 
-						$email_body .= sprintf( __( "You've been given access to manage this system: %s", 'metermaid' ), $system->name );
-						$email_body .= "\n\n";
+						$new_user_email_body .= sprintf( __( "You've been given access to manage this system: %s", 'metermaid' ), $system->name );
+						$new_user_email_body .= "\n\n";
+
+						$existing_user_email_body .= sprintf(
+							__( '%1$s has invited you to manage this system on Metermaid: %1$s.', 'metermaid' ),
+							get_user_meta( wp_get_current_user()->ID, 'nickname', true ),
+							$system->name
+						);
+						$existing_user_email_body .= "\n\n";
+
 					} else {
-						$email_body .= sprintf( __( "You've been given access to view this system: %s", 'metermaid' ), $system->name );
-						$email_body .= "\n\n";
+						$new_user_email_body .= sprintf( __( "You've been given access to view this system: %s", 'metermaid' ), $system->name );
+						$new_user_email_body .= "\n\n";
+
+						$existing_user_email_body .= sprintf(
+							__( '%1$s has invited you to view this system on Metermaid: %1$s.', 'metermaid' ),
+							get_user_meta( wp_get_current_user()->ID, 'nickname', true ),
+							$system->name
+						);
+						$existing_user_email_body .= "\n\n";
 					}
 
 					$meter_id_to_insert = 0;
@@ -1023,27 +1043,57 @@ class METERMAID {
 							wp_die();
 						}
 
-						$email_body .= sprintf( __( "You've been given access to manage this meter: %s", 'metermaid' ), $meter->name );
-						$email_body .= "\n\n";
+						$new_user_email_body .= sprintf( __( "You've been given access to manage this meter: %s", 'metermaid' ), $meter->name );
+						$new_user_email_body .= "\n\n";
+
+						$existing_user_email_body .= sprintf(
+							__( '%1$s has invited you to manage this meter on Metermaid: %1$s.', 'metermaid' ),
+							get_user_meta( wp_get_current_user()->ID, 'nickname', true ),
+							$meter->name
+						);
+						$existing_user_email_body .= "\n\n";
 
 						$manage_value = 1;
 					} else {
-						$email_body .= sprintf( __( "You've been given access to view this meter: %s", 'metermaid' ), $meter->name );
-						$email_body .= "\n\n";
+						$new_user_email_body .= sprintf( __( "You've been given access to view this meter: %s", 'metermaid' ), $meter->name );
+						$new_user_email_body .= "\n\n";
+
+						$existing_user_email_body .= sprintf(
+							__( '%1$s has invited you to view this meter on Metermaid: %1$s.', 'metermaid' ),
+							get_user_meta( wp_get_current_user()->ID, 'nickname', true ),
+							$meter->name
+						);
+						$existing_user_email_body .= "\n\n";
 					}
 				}
 
-				$email_body .= sprintf(
+				$new_user_email_body .= sprintf(
 					__( 'Visit %1$s to register for free using the address that this email was sent to (%2$s).', 'metermaid' ),
 					site_url( 'wp-login.php?action=register' ),
 					$_POST['metermaid_invite_email']
 				);
-				$email_body .= "\n\n";
-				$email_body .= __( 'If you have any questions, email me at help@metermaid.org!' );
-				$email_body .= "\n\n";
-				$email_body .= 'Chris at Metermaid';
+				$new_user_email_body .= "\n\n";
+				$new_user_email_body .= __( 'If you have any questions, email me at help@metermaid.org!' );
+				$new_user_email_body .= "\n\n";
+				$new_user_email_body .= 'Chris at Metermaid';
 
-				wp_mail( $_POST['metermaid_invite_email'], $email_subject, $email_body, array( 'Bcc: help@metermaid.org' ) );
+				$existing_user_email_body .= sprintf(
+					__( 'Visit %1$s to and log in using the address that this email was sent to (%2$s).', 'metermaid' ),
+					site_url(),
+					$_POST['metermaid_invite_email']
+				);
+				$existing_user_email_body .= "\n\n";
+				$existing_user_email_body .= __( 'If you have any questions, email me at help@metermaid.org!' );
+				$existing_user_email_body .= "\n\n";
+				$existing_user_email_body .= 'Chris at Metermaid';
+
+				$existing_user = get_user_by( 'email', $_POST['metermaid_invite_email'] );
+
+				if ( $existing_user ) {
+					wp_mail( $_POST['metermaid_invite_email'], $existing_user_email_subject, $existing_user_email_body, array( 'Bcc: help@metermaid.org' ) );
+				} else {
+					wp_mail( $_POST['metermaid_invite_email'], $new_user_email_subject, $new_user_email_body, array( 'Bcc: help@metermaid.org' ) );
+				}
 
 				$wpdb->query( $wpdb->prepare( "INSERT INTO " . $wpdb->prefix . "metermaid_personnel SET
 					email=%s,
@@ -1051,7 +1101,7 @@ class METERMAID {
 					metermaid_meter_id=%d,
 					manage=%d,
 					added=NOW(),
-					added_by=%d ON DUPLICATE KEY UPDATE added=added",
+					added_by=%d ON DUPLICATE KEY UPDATE added=NOW()",
 					$_POST['metermaid_invite_email'],
 					$_POST['metermaid_invite_system_id'],
 					$meter_id_to_insert,
@@ -1059,8 +1109,6 @@ class METERMAID {
 					get_current_user_id()
 				) );
 
-				// @todo If the user already has an account, notify them that they have access.
-				// If they don't email and invite them.
 				METERMAID::save_pending_notice( 'success', sprintf( __( 'Invite sent to %s', 'metermaid' ), $_POST['metermaid_invite_email'] ) );
 			} else if ( 'delete_system' == $_POST['metermaid_action'] ) {
 				if ( ! wp_verify_nonce( $_POST['metermaid_nonce'], 'metermaid-delete-system' ) ) {
