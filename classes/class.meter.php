@@ -541,9 +541,13 @@ class METERMAID_METER {
 			$col_key = $this_reading_year - $first_year + 1;
 
 			if ( $last_reading && $this_reading_year != $last_reading_year ) {
-				if ( ! isset( $data[ 'December 31' ][ $col_key - 1 ] ) ) {
-					// Add an estimated end value for the previous year to make the chart more readable.
-					$data[ 'December 31' ][ $col_key - 1 ] = $this->estimate_real_reading_at_date( $last_reading_year . '-12-31' ) - $year_beginning_reading;
+				for ( $years_ago = 1; $years_ago <= ( $this_reading_year - $last_reading_year ); $years_ago++ ) {
+					if ( ! isset( $data[ 'December 31' ][ $col_key - $years_ago ] ) ) {
+						// Add an estimated end value for the previous year to make the chart more readable.
+						if ( isset( $data['January 1'][ $col_key - $years_ago ] ) ) {
+							$data[ 'December 31' ][ $col_key - $years_ago ] = $this->estimate_real_reading_at_date( ( $this_reading_year - $years_ago ) . '-12-31' ) - $this->estimate_real_reading_at_date( ( $this_reading_year - $years_ago ) . '-01-01' );
+						}
+					}
 				}
 			}
 
