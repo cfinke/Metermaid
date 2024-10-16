@@ -540,30 +540,21 @@ class METERMAID_METER {
 			$row_key = date( "F j", strtotime( $reading->reading_date ) );
 			$col_key = $this_reading_year - $first_year + 1;
 
-			if ( $last_reading && $this_reading_year == $last_reading_year + 1 ) {
-				if ( date( "z", strtotime( $reading->reading_date ) ) <= 10 ) {
-					// If the first reading of the year is within the first ten days, consider it the last reading of the previous year.
-					$data[ 'December 31' ][ $col_key - 1 ] = $reading->real_reading - $year_beginning_reading;
+			if ( $last_reading && $this_reading_year != $last_reading_year ) {
+				if ( ! isset( $data[ 'December 31' ][ $col_key - 1 ] ) ) {
+					// Add an estimated end value for the previous year to make the chart more readable.
+					$data[ 'December 31' ][ $col_key - 1 ] = $this->estimate_real_reading_at_date( $last_reading_year . '-12-31' ) - $year_beginning_reading;
 				}
 			}
 
 			if ( $this_reading_year !== $last_reading_year ) {
-				$year_beginning_reading = $reading->real_reading;
-			}
-
-			if ( $this_reading_year == $last_reading_year + 1 ) {
-				// If the last reading of the last year is within the last ten days, and this reading is not within the first ten days,
-				// consider that one the first reading of this year.
-				if ( $last_reading && date( "z", strtotime( $last_reading->reading_date ) ) >= 355 ) {
-					$year_beginning_reading = $last_reading->real_reading;
-					$data[ 'January 1' ][ $col_key ] = $last_reading->real_reading - $year_beginning_reading;
-				}
+				$year_beginning_reading = $this->estimate_real_reading_at_date( $this_reading_year . '-01-01' );
+				$data[ 'January 1' ][ $col_key ] = 0;
 			}
 
 			$gallons = $reading->real_reading - $year_beginning_reading;
 
 			$data[ $row_key ][ $col_key ] = $gallons;
-
 			$last_reading = $reading;
 			$last_reading_year = $this_reading_year;
 		}
