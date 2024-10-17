@@ -1412,7 +1412,7 @@ class METERMAID {
 											<th><?php echo esc_html( __( 'Reading', 'metermaid' ) ); ?></th>
 											<th><?php echo esc_html( __( 'Real Reading', 'metermaid' ) ); ?></th>
 											<?php if ( $meter->is_parent() ) { ?>
-												<th><?php echo esc_html( __( 'Children Reading', 'metermaid' ) ); ?></th>
+												<th><?php echo esc_html( __( 'Children +/-', 'metermaid' ) ); ?></th>
 											<?php } ?>
 											<th>
 												<?php echo esc_html( sprintf( __( '%1$s Since Last (At least %2$s days)', 'metermaid' ), strtoupper( $meter->system->measurement()['rate_abbreviation'] ), $meter->system->rate_interval ) ); ?>
@@ -1480,11 +1480,11 @@ class METERMAID {
 																				$difference_percent = round( $difference / $total_gallons * 100, 1 );
 
 																				if ( $difference > 0 ) {
-																					echo '<span title="The child meters of this meter read higher than expected. Either they are overreporting, or this meter is underreporting." class="metermaid-surplus">(+' . esc_html( number_format( $difference, 0 ) ) . ' / ' . esc_html( $difference_percent ) . '%; ' . number_format( $difference_per_day, 0 ) . ' ' . esc_html( $meter->system->measurement()['rate_abbreviation'] ) . ')</span>';
+																					echo '<span title="' . esc_attr( __( 'The child meters of this meter read higher than expected. Either they are overreporting, or this meter is underreporting.', 'metermaid' ) ) . '" class="metermaid-surplus">+' . esc_html( number_format( $difference, 0 ) ) . ' / ' . esc_html( $difference_percent ) . '%; ' . number_format( $difference_per_day, 0 ) . ' ' . esc_html( $meter->system->measurement()['rate_abbreviation'] ) . '</span>';
 																				} else if ( $difference < 0 ) {
-																					echo '<span title="The child meters of this meter read lower than expected. Either they are underreporting, or this meter is overreporting." class="metermaid-deficit">(' . esc_html( number_format( $difference, 0 ) ) . ' / ' . esc_html( $difference_percent ) . '%; ' . number_format( $difference_per_day, 0 ) . ' ' . esc_html( $meter->system->measurement()['rate_abbreviation'] ) . ')</span>';
+																					echo '<span title="' . esc_attr( __( 'The child meters of this meter read lower than expected. Either they are underreporting, or this meter is overreporting.', 'metermaid' ) ) . '" class="metermaid-deficit">' . esc_html( number_format( $difference, 0 ) ) . ' / ' . esc_html( $difference_percent ) . '%; ' . number_format( $difference_per_day, 0 ) . ' ' . esc_html( $meter->system->measurement()['rate_abbreviation'] ) . '</span>';
 																				} else {
-																					echo '<span title="" class="metermaid-balanced">(0%)</span>';
+																					echo '<span title="' . esc_attr( __( 'The child meters of this meter perfectly match this meter.', 'metermaid' ) ) . '" class="metermaid-balanced">0%</span>';
 																				}
 
 																				if ( $includes_supplements ) {

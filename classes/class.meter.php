@@ -466,13 +466,13 @@ class METERMAID_METER {
 		if ( is_null( $this->_children_readings ) ) {
 			$this->_children_readings = array();
 
-			$master_reading_dates = array();
-
-			foreach ( $this->readings() as $reading ) {
-				$master_reading_dates[] = $reading->reading_date;
-			}
-
 			if ( $this->is_parent() ) {
+				$master_reading_dates = array();
+
+				foreach ( $this->readings() as $reading ) {
+					$master_reading_dates[] = $reading->reading_date;
+				}
+
 				$children = $this->children;
 
 				$this->_children_readings = array();
@@ -488,7 +488,7 @@ class METERMAID_METER {
 								$this->_children_readings[ $reading->reading_date ] = array();
 							}
 
-							$this->_children_readings[ $reading->reading_date ][] = $reading->reading;
+							$this->_children_readings[ $reading->reading_date ][] = $reading->real_reading;
 						}
 					}
 				}
