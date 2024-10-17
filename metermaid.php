@@ -1439,7 +1439,11 @@ class METERMAID {
 													<td><?php echo esc_html( date( get_option( 'date_format' ), strtotime( $reading->reading_date ) ) ); ?></td>
 													<td><?php echo esc_html( number_format( $reading->reading, 0 ) ); ?></td>
 													<td><?php echo esc_html( number_format( $reading->real_reading, 0 ) ); ?></td>
-													<?php if ( $meter->is_parent() ) { ?>
+													<?php if ( $meter->is_parent() ) {
+														$children_readings = $meter->children_readings();
+														$supplements = $meter->supplements;
+
+														?>
 														<td>
 															<?php
 
@@ -1537,14 +1541,9 @@ class METERMAID {
 						</div>
 					</div>
 				<?php } ?>
-
 				<?php
 
-				$supplements = $wpdb->get_results( $wpdb->prepare(
-					"SELECT * FROM " . $wpdb->prefix . "metermaid_supplements WHERE metermaid_meter_id=%d ORDER BY supplement_date DESC",
-					$meter->id
-				) );
-				$children_readings = $meter->children_readings();
+				$supplements = $meter->supplements;
 
 				?>
 				<?php if ( ! empty( $supplements ) ) { ?>
