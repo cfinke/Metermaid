@@ -24,6 +24,12 @@ class METERMAID {
 		global $wpdb;
 		global $pagenow;
 
+		foreach ( $_POST as $key => $val ) {
+			if ( strpos( $key, "metermaid" ) === 0 ) {
+				$_POST[ $key ] = stripslashes_deep( $val );
+			}
+		}
+
 		add_action( 'user_register', array( 'METERMAID', 'set_default_user_role' ), 10, 2 );
 
 		add_filter( 'not_a_blog_default_page', function ( $url ) {
