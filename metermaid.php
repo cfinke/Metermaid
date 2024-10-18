@@ -1448,8 +1448,6 @@ class METERMAID {
 															<?php
 
 															if ( isset( $children_readings[ $reading->reading_date ] ) ) {
-																echo esc_html( number_format( $children_readings[ $reading->reading_date ] ), 0 );
-
 																// Now, figure out the difference between this reading and the next child reading, and then compare that difference to the diff between today's master reading and the reading from the date of the child reading.
 
 																$found = false;
