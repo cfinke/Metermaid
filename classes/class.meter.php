@@ -758,15 +758,18 @@ class METERMAID_METER {
 		return false;
 	}
 
-	public function estimate_real_reading_on_this_date_last_year() {
-		// "This date" is the date of the last meter reading.
-		$readings = $this->readings();
+	public function estimate_real_reading_on_this_date_last_year( $date = null ) {
+		if ( ! $date ) {
+			// "This date" is the date of the last meter reading.
+			$readings = $this->readings();
 
-		if ( count( $readings ) <= 1 ) {
-			return null;
+			if ( count( $readings ) <= 1 ) {
+				return null;
+			}
+
+			$date = $readings[0]->reading_date;
 		}
 
-		$date = $readings[0]->reading_date;
 		$date_parts = explode( "-", $date );
 		$last_year_today = $date_parts[0] - 1 . "-" . $date_parts[1] . "-" . $date_parts[2];
 		$last_year_january = $date_parts[0] - 1 . "-01-01";

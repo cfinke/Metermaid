@@ -1599,7 +1599,40 @@ class METERMAID {
 
 														?>
 													</td>
-													<td><?php echo esc_html( number_format( $meter->gallons_ytd( $reading ) ?? 0 ) ); ?></td>
+													<td>
+														<?php
+
+														$gallons_ytd = $meter->gallons_ytd( $reading );
+
+														echo esc_html( number_format( $gallons_ytd ?? 0 ) );
+
+														$gallons_last_year_at_this_time = $meter->estimate_real_reading_on_this_date_last_year( $reading->reading_date );
+
+														if ( $gallons_ytd && $gallons_last_year_at_this_time ) {
+															$tooltip_text = sprintf(
+																__( 'Versus %1$s %2$s last year at this point', 'metermaid' ),
+																number_format( $gallons_last_year_at_this_time ),
+																$meter->system->measurement()['plural']
+															);
+
+															if ( $gallons_ytd < $gallons_last_year_at_this_time ) {
+																$percent_decrease = round( ( ( $gallons_last_year_at_this_time - $gallons_ytd ) / $gallons_last_year_at_this_time ) * 100 );
+
+																if ( $percent_decrease >= 3 ) {
+
+																	echo ' <span class="metermaid-surplus" title="' . esc_attr( $tooltip_text ) . '">(-' . $percent_decrease . '%)</span>';
+																}
+															} else {
+																$percent_increase = round( ( ( $gallons_ytd - $gallons_last_year_at_this_time ) / $gallons_last_year_at_this_time ) * 100 );
+
+																if ( $percent_increase >= 3 ) {
+																	echo ' <span class="metermaid-deficit" title="' . esc_attr( $tooltip_text ) . '">(+' . $percent_increase . '%)</span>';
+																}
+															}
+														}
+
+														?>
+													</td>
 												</tr>
 												<?php
 											}
