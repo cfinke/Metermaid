@@ -683,6 +683,50 @@ class METERMAID {
 			}
 
 			exit;
+		} else if ( isset( $_GET['metermaid_export_meters'] ) ) {
+			if ( ! current_user_can( 'metermaid-access-system', $_GET['metermaid_system_id'] ) ) {
+				echo 'You are not authorized to access this sytem.';
+				wp_die();
+			}
+
+			$system = new METERMAID_SYSTEM( $_GET['metermaid_system_id'] );
+
+			if ( ! $system() ) {
+				wp_die( 'Invalid system ID.' );
+			}
+
+			$meters = $system->readable_meters;
+
+			header( "Content-Type: text/csv" );
+			header( "Content-Disposition: attachment; filename=metermaid-meters-" . $_GET['metermaid_system_id'] . ".csv" );
+
+			echo "Date";
+
+			foreach ( $meters as $meter ) {
+				echo "," . '"' . str_replace( '"', '""', $meter->name ) . '"';
+			}
+
+			echo "\n";
+
+			$readings_by_date = array();
+
+			foreach ( $meters as $idx => $meter ) {
+				foreach ( $meter->readings() as $reading ) {
+					if ( ! isset( $readings_by_date[ $reading->reading_date ] ) ) {
+						$readings_by_date[ $reading->reading_date ] = array_fill( 0, count( $meters ), null );
+					}
+
+					$readings_by_date[ $reading->reading_date ][ $idx ] = $reading->reading;
+				}
+			}
+
+			ksort( $readings_by_date );
+
+			foreach ( $readings_by_date as $date => $reading_values ) {
+				echo $date . "," . join( ",", $reading_values ) . "\n";
+			}
+
+			exit;
 		}
 
 		if ( isset( $_POST['metermaid_action'] ) ) {
@@ -1346,6 +1390,12 @@ class METERMAID {
 						</div>
 					</div>
 				</div>
+
+				<?php if ( count( $system->readable_meters ) > 0 ) { ?>
+					<div class="metermaid-export">
+						<a href="<?php echo esc_attr( add_query_arg( 'metermaid_export_meters', 1 ) ); ?>"><?php echo esc_html( __( 'Export All Meter Readings as CSV', 'metermaid' ) ); ?></a>
+					</div>
+				<?php } ?>
 
 				<?php $system->display_meter_table( true ); ?>
 			<?php } ?>
