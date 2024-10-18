@@ -216,25 +216,37 @@ class METERMAID_SMS {
 	public static function db_setup() {
 		global $wpdb;
 
-		$wpdb->query( "CREATE TABLE IF NOT EXISTS " . $wpdb->prefix . "metermaid_sms_conversations (
-			metermaid_sms_conversation_id bigint NOT NULL AUTO_INCREMENT,
-			number char(12) DEFAULT NULL,
-			timestamp datetime NOT NULL,
-			to_or_from varchar(4) DEFAULT NULL,
-			message varchar(1000) DEFAULT NULL,
-			status varchar(32) DEFAULT NULL,
-			PRIMARY KEY (metermaid_sms_conversation_id),
-			KEY timestamp (timestamp),
-			KEY number (number)
-		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4" );
+		$METERMAID_SMS_DB_SCHEMA_VERSION = 1;
 
-		$wpdb->query( "CREATE TABLE IF NOT EXISTS " . $wpdb->prefix . "metermaid_sms_log (
-			metermaid_sms_log_id bigint NOT NULL AUTO_INCREMENT,
-			timestamp datetime NOT NULL,
-			log text,
-			PRIMARY KEY (metermaid_sms_log_id),
-			KEY timestamp (timestamp)
-		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4" );
+		$existing_schema_version = get_option( 'metermaid_sms_db_schema_version', 0 );
+
+		if ( $METERMAID_SMS_DB_SCHEMA_VERSION != $existing_schema_version ) {
+			switch ( $existing_schema_version ) {
+				case 0:
+					$wpdb->query( "CREATE TABLE IF NOT EXISTS " . $wpdb->prefix . "metermaid_sms_conversations (
+						metermaid_sms_conversation_id bigint NOT NULL AUTO_INCREMENT,
+						number char(12) DEFAULT NULL,
+						timestamp datetime NOT NULL,
+						to_or_from varchar(4) DEFAULT NULL,
+						message varchar(1000) DEFAULT NULL,
+						status varchar(32) DEFAULT NULL,
+						PRIMARY KEY (metermaid_sms_conversation_id),
+						KEY timestamp (timestamp),
+						KEY number (number)
+					) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4" );
+
+					$wpdb->query( "CREATE TABLE IF NOT EXISTS " . $wpdb->prefix . "metermaid_sms_log (
+						metermaid_sms_log_id bigint NOT NULL AUTO_INCREMENT,
+						timestamp datetime NOT NULL,
+						log text,
+						PRIMARY KEY (metermaid_sms_log_id),
+						KEY timestamp (timestamp)
+					) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4" );
+				break;
+			}
+
+			update_option( 'metermaid_sms_db_schema_version', $METERMAID_SMS_DB_SCHEMA_VERSION );
+		}
 	}
 
 	public static function send_message( $number, $message ) {
