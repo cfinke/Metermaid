@@ -36,6 +36,12 @@
 	color: #b32d2e !important;
 }
 
+.metermaid-export {
+	text-align: right;
+	margin-top: 15px;
+	margin-bottom: 20px;
+}
+
 /**
  * Hide various UI elements that are not useful in this single-plugin context.
  */

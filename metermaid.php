@@ -650,6 +650,35 @@ class METERMAID {
 	public static function process_form_submissions() {
 		global $wpdb;
 
+		if ( isset( $_GET['metermaid_export_meter'] ) ) {
+			if ( ! current_user_can( 'metermaid-view-meter', $_GET['metermaid_meter_id'] ) ) {
+				echo 'You are not authorized to export this meter.';
+				wp_die();
+			}
+
+			$meter = new METERMAID_METER( $_GET['metermaid_meter_id'] );
+
+			if ( ! $meter() ) {
+				wp_die( 'Invalid meter ID.' );
+			}
+
+			$readings = $meter->readings();
+
+			// Ascending order for the export.
+			$readings = array_reverse( $readings );
+
+			header( "Content-Type: text/csv" );
+			header( "Content-Disposition: attachment; filename=metermaid-meter-" . $_GET['metermaid_meter_id'] . ".csv" );
+
+			echo "Date,Reading\n";
+
+			foreach ( $readings as $reading ) {
+				echo $reading->reading_date . "," . $reading->reading . "\n";
+			}
+
+			exit;
+		}
+
 		if ( isset( $_POST['metermaid_action'] ) ) {
 			if ( 'edit_settings' == $_POST['metermaid_action'] ) {
 				if ( ! wp_verify_nonce( $_POST['metermaid_nonce'], 'metermaid-edit-settings' ) ) {
@@ -1405,7 +1434,10 @@ class METERMAID {
 								<?php
 
 								if ( ! empty( $meter_readings ) ) { ?>
-									<table class="wp-list-table widefat striped" style="margin-top: 20px;">
+									<div class="metermaid-export">
+										<a href="<?php echo esc_attr( add_query_arg( 'metermaid_export_meter', 1 ) ); ?>"><?php echo esc_html( __( 'Export as CSV', 'metermaid' ) ); ?></a>
+									</div>
+									<table class="wp-list-table widefat striped">
 										<thead>
 											<th></th>
 											<th><?php echo esc_html( __( 'Date', 'metermaid' ) ); ?></th>
