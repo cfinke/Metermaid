@@ -1913,7 +1913,7 @@ class METERMAID {
 						<?php echo esc_html( __( 'Minimum rate interval (in days)', 'metermaid' ) ); ?>
 					</th>
 					<td>
-						<input type="number" name="metermaid_system_rate_interval" value="<?php echo esc_attr( $system() ? $system->rate_interval : METERMAID_DEFAULT_RATE_INTERVAL ); ?>" />
+						<input type="text" inputmode="numeric" pattern="[0-9,.]*" name="metermaid_system_rate_interval" value="<?php echo esc_attr( $system() ? $system->rate_interval : METERMAID_DEFAULT_RATE_INTERVAL ); ?>" />
 						<p class="description"><?php echo esc_html( __( 'What is the least number of days between which Metermaid should calculate average usage rates? A higher number means a more accurate result, but it will also be more likely to hide short-term trends.' ) ); ?></p>
 					</td>
 				</tr>
@@ -2047,7 +2047,7 @@ class METERMAID {
 						<?php echo esc_html( __( 'Reading', 'metermaid' ) ); ?>
 					</th>
 					<td>
-						<input type="number" name="metermaid_reading" value="" />
+						<input type="text" inputmode="numeric" pattern="[0-9,.]*" name="metermaid_reading" value="" />
 					</td>
 				</tr>
 				<tr>
@@ -2139,7 +2139,7 @@ class METERMAID {
 						<?php echo esc_html( __( 'Amount', 'metermaid' ) ); ?>
 					</th>
 					<td>
-						<input type="number" name="metermaid_supplement_amount" value="" />
+						<input type="text" inputmode="numeric" pattern="[0-9,.]*" name="metermaid_supplement_amount" value="" />
 						<p class="description"><?php echo esc_html( __( 'A supplement is water that is added to the system after this meter. For example, water being delivered directly to a holding tank downstream from this meter would be a supplement.', 'metermaid' ) ); ?></p>
 					</td>
 				</tr>
