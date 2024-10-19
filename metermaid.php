@@ -1405,7 +1405,7 @@ class METERMAID {
 					<div class="metermaid-tabbed-content card">
 						<?php if ( current_user_can( 'metermaid-add-reading' ) ) { ?>
 							<div data-metermaid-tab="reading">
-								<?php if ( count( $system->meters ) > 0 ) { ?>
+								<?php if ( count( $system->writeable_meters ) > 0 ) { ?>
 									<?php self::add_reading_form( $system->id ); ?>
 								<?php } else { ?>
 									<p><a href="#tab-add-meter"><?php echo esc_html( __( 'Add a meter before entering any readings.', 'metermaid' ) ); ?></a></p>
