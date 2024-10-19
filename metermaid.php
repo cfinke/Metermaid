@@ -1017,6 +1017,12 @@ class METERMAID {
 					wp_die();
 				}
 
+				$meter = new METERMAID_METER( $_POST['metermaid_meter_id'] );
+
+				if ( ! $meter() ) {
+					wp_die( 'Invalid meter ID.' );
+				}
+
 				$wpdb->query( $wpdb->prepare(
 					"UPDATE " . $wpdb->prefix . "metermaid_meters SET name=%s, status=%d, contact_name=%s, contact_email=%s, contact_phone=%s WHERE metermaid_meter_id=%d LIMIT 1",
 					$_POST['metermaid_meter_name'],
