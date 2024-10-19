@@ -480,7 +480,7 @@ class METERMAID {
 	public static function sql() {
 		global $wpdb;
 
-		$METERMAID_DB_SCHEMA_VERSION = 1;
+		$METERMAID_DB_SCHEMA_VERSION = 2;
 
 		$existing_schema_version = get_option( 'metermaid_db_schema_version', 0 );
 
@@ -570,6 +570,26 @@ class METERMAID {
 							INDEX added (added)
 						) ENGINE=InnoDB DEFAULT CHARSET utf8mb4"
 					);
+				case 1:
+					$wpdb->query( "ALTER TABLE " . $wpdb->prefix . "metermaid_relationships ADD metermaid_system_id BIGINT NOT NULL AFTER metermaid_relationship_id" );
+					$wpdb->query( "CREATE INDEX metermaid_system_id ON " . $wpdb->prefix . "metermaid_relationships (metermaid_system_id)" );
+
+					// Add the system ID to any existing rows.
+					$existing_rows = $wpdb->get_results( "SELECT * FROM " . $wpdb->prefix . "metermaid_relationships WHERE metermaid_system_id=0 GROUP BY parent_meter_id" );
+					var_dump( $existing_rows );
+					foreach ( $existing_rows as $row ) {
+						$meter = new METERMAID_METER( $row->parent_meter_id );
+
+						if ( ! $meter() ) {
+							error_log( "Missing meter: " . $row->metermaid_meter_id );
+						} else {
+							$wpdb->query( $wpdb->prepare(
+								"UPDATE " . $wpdb->prefix . "metermaid_relationships SET metermaid_system_id=%d WHERE parent_meter_id=%d",
+								$meter->system_id,
+								$meter->id
+							) );
+						}
+					}
 				break;
 			}
 
@@ -849,7 +869,8 @@ class METERMAID {
 				if ( ! empty( $_POST['metermaid_parent_meters'] ) ) {
 					foreach ( array_filter( $_POST['metermaid_parent_meters'] ) as $parent_meter_id ) {
 						$wpdb->query( $wpdb->prepare(
-							"INSERT INTO ".$wpdb->prefix."metermaid_relationships SET parent_meter_id=%s, child_meter_id=%s, added=NOW(), added_by=%d ON DUPLICATE KEY UPDATE parent_meter_id=VALUES(parent_meter_id)",
+							"INSERT INTO ".$wpdb->prefix."metermaid_relationships SET metermaid_system_id=%s, parent_meter_id=%s, child_meter_id=%s, added=NOW(), added_by=%d ON DUPLICATE KEY UPDATE parent_meter_id=VALUES(parent_meter_id)",
+							$_POST['metermaid_system_id'],
 							$parent_meter_id,
 							$meter_id,
 							get_current_user_id()
@@ -860,7 +881,8 @@ class METERMAID {
 				if ( ! empty( $_POST['metermaid_child_meters'] ) ) {
 					foreach ( array_filter( $_POST['metermaid_child_meters'] ) as $child_meter_id ) {
 						$wpdb->query( $wpdb->prepare(
-							"INSERT INTO ".$wpdb->prefix."metermaid_relationships SET child_meter_id=%s, parent_meter_id=%s, added=NOW(), added_by=%d ON DUPLICATE KEY UPDATE child_meter_id=VALUES(child_meter_id)",
+							"INSERT INTO ".$wpdb->prefix."metermaid_relationships SET metermaid_system_id=%s, child_meter_id=%s, parent_meter_id=%s, added=NOW(), added_by=%d ON DUPLICATE KEY UPDATE child_meter_id=VALUES(child_meter_id)",
+							$_POST['metermaid_system_id'],
 							$child_meter_id,
 							$meter_id,
 							get_current_user_id()
@@ -1019,7 +1041,8 @@ class METERMAID {
 						}
 
 						$wpdb->query( $wpdb->prepare(
-							"INSERT INTO ".$wpdb->prefix."metermaid_relationships SET parent_meter_id=%s, child_meter_id=%s, added=NOW(), added_by=%d ON DUPLICATE KEY UPDATE parent_meter_id=VALUES(parent_meter_id)",
+							"INSERT INTO ".$wpdb->prefix."metermaid_relationships SET metermaid_system_id=%s, parent_meter_id=%s, child_meter_id=%s, added=NOW(), added_by=%d ON DUPLICATE KEY UPDATE parent_meter_id=VALUES(parent_meter_id)",
+							$meter->system_id,
 							$parent_meter_id,
 							$_POST['metermaid_meter_id'],
 							get_current_user_id()
@@ -1035,7 +1058,8 @@ class METERMAID {
 						}
 
 						$wpdb->query( $wpdb->prepare(
-							"INSERT INTO ".$wpdb->prefix."metermaid_relationships SET child_meter_id=%s, parent_meter_id=%s, added=NOW(), added_by=%d ON DUPLICATE KEY UPDATE child_meter_id=VALUES(child_meter_id)",
+							"INSERT INTO ".$wpdb->prefix."metermaid_relationships SET metermaid_system_id=%s, child_meter_id=%s, parent_meter_id=%s, added=NOW(), added_by=%d ON DUPLICATE KEY UPDATE child_meter_id=VALUES(child_meter_id)",
+							$meter->system_id,
 							$child_meter_id,
 							$_POST['metermaid_meter_id'],
 							get_current_user_id()
@@ -1226,12 +1250,12 @@ class METERMAID {
 					$_POST['metermaid_system_id']
 				) );
 
+				// Delete any parent/child relationships.
+				$wpdb->query( $wpdb->prepare( "DELETE FROM " . $wpdb->prefix . "metermaid_relationships WHERE metermaid_system_id=%d", $system->id ) );
+
 				foreach ( $meter_ids as $meter_id ) {
 					// Delete all readings.
 					$wpdb->query( $wpdb->prepare( "DELETE FROM " . $wpdb->prefix . "metermaid_readings WHERE metermaid_meter_id=%d", $meter_id ) );
-
-					// Delete any parent/child relationships.
-					$wpdb->query( $wpdb->prepare( "DELETE FROM " . $wpdb->prefix . "metermaid_relationships WHERE parent_meter_id=%d OR child_meter_id=%d", $meter_id, $meter_id ) );
 
 					// Delete any supplements.
 					$wpdb->query( $wpdb->prepare( "DELETE FROM " . $wpdb->prefix . "metermaid_supplements WHERE parent_meter_id=%d OR child_meter_id=%d", $meter_id, $meter_id ) );
@@ -1777,22 +1801,6 @@ class METERMAID {
 
 		return $all_systems;
 
-	}
-
-	public static function meters() {
-		global $wpdb;
-
-		$meter_rows = $wpdb->get_results(
-			"SELECT m.*, r.parent_meter_id AS is_parent FROM " . $wpdb->prefix . "metermaid_meters m LEFT JOIN " . $wpdb->prefix . "metermaid_relationships r ON m.metermaid_meter_id=r.parent_meter_id GROUP BY m.metermaid_meter_id ORDER BY is_parent DESC, m.name ASC"
-		);
-
-		$all_meters = array();
-
-		foreach ( $meter_rows as $meter_row ) {
-			$all_meters[] = new METERMAID_METER( $meter_row );
-		}
-
-		return $all_meters;
 	}
 
 	public static function system_list_selection( $field_name, $multiple = false, $selected = array() ) {
