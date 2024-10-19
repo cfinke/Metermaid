@@ -7,7 +7,7 @@ class METERMAID_SYSTEM {
 	public $rate_interval;
 	public $added_by;
 
-	private $_meters = null;
+	private $_all_meters = null;
 	private $_readable_meters = null;
 	private $_writeable_meters = null;
 
@@ -48,7 +48,7 @@ class METERMAID_SYSTEM {
 	public function __get( $key ) {
 		global $wpdb;
 
-		if ( 'meters' == $key ) {
+		if ( 'all_meters' == $key ) {
 			if ( ! is_null( $this->_meters ) ) {
 				return $this->_meters;
 			}
@@ -70,7 +70,7 @@ class METERMAID_SYSTEM {
 				return $this->_readable_meters;
 			}
 
-			$meters = $this->meters;
+			$meters = $this->all_meters;
 
 			$this->_readable_meters = array();
 
@@ -86,7 +86,7 @@ class METERMAID_SYSTEM {
 				return $this->_writeable_meters;
 			}
 
-			$meters = $this->meters;
+			$meters = $this->all_meters;
 
 			$this->_writeable_meters = array();
 
