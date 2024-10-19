@@ -16,6 +16,7 @@ class METERMAID_METER {
 	private $_parents = null;
 	private $_children_readings = null;
 	private $_system = null;
+	private $_relationships = null;
 
 	public function __construct( $meter_id_or_row ) {
 		global $wpdb;
@@ -173,12 +174,14 @@ class METERMAID_METER {
 				return $this->_parents;
 			}
 
-			$relationships = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM " . $wpdb->prefix . "metermaid_relationships WHERE parent_meter_id=%s OR child_meter_id=%s", $this->id, $this->id ) );
+			if ( is_null( $this->_relationships ) ) {
+				$this->_relationships = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM " . $wpdb->prefix . "metermaid_relationships WHERE parent_meter_id=%s OR child_meter_id=%s", $this->id, $this->id ) );
+			}
 
 			$this->_children = array();
 			$this->_parents = array();
 
-			foreach ( $relationships as $relationship ) {
+			foreach ( $this->_relationships as $relationship ) {
 				if ( $relationship->parent_meter_id == $this->id ) {
 					$this->_children[] = $relationship->child_meter_id;
 				} else if ( $relationship->child_meter_id == $this->id ) {
