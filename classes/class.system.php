@@ -139,10 +139,7 @@ class METERMAID_SYSTEM {
 							$last_was_parent = false;
 						}
 
-						$readings = $wpdb->get_results( $wpdb->prepare(
-							"SELECT * FROM " . $wpdb->prefix . "metermaid_readings WHERE metermaid_meter_id=%s ORDER BY reading_date DESC",
-							$meter->id
-						) );
+						$readings = $meter->readings();
 
 						?>
 						<tr>
