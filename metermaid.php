@@ -1793,15 +1793,19 @@ class METERMAID {
 	public static function systems() {
 		global $wpdb;
 
-		$system_rows = $wpdb->get_results(
-			"SELECT * FROM " . $wpdb->prefix . "metermaid_systems ORDER BY name ASC"
-		);
+		static $all_systems = null;
 
-		$all_systems = array();
+		if ( is_null( $all_systems ) ) {
+			$system_rows = $wpdb->get_results(
+				"SELECT * FROM " . $wpdb->prefix . "metermaid_systems ORDER BY name ASC"
+			);
 
-		foreach ( $system_rows as $system_row ) {
-			if ( current_user_can( 'metermaid-access-system', $system_row->metermaid_system_id ) ) {
-				$all_systems[] = new METERMAID_SYSTEM( $system_row );
+			$all_systems = array();
+
+			foreach ( $system_rows as $system_row ) {
+				if ( current_user_can( 'metermaid-access-system', $system_row->metermaid_system_id ) ) {
+					$all_systems[] = new METERMAID_SYSTEM( $system_row );
+				}
 			}
 		}
 
