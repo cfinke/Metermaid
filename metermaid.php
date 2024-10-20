@@ -756,18 +756,8 @@ class METERMAID {
 					wp_die();
 				}
 
-				$reading_int = intval( str_replace( ',', '', $_POST['metermaid_reading'] ) );
-
-				$wpdb->query( $wpdb->prepare(
-					"INSERT INTO " . $wpdb->prefix . "metermaid_readings SET metermaid_meter_id=%s, reading=%d, reading_date=%s, added=NOW(), added_by=%d ON DUPLICATE KEY UPDATE reading=VALUES(reading)",
-					$_POST['metermaid_meter_id'],
-					$reading_int,
-					$_POST['metermaid_reading_date'],
-					get_current_user_id()
-				) );
-
 				$meter = new METERMAID_METER( $_POST['metermaid_meter_id'] );
-				$meter->recalculate_real_readings();
+				$meter->add_reading( $_POST['metermaid_reading'], $_POST['metermaid_reading_date'] );
 
 				METERMAID::save_pending_notice( 'success', __( 'The reading has been added.', 'metermaid' ) );
 			} else if ( 'add_meter' == $_POST['metermaid_action'] ) {
