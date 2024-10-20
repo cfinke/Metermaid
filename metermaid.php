@@ -907,6 +907,8 @@ class METERMAID {
 					$_POST['metermaid_meter_id'],
 				) );
 
+				wp_cache_delete( $_POST['metermaid_meter_id'], 'metermaid-meter' );
+
 				$wpdb->query( $wpdb->prepare(
 					"DELETE FROM " . $wpdb->prefix . "metermaid_readings WHERE metermaid_meter_id=%s",
 					$_POST['metermaid_meter_id'],
@@ -1032,6 +1034,8 @@ class METERMAID {
 					$_POST['metermaid_meter_contact_phone'],
 					$_POST['metermaid_meter_id']
 				) );
+
+				wp_cache_delete( $_POST['metermaid_meter_id'], 'metermaid-meter' );
 
 				$wpdb->query( $wpdb->prepare(
 					"DELETE FROM ".$wpdb->prefix."metermaid_relationships WHERE parent_meter_id=%d OR parent_meter_id=%d",
@@ -1268,6 +1272,8 @@ class METERMAID {
 
 					// Delete the meter.
 					$wpdb->query( $wpdb->prepare( "DELETE FROM " . $wpdb->prefix . "metermaid_meters WHERE metermaid_meter_id=%d", $meter_id ) );
+
+					wp_cache_delete( $meter_id, 'metermaid-meter' );
 				}
 
 				// Delete any personnel.
