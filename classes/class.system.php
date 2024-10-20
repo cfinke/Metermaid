@@ -19,11 +19,25 @@ class METERMAID_SYSTEM {
 		}
 
 		if ( is_numeric( $system_id_or_row ) ) {
-			$system_id_or_row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM " . $wpdb->prefix . "metermaid_systems WHERE metermaid_system_id=%s LIMIT 1", $system_id_or_row ) );
+			$system_data = wp_cache_get( $system_id_or_row, 'metermaid-system' );
 
-			if ( ! $system_id_or_row ) {
+			if ( false === $system_data ) {
+				$system_data = $wpdb->get_row( $wpdb->prepare(
+					"SELECT *
+						FROM " . $wpdb->prefix . "metermaid_systems
+						WHERE metermaid_system_id=%d
+						LIMIT 1",
+					$system_id_or_row
+				) );
+
+				wp_cache_set( $system_id_or_row, $system_data, 'metermaid-system' );
+			}
+
+			if ( ! $system_data ) {
 				return false;
 			}
+
+			$system_id_or_row = $system_data;
 		}
 
 		$this->id = $system_id_or_row->metermaid_system_id;

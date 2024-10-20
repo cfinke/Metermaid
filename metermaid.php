@@ -874,6 +874,8 @@ class METERMAID {
 					$_POST['metermaid_system_id']
 				) );
 
+				wp_cache_delete( $_POST['metermaid_system_id'], 'metermaid-system' );
+
 				METERMAID::save_pending_notice( 'success', __( 'The system has been updated.', 'metermaid' ) );
 			} if ( 'delete_reading' == $_POST['metermaid_action'] ) {
 				if ( ! wp_verify_nonce( $_POST['metermaid_nonce'], 'metermaid-delete-reading' ) ) {
@@ -1208,6 +1210,8 @@ class METERMAID {
 
 				// Delete the system entry.
 				$wpdb->query( $wpdb->prepare( "DELETE FROM " . $wpdb->prefix . "metermaid_systems WHERE metermaid_system_id=%d LIMIT 1", $_POST['metermaid_system_id'] ) );
+
+				wp_cache_delete( $_POST['metermaid_system_id'], 'metermaid-system' );
 
 				METERMAID::save_pending_notice( 'success', __( 'The system was deleted.', 'metermaid' ) );
 			} else if ( 'export_meter' == $_POST['metermaid_action'] ) {
