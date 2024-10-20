@@ -67,9 +67,31 @@ class METERMAID_METER {
 		$reading_int = intval( str_replace( ',', '', $reading ) );
 		$when = date( "Y-m-d", strtotime( $when ) );
 
-		// @todo Don't allow one user to overwrite another user's reading.
+		// Don't allow one user to overwrite another user's reading.
+
+		$existing_reading_id = $wpdb->get_var( $wpdb->prepare(
+			"SELECT metermaid_reading_id FROM " . $wpdb->prefix . "metermaid_readings
+				WHERE metermaid_meter_id=%d AND reading_date=%s AND reading <> %d AND added_by <> %d ",
+			$this->id,
+			$when,
+			$reading_int,
+			$user_id ?? get_current_user_id()
+		) );
+
+		if ( $existing_reading_id ) {
+			return false;
+		}
+
 		$wpdb->query( $wpdb->prepare(
-			"INSERT INTO " . $wpdb->prefix . "metermaid_readings SET metermaid_meter_id=%s, reading=%d, reading_date=%s, added=NOW(), added_by=%d ON DUPLICATE KEY UPDATE reading=VALUES(reading), added=NOW()",
+			"INSERT INTO " . $wpdb->prefix . "metermaid_readings
+				SET metermaid_meter_id=%s,
+					reading=%d,
+					reading_date=%s,
+					added=NOW(),
+					added_by=%d
+				ON DUPLICATE KEY
+					UPDATE reading=VALUES(reading),
+					added=NOW()",
 			$this->id,
 			$reading_int,
 			$when,

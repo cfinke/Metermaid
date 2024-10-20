@@ -757,9 +757,13 @@ class METERMAID {
 				}
 
 				$meter = new METERMAID_METER( $_POST['metermaid_meter_id'] );
-				$meter->add_reading( $_POST['metermaid_reading'], $_POST['metermaid_reading_date'] );
+				$success = $meter->add_reading( $_POST['metermaid_reading'], $_POST['metermaid_reading_date'] );
 
-				METERMAID::save_pending_notice( 'success', __( 'The reading has been added.', 'metermaid' ) );
+				if ( $success ) {
+					METERMAID::save_pending_notice( 'success', __( 'The reading has been added.', 'metermaid' ) );
+				} else {
+					METERMAID::save_pending_notice( 'error', __( 'The reading could not be added because another person already saved a reading for that date.', 'metermaid' ) );
+				}
 			} else if ( 'add_meter' == $_POST['metermaid_action'] ) {
 				if ( ! wp_verify_nonce( $_POST['metermaid_nonce'], 'metermaid-add-meter' ) ) {
 					echo 'You are not authorized to add a meter.';
