@@ -688,79 +688,6 @@ class METERMAID {
 	public static function process_form_submissions() {
 		global $wpdb;
 
-		if ( isset( $_GET['metermaid_export_meter'] ) ) {
-			if ( ! current_user_can( 'metermaid-view-meter', $_GET['metermaid_meter_id'] ) ) {
-				echo 'You are not authorized to export this meter.';
-				wp_die();
-			}
-
-			$meter = new METERMAID_METER( $_GET['metermaid_meter_id'] );
-
-			if ( ! $meter() ) {
-				wp_die( 'Invalid meter ID.' );
-			}
-
-			$readings = $meter->readings();
-
-			// Ascending order for the export.
-			$readings = array_reverse( $readings );
-
-			header( "Content-Type: text/csv" );
-			header( "Content-Disposition: attachment; filename=metermaid-meter-" . $_GET['metermaid_meter_id'] . ".csv" );
-
-			echo "Date,Reading\n";
-
-			foreach ( $readings as $reading ) {
-				echo $reading->reading_date . "," . $reading->reading . "\n";
-			}
-
-			exit;
-		} else if ( isset( $_GET['metermaid_export_meters'] ) ) {
-			if ( ! current_user_can( 'metermaid-access-system', $_GET['metermaid_system_id'] ) ) {
-				echo 'You are not authorized to access this sytem.';
-				wp_die();
-			}
-
-			$system = new METERMAID_SYSTEM( $_GET['metermaid_system_id'] );
-
-			if ( ! $system() ) {
-				wp_die( 'Invalid system ID.' );
-			}
-
-			$meters = $system->readable_meters;
-
-			header( "Content-Type: text/csv" );
-			header( "Content-Disposition: attachment; filename=metermaid-meters-" . $_GET['metermaid_system_id'] . ".csv" );
-
-			echo "Date";
-
-			foreach ( $meters as $meter ) {
-				echo "," . '"' . str_replace( '"', '""', $meter->name ) . '"';
-			}
-
-			echo "\n";
-
-			$readings_by_date = array();
-
-			foreach ( $meters as $idx => $meter ) {
-				foreach ( $meter->readings() as $reading ) {
-					if ( ! isset( $readings_by_date[ $reading->reading_date ] ) ) {
-						$readings_by_date[ $reading->reading_date ] = array_fill( 0, count( $meters ), null );
-					}
-
-					$readings_by_date[ $reading->reading_date ][ $idx ] = $reading->reading;
-				}
-			}
-
-			ksort( $readings_by_date );
-
-			foreach ( $readings_by_date as $date => $reading_values ) {
-				echo $date . "," . join( ",", $reading_values ) . "\n";
-			}
-
-			exit;
-		}
-
 		if ( isset( $_POST['metermaid_action'] ) ) {
 			if ( 'edit_settings' == $_POST['metermaid_action'] ) {
 				if ( ! wp_verify_nonce( $_POST['metermaid_nonce'], 'metermaid-edit-settings' ) ) {
@@ -1283,6 +1210,157 @@ class METERMAID {
 				$wpdb->query( $wpdb->prepare( "DELETE FROM " . $wpdb->prefix . "metermaid_systems WHERE metermaid_system_id=%d LIMIT 1", $_POST['metermaid_system_id'] ) );
 
 				METERMAID::save_pending_notice( 'success', __( 'The system was deleted.', 'metermaid' ) );
+			} else if ( 'export_meter' == $_POST['metermaid_action'] ) {
+				if ( ! wp_verify_nonce( $_POST['metermaid_nonce'], 'metermaid-export-meter' ) ) {
+					echo 'You are not authorized to export a meter.';
+					wp_die();
+				}
+
+				if ( ! current_user_can( 'metermaid-view-meter', $_POST['metermaid_meter_id'] ) ) {
+					echo 'You are not authorized to export this meter.';
+					wp_die();
+				}
+
+				$meter = new METERMAID_METER( $_POST['metermaid_meter_id'] );
+
+				if ( ! $meter() ) {
+					wp_die( 'Invalid meter ID.' );
+				}
+
+				$readings = $meter->readings();
+
+				// Ascending order for the export.
+				$readings = array_reverse( $readings );
+
+				header( "Content-Type: text/csv" );
+				header( "Content-Disposition: attachment; filename=metermaid-meter-" . $_POST['metermaid_meter_id'] . ".csv" );
+
+				echo "Date,Reading\n";
+
+				foreach ( $readings as $reading ) {
+					echo $reading->reading_date . "," . $reading->reading . "\n";
+				}
+
+				exit;
+			} else if ( 'export_meters' == $_POST['metermaid_action'] ) {
+				if ( ! wp_verify_nonce( $_POST['metermaid_nonce'], 'metermaid-export-meters' ) ) {
+					echo 'You are not authorized to export meters from this system.';
+					wp_die();
+				}
+
+				if ( ! current_user_can( 'metermaid-access-system', $_POST['metermaid_system_id'] ) ) {
+					echo 'You are not authorized to access this sytem.';
+					wp_die();
+				}
+
+				$system = new METERMAID_SYSTEM( $_POST['metermaid_system_id'] );
+
+				if ( ! $system() ) {
+					wp_die( 'Invalid system ID.' );
+				}
+
+				$meters = $system->readable_meters;
+
+				header( "Content-Type: text/csv" );
+				header( "Content-Disposition: attachment; filename=metermaid-meters-" . $_POST['metermaid_system_id'] . ".csv" );
+
+				echo "Date";
+
+				foreach ( $meters as $meter ) {
+					echo "," . '"' . str_replace( '"', '""', $meter->name ) . '"';
+				}
+
+				echo "\n";
+
+				$readings_by_date = array();
+
+				foreach ( $meters as $idx => $meter ) {
+					foreach ( $meter->readings() as $reading ) {
+						if ( ! isset( $readings_by_date[ $reading->reading_date ] ) ) {
+							$readings_by_date[ $reading->reading_date ] = array_fill( 0, count( $meters ), null );
+						}
+
+						$readings_by_date[ $reading->reading_date ][ $idx ] = $reading->reading;
+					}
+				}
+
+				ksort( $readings_by_date );
+
+				foreach ( $readings_by_date as $date => $reading_values ) {
+					echo $date . "," . join( ",", $reading_values ) . "\n";
+				}
+
+				exit;
+
+			} else if ( 'import_meter' == $_POST['metermaid_action'] ) {
+				if ( ! wp_verify_nonce( $_POST['metermaid_nonce'], 'metermaid-import-meter' ) ) {
+					echo 'You are not authorized to import readings.';
+					wp_die();
+				}
+
+				if ( ! current_user_can( 'metermaid-add-reading', $_POST['metermaid_meter_id'] ) ) {
+					echo 'You are not authorized to add readings for this meter.';
+					wp_die();
+				}
+
+				$meter = new METERMAID_METER( $_POST['metermaid_meter_id'] );
+
+				if ( ! $meter() ) {
+					wp_die( 'Invalid meter ID.' );
+				}
+
+				$csv = $_FILES['metermaid_import_file'];
+
+				if ( ! empty( $csv['error'] ) ) {
+					$upload_error_strings = array(
+						1 => __( 'The CSV file is larger than the maximum file size.', 'metermaid' ),
+						2 => __( 'The CSV file is larger than the maximum file size.', 'metermaid' ),
+						3 => __( 'The CSV file only partially uploaded. Try again.', 'metermaid' ),
+						4 => __( 'No file was uploaded. Try again.', 'metermaid' ),
+						6 => __( 'The server couldn\'t write the file to disk. Try again.', 'metermaid' ),
+						7 => __( 'The server failed to write file to disk. Try again.', 'metermaid' ),
+					);
+
+					$error_message = $upload_error_strings[ $csv['error'] ] ?? sprintf( __( 'An error occurred (error code %s).', 'metermaid' ), $csv['error'] );
+
+					METERMAID::save_pending_notice( 'error', $error_message );
+				} else {
+					$success = true;
+					$count = 0;
+					$header_fields = array();
+
+					if ( ( $handle = fopen( $csv['tmp_name'], 'r' ) ) !== false ) {
+						while ( $success && ( $data = fgetcsv( $handle, 1000, ",") ) !== false ) {
+							if ( empty( $header_fields ) ) {
+								foreach ( $data as $column => $label ) {
+									$header_fields[ trim( strtolower( $label ) ) ] = $column;
+								}
+
+								if ( ! isset( $header_fields['reading'] ) ) {
+									METERMAID::save_pending_notice( 'error', __( 'The CSV must contain a "Reading" column.', 'metermaid' ) );
+									$success = false;
+								}
+
+								if ( ! isset( $header_fields['date'] ) ) {
+									METERMAID::save_pending_notice( 'error', __( 'The CSV must contain a "Date" column.', 'metermaid' ) );
+									$success = false;
+								}
+							} else {
+								$date = $data[ $header_fields['date'] ];
+								$reading = $data[ $header_fields['reading'] ];
+
+								$meter->add_reading( $reading, $date );
+								$count++;
+							}
+						}
+
+						fclose( $handle );
+					}
+
+					if ( $success ) {
+						METERMAID::save_pending_notice( 'success', sprintf( __( '%s readings were imported.', 'metermaid' ), number_format( $count ) ) );
+					}
+				}
 			}
 		}
 	}
@@ -1405,6 +1483,9 @@ class METERMAID {
 						<?php if ( current_user_can( 'metermaid-add-reading' ) ) { ?><a href="#tab-reading" class="nav-tab" data-metermaid-tab="reading"><?php echo esc_html( __( 'Add Reading', 'metermaid' ) ); ?></a><?php } ?>
 						<?php if ( current_user_can( 'metermaid-add-meter' ) ) { ?><a href="#tab-add-meter" class="nav-tab" data-metermaid-tab="add-meter"><?php echo esc_html( __( 'Add Meter', 'metermaid' ) ); ?></a><?php } ?>
 						<?php if ( current_user_can( 'metermaid-edit-system', $system->id ) ) { ?><a href="#tab-settings" class="nav-tab" data-metermaid-tab="settings"><?php echo esc_html( __( 'Configure System', 'metermaid' ) ); ?></a><?php } ?>
+						<?php if ( count( $system->readable_meters ) > 0 ) { ?>
+							<a href="#tab-export" class="nav-tab" data-metermaid-tab="export"><?php echo esc_html( __( 'Export', 'metermaid' ) ); ?></a>
+						<?php } ?>
 						<?php if ( current_user_can( 'metermaid-invite-system', $system->id ) ) { ?><a href="#tab-invite" class="nav-tab" data-metermaid-tab="invite"><?php echo esc_html( __( 'Invite Others', 'metermaid' ) ); ?></a><?php } ?>
 						<a href="#tab-profile" class="nav-tab" data-metermaid-tab="profile"><?php echo esc_html( __( 'Edit Profile', 'metermaid' ) ); ?></a>
 					</nav>
@@ -1428,6 +1509,28 @@ class METERMAID {
 								<?php self::system_form( $system->id ); ?>
 							</div>
 						<?php } ?>
+						<?php if ( count( $system->readable_meters ) > 0 ) { ?>
+							<div data-metermaid-tab="export">
+								<table class="form-table">
+									<tr>
+										<th scope="row">
+											<?php echo esc_html( __( 'Export All Meter Readings', 'metermaid' ) ); ?>
+										</th>
+										<td>
+											<p><?php echo esc_html( __( 'The CSV will contain a single Date column and one column for each meter\'s readings.', 'metermaid' ) ); ?></p>
+											<form method="post" action="">
+												<input type="hidden" name="metermaid_nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-export-meters' ) ); ?>" />
+												<input type="hidden" name="metermaid_action" value="export_meters" />
+												<input type="hidden" name="metermaid_system_id" value="<?php echo esc_attr( $system->id ); ?>" />
+												<p>
+													<input type="submit" class="button button-primary" value="<?php echo esc_attr( __( 'Download CSV', 'metermaid' ) ); ?>" />
+												</p>
+											</form>
+										</td>
+									</tr>
+								</table>
+							</div>
+						<?php } ?>
 						<?php if ( current_user_can( 'metermaid-invite-system', $system->id ) ) { ?>
 							<div data-metermaid-tab="invite">
 								<?php self::invite_form( $system->id ); ?>
@@ -1438,12 +1541,6 @@ class METERMAID {
 						</div>
 					</div>
 				</div>
-
-				<?php if ( count( $system->readable_meters ) > 0 ) { ?>
-					<div class="metermaid-export">
-						<a href="<?php echo esc_attr( add_query_arg( 'metermaid_export_meters', 1 ) ); ?>"><?php echo esc_html( __( 'Export All Meter Readings as CSV', 'metermaid' ) ); ?></a>
-					</div>
-				<?php } ?>
 
 				<?php $system->display_meter_table( true ); ?>
 			<?php } ?>
@@ -1487,6 +1584,13 @@ class METERMAID {
 						<?php if ( current_user_can( 'metermaid-add-reading', $meter->id ) ) { ?><a href="#tab-reading" class="nav-tab" data-metermaid-tab="reading"><?php echo esc_html( __( 'Add Reading', 'metermaid' ) ); ?></a><?php } ?>
 						<?php if ( current_user_can( 'metermaid-add-supplement', $meter->id ) ) { ?><a href="#tab-supplement" class="nav-tab" data-metermaid-tab="supplement"><?php echo esc_html( __( 'Add Supplement', 'metermaid' ) ); ?></a><?php } ?>
 						<?php if ( current_user_can( 'metermaid-edit-meter', $meter->id ) ) { ?><a href="#tab-settings" class="nav-tab" data-metermaid-tab="settings"><?php echo esc_html( __( 'Configure Meter', 'metermaid' ) ); ?></a><?php } ?>
+						<a href="#tab-import_export" class="nav-tab" data-metermaid-tab="import_export">
+							<?php if ( current_user_can( 'metermaid-add-reading', $meter->id ) ) { ?>
+								<?php echo esc_html( __( 'Import/Export', 'metermaid' ) ); ?></a>
+							<?php } else { ?>
+								<?php echo esc_html( __( 'Export', 'metermaid' ) ); ?></a>
+							<?php } ?>
+						</a>
 						<a href="#tab-invite" class="nav-tab" data-metermaid-tab="invite"><?php echo esc_html( __( 'Invite Others', 'metermaid' ) ); ?></a>
 						<a href="#tab-profile" class="nav-tab" data-metermaid-tab="profile"><?php echo esc_html( __( 'Edit Profile', 'metermaid' ) ); ?></a>
 					</nav>
@@ -1506,6 +1610,44 @@ class METERMAID {
 								<?php self::meter_form( $meter->system_id, $meter->id ); ?>
 							</div>
 						<?php } ?>
+						<div data-metermaid-tab="import_export">
+							<table class="form-table">
+								<tr>
+									<th scope="row">
+										<?php echo esc_html( __( 'Export Readings as CSV', 'metermaid' ) ); ?>
+									</th>
+									<td>
+										<form method="post" action="">
+											<input type="hidden" name="metermaid_nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-export-meter' ) ); ?>" />
+											<input type="hidden" name="metermaid_action" value="export_meter" />
+											<input type="hidden" name="metermaid_meter_id" value="<?php echo esc_attr( $meter->id ); ?>" />
+											<input type="submit" class="button button-primary" value="<?php echo esc_attr( __( 'Download CSV', 'metermaid' ) ); ?>" />
+										</form>
+									</td>
+								</tr>
+								<?php if ( current_user_can( 'metermaid-add-reading', $meter->id ) ) { ?>
+									<tr>
+										<th scope="row">
+											<?php echo esc_html( __( 'Import readings from CSV', 'metermaid' ) ); ?>
+										</th>
+										<td>
+											<p><?php echo esc_html( sprintf( __( 'The CSV must have a column labeled "%1$s" and a column labeled "%2$s".', 'metermaid' ), 'Date', 'Reading' ) ); ?></p>
+											<form method="post" action="" enctype="multipart/form-data">
+												<input type="hidden" name="metermaid_action" value="import_meter" />
+												<input type="hidden" name="metermaid_nonce" value="<?php echo esc_attr( wp_create_nonce( 'metermaid-import-meter' ) ); ?>" />
+												<input type="hidden" name="metermaid_meter_id" value="<?php echo esc_attr( $meter->id ); ?>" />
+												<p>
+													<input type="file" name="metermaid_import_file" />
+												</p>
+												<p>
+													<input type="submit" class="button button-secondary" value="Import CSV" />
+												</p>
+											</form>
+										</td>
+									</tr>
+								<?php } ?>
+							</table>
+						</div>
 						<div data-metermaid-tab="invite">
 							<?php self::invite_form( $meter->system_id, $meter->id ); ?>
 						</div>
@@ -1538,9 +1680,6 @@ class METERMAID {
 								<?php
 
 								if ( ! empty( $meter_readings ) ) { ?>
-									<div class="metermaid-export">
-										<a href="<?php echo esc_attr( add_query_arg( 'metermaid_export_meter', 1 ) ); ?>"><?php echo esc_html( __( 'Export as CSV', 'metermaid' ) ); ?></a>
-									</div>
 									<table class="wp-list-table widefat striped">
 										<thead>
 											<th></th>
