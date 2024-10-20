@@ -791,6 +791,8 @@ class METERMAID {
 					get_current_user_id()
 				) );
 
+				wp_cache_delete( $_POST['metermaid_system_id'], 'metermaid-meters' );
+
 				$meter_id = $wpdb->insert_id;
 
 				if ( ! empty( $_POST['metermaid_parent_meters'] ) ) {
@@ -843,6 +845,7 @@ class METERMAID {
 				) );
 
 				wp_cache_delete( $_POST['metermaid_meter_id'], 'metermaid-meter' );
+				wp_cache_delete( $meter->system_id, 'metermaid-meters' );
 
 				$wpdb->query( $wpdb->prepare(
 					"DELETE FROM " . $wpdb->prefix . "metermaid_readings WHERE metermaid_meter_id=%s",
@@ -1215,6 +1218,7 @@ class METERMAID {
 					$wpdb->query( $wpdb->prepare( "DELETE FROM " . $wpdb->prefix . "metermaid_meters WHERE metermaid_meter_id=%d", $meter_id ) );
 
 					wp_cache_delete( $meter_id, 'metermaid-meter' );
+					wp_cache_delete( $system->id, 'metermaid-meters' );
 				}
 
 				// Delete any personnel.

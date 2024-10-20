@@ -67,16 +67,36 @@ class METERMAID_SYSTEM {
 				return $this->_meters;
 			}
 
-			$meter_rows = $wpdb->get_results( $wpdb->prepare(
-				"SELECT m.*, r.parent_meter_id AS is_parent FROM " . $wpdb->prefix . "metermaid_meters m LEFT JOIN " . $wpdb->prefix . "metermaid_relationships r ON m.metermaid_meter_id=r.parent_meter_id WHERE m.metermaid_system_id=%s GROUP BY m.metermaid_meter_id ORDER BY is_parent DESC, m.name ASC",
-				$this->id
-			) );
+			$meter_ids = wp_cache_get( $this->id, 'metermaid-meters' );
+
+			if ( false === $meter_ids ) {
+				$meter_ids = $wpdb->get_col( $wpdb->prepare(
+					"SELECT metermaid_meter_id FROM " . $wpdb->prefix . "metermaid_meters WHERE metermaid_system_id=%d ORDER BY name ASC",
+					$this->id
+				) );
+
+				wp_cache_set( $this->id, $meter_ids, 'metermaid-meters' );
+			}
+
+			// Sort so that parents are first, children second, and both groups alphabetical by name.
 
 			$this->_meters = array();
 
-			foreach ( $meter_rows as $meter_row ) {
-				$this->_meters[] = new METERMAID_METER( $meter_row );
+			foreach ( $meter_ids as $meter_id ) {
+				$this->_meters[] = new METERMAID_METER( $meter_id );
 			}
+
+			usort( $this->_meters, function ( $a, $b ) {
+				if ( $a->is_parent() && ! $b->is_parent() ) {
+					return -1;
+				}
+
+				if ( $b->is_parent() && ! $a->is_parent() ) {
+					return 1;
+				}
+
+				return strcmp( $a->name, $b->name );
+			} );
 
 			return $this->_meters;
 		} else if ( 'readable_meters' == $key ) {
