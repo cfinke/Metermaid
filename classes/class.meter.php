@@ -181,14 +181,10 @@ class METERMAID_METER {
 				return $this->_parents;
 			}
 
-			if ( is_null( $this->_relationships ) ) {
-				$this->_relationships = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM " . $wpdb->prefix . "metermaid_relationships WHERE parent_meter_id=%s OR child_meter_id=%s", $this->id, $this->id ) );
-			}
-
 			$this->_children = array();
 			$this->_parents = array();
 
-			foreach ( $this->_relationships as $relationship ) {
+			foreach ( $this->relationships() as $relationship ) {
 				if ( $relationship->parent_meter_id == $this->id ) {
 					$this->_children[] = $relationship->child_meter_id;
 				} else if ( $relationship->child_meter_id == $this->id ) {
@@ -805,5 +801,38 @@ class METERMAID_METER {
 			METERMAID_STATUS_ACTIVE => __( 'Active', 'metermaid' ),
 			METERMAID_STATUS_INACTIVE => __( 'Inactive', 'metermaid' ),
 		);
+	}
+
+	public function relationships() {
+		global $wpdb;
+
+		if ( is_null( $this->_relationships ) ) {
+			$system_relationships = wp_cache_get( $this->system_id, 'metermaid-relationships' );
+
+			if ( false === $system_relationships ) {
+				error_log( "Cache miss for relationships where system_id=" . $this->system_id );
+
+				$system_relationships = $wpdb->get_results( $wpdb->prepare(
+					"SELECT *
+						FROM " . $wpdb->prefix . "metermaid_relationships
+						WHERE metermaid_system_id=%d
+						ORDER BY parent_meter_id ASC,
+							child_meter_id ASC",
+					$this->system_id
+				) );
+
+				wp_cache_set( $this->system_id, $system_relationships, 'metermaid-relationships' );
+			}
+
+			$this->_relationships = array();
+
+			foreach ( $system_relationships as $row ) {
+				if ( $row->parent_meter_id == $this->id || $row->child_meter_id == $this->id ) {
+					$this->_relationships[] = $row;
+				}
+			}
+		}
+
+		return $this->_relationships;
 	}
 }

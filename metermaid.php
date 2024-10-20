@@ -576,7 +576,7 @@ class METERMAID {
 
 					// Add the system ID to any existing rows.
 					$existing_rows = $wpdb->get_results( "SELECT * FROM " . $wpdb->prefix . "metermaid_relationships WHERE metermaid_system_id=0 GROUP BY parent_meter_id" );
-					var_dump( $existing_rows );
+
 					foreach ( $existing_rows as $row ) {
 						$meter = new METERMAID_METER( $row->parent_meter_id );
 
@@ -817,6 +817,8 @@ class METERMAID {
 					}
 				}
 
+				wp_cache_delete( $_POST['metermaid_system_id'], 'metermaid-relationships' );
+
 				METERMAID::save_pending_notice( 'success', __( 'The meter has been added.', 'metermaid' ) );
 			} else if ( 'delete_meter' == $_POST['metermaid_action'] ) {
 				if ( ! wp_verify_nonce( $_POST['metermaid_nonce'], 'metermaid-delete-meter' ) ) {
@@ -827,6 +829,12 @@ class METERMAID {
 				if ( ! current_user_can( 'metermaid-delete-meter', $_POST['metermaid_meter_id'] ) ) {
 					echo 'You are not authorized to delete this meter.';
 					wp_die();
+				}
+
+				$meter = new METERMAID_METER( $_POST['metermaid_meter_id'] );
+
+				if ( ! $meter() ) {
+					wp_die( 'Invalid meter ID.' );
 				}
 
 				$wpdb->query( $wpdb->prepare(
@@ -846,6 +854,8 @@ class METERMAID {
 					$_POST['metermaid_meter_id'],
 					$_POST['metermaid_meter_id']
 				) );
+
+				wp_cache_delete( $meter->system_id, 'metermaid-relationships' );
 
 				/* // Is there value in keeping around the personnel entries?
 				$wpdb->query( $wpdb->prepare(
@@ -1005,6 +1015,8 @@ class METERMAID {
 						) );
 					}
 				}
+
+				wp_cache_delete( $meter->system_id, 'metermaid-relationships' );
 
 				METERMAID::save_pending_notice( 'success', __( 'The meter has been updated.', 'metermaid' ) );
 			} else if ( 'invite' == $_POST['metermaid_action'] ) {
@@ -1212,6 +1224,7 @@ class METERMAID {
 				$wpdb->query( $wpdb->prepare( "DELETE FROM " . $wpdb->prefix . "metermaid_systems WHERE metermaid_system_id=%d LIMIT 1", $_POST['metermaid_system_id'] ) );
 
 				wp_cache_delete( $_POST['metermaid_system_id'], 'metermaid-system' );
+				wp_cache_delete( $_POST['metermaid_system_id'], 'metermaid-relationships' );
 
 				METERMAID::save_pending_notice( 'success', __( 'The system was deleted.', 'metermaid' ) );
 			} else if ( 'export_meter' == $_POST['metermaid_action'] ) {
