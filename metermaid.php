@@ -1909,7 +1909,7 @@ class METERMAID {
 				if ( $meter->is_parent() ) {
 					$child_meters = array();
 
-					foreach ( $meter->children as $child_id ) {
+					foreach ( $meter->children() as $child_id ) {
 						if ( current_user_can( 'metermaid-view-meter', $child_id ) ) {
 							$child_meters[] = new METERMAID_METER( $child_id );
 						}
@@ -1929,7 +1929,7 @@ class METERMAID {
 						<tbody>
 							<?php
 
-							$children = $meter->children;
+							$children = $meter->children();
 
 							foreach ( $child_meters as $child ) {
 								?>
@@ -2428,7 +2428,7 @@ class METERMAID {
 							<?php echo esc_html( __( 'Parent Meters', 'metermaid' ) ); ?>
 						</th>
 						<td>
-							<?php METERMAID::meter_list_selection( $system_id, 'metermaid_parent_meters', true, $meter() ? $meter->parents : [], array( $meter->id ) ); ?>
+							<?php METERMAID::meter_list_selection( $system_id, 'metermaid_parent_meters', true, $meter() ? $meter->parents() : [], array( $meter->id ) ); ?>
 							<p class="description"><?php echo esc_html( __( 'A parent meter is a meter that is located upstream from this meter.', 'metermaid' ) ); ?></p>
 						</td>
 					</tr>
@@ -2437,7 +2437,7 @@ class METERMAID {
 							<?php echo esc_html( __( 'Child Meters', 'metermaid' ) ); ?>
 						</th>
 						<td>
-							<?php METERMAID::meter_list_selection( $system_id, 'metermaid_child_meters', true, $meter() ? $meter->children : [], array( $meter->id ) ); ?>
+							<?php METERMAID::meter_list_selection( $system_id, 'metermaid_child_meters', true, $meter() ? $meter->children() : [], array( $meter->id ) ); ?>
 							<p class="description"><?php echo esc_html( __( 'A child meter is a meter that is located downstream from this meter.', 'metermaid' ) ); ?></p>
 						</td>
 					</tr>

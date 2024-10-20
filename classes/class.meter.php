@@ -174,26 +174,7 @@ class METERMAID_METER {
 	public function __get( $key ) {
 		global $wpdb;
 
-		if ( 'children' == $key || 'parents' == $key ) {
-			if ( 'children' == $key && ! is_null( $this->_children ) ) {
-				return $this->_children;
-			} else if ( 'parents' == $key && ! is_null( $this->_parents ) ) {
-				return $this->_parents;
-			}
-
-			$this->_children = array();
-			$this->_parents = array();
-
-			foreach ( $this->relationships() as $relationship ) {
-				if ( $relationship->parent_meter_id == $this->id ) {
-					$this->_children[] = $relationship->child_meter_id;
-				} else if ( $relationship->child_meter_id == $this->id ) {
-					$this->_parents[] = $relationship->parent_meter_id;
-				}
-			}
-
-			return $this->__get( $key );
-		} else if ( 'system' == $key ) {
+		if ( 'system' == $key ) {
 			if ( ! is_null( $this->_system ) ) {
 				return $this->_system;
 			}
@@ -216,11 +197,39 @@ class METERMAID_METER {
 		return null;
 	}
 
+	public function children() {
+		if ( is_null( $this->_children ) ) {
+			$this->_children = array();
+
+			foreach ( $this->relationships() as $relationship ) {
+				if ( $relationship->parent_meter_id == $this->id ) {
+					$this->_children[] = $relationship->child_meter_id;
+				}
+			}
+		}
+
+		return $this->_children;
+	}
+
+	public function parents() {
+		if ( is_null( $this->_parents ) ) {
+			$this->_parents = array();
+
+			foreach ( $this->relationships() as $relationship ) {
+				if ( $relationship->child_meter_id == $this->id ) {
+					$this->_parents[] = $relationship->parent_meter_id;
+				}
+			}
+		}
+
+		return $this->_parents;
+	}
+
 	/**
 	 * @return bool
 	 */
 	public function is_parent() {
-		$children = $this->children;
+		$children = $this->children();
 
 		if ( ! empty( $children ) ) {
 			return true;
@@ -341,7 +350,7 @@ class METERMAID_METER {
 
 		$child_objects = array();
 
-		foreach ( $this->children as $child_id ) {
+		foreach ( $this->children() as $child_id ) {
 			$meter = new METERMAID_METER( $child_id );
 			$child_objects[] = $meter;
 		}
@@ -479,7 +488,7 @@ class METERMAID_METER {
 					$master_reading_dates[] = $reading->reading_date;
 				}
 
-				$children = $this->children;
+				$children = $this->children();
 
 				$this->_children_readings = array();
 
@@ -810,8 +819,6 @@ class METERMAID_METER {
 			$system_relationships = wp_cache_get( $this->system_id, 'metermaid-relationships' );
 
 			if ( false === $system_relationships ) {
-				error_log( "Cache miss for relationships where system_id=" . $this->system_id );
-
 				$system_relationships = $wpdb->get_results( $wpdb->prepare(
 					"SELECT *
 						FROM " . $wpdb->prefix . "metermaid_relationships
