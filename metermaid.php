@@ -1735,7 +1735,7 @@ class METERMAID {
 													<td><?php echo esc_html( number_format( $reading->reading, 0 ) ); ?></td>
 													<?php if ( $meter->is_parent() ) {
 														$children_readings = $meter->children_readings();
-														$supplements = $meter->supplements;
+														$supplements = $meter->supplements();
 
 														?>
 														<td>
@@ -1868,7 +1868,7 @@ class METERMAID {
 				<?php } ?>
 				<?php
 
-				$supplements = $meter->supplements;
+				$supplements = $meter->supplements();
 
 				?>
 				<?php if ( ! empty( $supplements ) ) { ?>

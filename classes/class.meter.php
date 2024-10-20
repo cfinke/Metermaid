@@ -181,17 +181,6 @@ class METERMAID_METER {
 
 			$this->_system = new METERMAID_SYSTEM( $this->system_id );
 			return $this->_system;
-		} else if ( 'supplements' == $key ) {
-			if ( ! is_null( $this->_supplements ) ) {
-				return $this->_supplements;
-			}
-
-			$this->_supplements = $wpdb->get_results( $wpdb->prepare(
-				"SELECT * FROM " . $wpdb->prefix . "metermaid_supplements WHERE metermaid_meter_id=%d ORDER BY supplement_date DESC",
-				$this->id
-			) );
-
-			return $this->_supplements;
 		}
 
 		return null;
@@ -223,6 +212,19 @@ class METERMAID_METER {
 		}
 
 		return $this->_parents;
+	}
+
+	public function supplements() {
+		global $wpdb;
+
+		if ( is_null( $this->_supplements ) ) {
+			$this->_supplements = $wpdb->get_results( $wpdb->prepare(
+				"SELECT * FROM " . $wpdb->prefix . "metermaid_supplements WHERE metermaid_meter_id=%d ORDER BY supplement_date DESC",
+				$this->id
+			) );
+		}
+
+		return $this->_supplements;
 	}
 
 	/**
