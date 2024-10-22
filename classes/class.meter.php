@@ -722,8 +722,17 @@ class METERMAID_METER {
 					) / 60 / 60 / 24 );
 
 				$days_since_january_1 = date( "z", strtotime( $last_reading->reading_date ) );
-				$total_gallons_then = $last_reading->real_reading - $readings[$i]->real_reading;
-				$total_gallons_to_subtract = ( $total_gallons_then * round( ( $days_between_closest_to_january_dates - $days_since_january_1 ) / $days_between_closest_to_january_dates ) );
+
+				$total_gallons_since = $last_reading->real_reading - $readings[$i]->real_reading;
+
+				$total_gallons_to_subtract = round(
+					$total_gallons_since
+					* (
+						( $days_between_closest_to_january_dates - $days_since_january_1 )
+						/ $days_between_closest_to_january_dates
+					)
+				);
+
 				$gallons = $current_reading->real_reading - $readings[$i]->real_reading;
 
 				return $gallons - $total_gallons_to_subtract;
