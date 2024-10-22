@@ -63,8 +63,8 @@ class METERMAID_SYSTEM {
 		global $wpdb;
 
 		if ( 'all_meters' == $key ) {
-			if ( ! is_null( $this->_meters ) ) {
-				return $this->_meters;
+			if ( ! is_null( $this->_all_meters ) ) {
+				return $this->_all_meters;
 			}
 
 			$meter_ids = wp_cache_get( $this->id, 'metermaid-meters' );
@@ -80,13 +80,13 @@ class METERMAID_SYSTEM {
 
 			// Sort so that parents are first, children second, and both groups alphabetical by name.
 
-			$this->_meters = array();
+			$this->_all_meters = array();
 
 			foreach ( $meter_ids as $meter_id ) {
-				$this->_meters[] = new METERMAID_METER( $meter_id );
+				$this->_all_meters[] = new METERMAID_METER( $meter_id );
 			}
 
-			usort( $this->_meters, function ( $a, $b ) {
+			usort( $this->_all_meters, function ( $a, $b ) {
 				if ( $a->is_parent() && ! $b->is_parent() ) {
 					return -1;
 				}
@@ -98,7 +98,7 @@ class METERMAID_SYSTEM {
 				return strcmp( $a->name, $b->name );
 			} );
 
-			return $this->_meters;
+			return $this->_all_meters;
 		} else if ( 'readable_meters' == $key ) {
 			if ( ! is_null( $this->_readable_meters ) ) {
 				return $this->_readable_meters;
