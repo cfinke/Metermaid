@@ -698,50 +698,21 @@ class METERMAID_METER {
 	}
 
 	public function gallons_ytd( $reading = null ) {
-		$readings = $this->readings();
+		if ( ! $reading ) {
+			$readings = $this->readings();
 
-		if ( count( $readings ) <= 1 ) {
-			return null;
-		}
-
-		if ( $reading ) {
-			$current_reading = $reading;
-		} else {
-			$current_reading = $readings[1];
-		}
-
-		$last_reading = $current_reading;
-
-		for ( $i = 1; $i < count( $readings ); $i++ ) {
-			if ( date( "Y", strtotime( $readings[$i]->reading_date ) ) < ( date( "Y", strtotime( $current_reading->reading_date ) ) ) ) {
-				// Figure out the rate of use between the two dates around January 1 and use that to
-				// estimate what the meter would have read on January 1.
-				$days_between_closest_to_january_dates = round(
-					(
-						strtotime( $last_reading->reading_date ) - strtotime( $readings[$i]->reading_date )
-					) / 60 / 60 / 24 );
-
-				$days_since_january_1 = date( "z", strtotime( $last_reading->reading_date ) );
-
-				$total_gallons_since = $last_reading->real_reading - $readings[$i]->real_reading;
-
-				$total_gallons_to_subtract = round(
-					$total_gallons_since
-					* (
-						( $days_between_closest_to_january_dates - $days_since_january_1 )
-						/ $days_between_closest_to_january_dates
-					)
-				);
-
-				$gallons = $current_reading->real_reading - $readings[$i]->real_reading;
-
-				return $gallons - $total_gallons_to_subtract;
-			} else {
-				$last_reading = $readings[$i];
+			if ( empty( $readings ) ) {
+				return null;
 			}
+
+			$reading = $readings[0];
 		}
 
-		return null;
+		$reading_year = date( "Y", strtotime( $reading->reading_date ) );
+
+		$january_1_reading = $this->estimate_real_reading_at_date( $reading_year . "-01-01" );
+
+		return $reading->real_reading - ( (int) $january_1_reading );
 	}
 
 	public function gallons_last_year() {
