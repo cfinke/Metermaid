@@ -216,11 +216,11 @@ class METERMAID_SYSTEM {
 									if ( $gallons_ytd < $gallons_last_year_at_this_time ) {
 										$percent_decrease = round( ( ( $gallons_last_year_at_this_time - $gallons_ytd ) / $gallons_last_year_at_this_time ) * 100 );
 
-										echo ' <span class="metermaid-surplus" title="' . esc_attr( $tooltip_text ) . '">(-' . $percent_decrease . '%)</span>';
+										echo ' <span class="metermaid-surplus" title="' . esc_attr( $tooltip_text ) . '">(-' . number_format( $percent_decrease, 0 ) . '%)</span>';
 									} else {
 										$percent_increase = round( ( ( $gallons_ytd - $gallons_last_year_at_this_time ) / $gallons_last_year_at_this_time ) * 100 );
 
-										echo ' <span class="metermaid-deficit" title="' . esc_attr( $tooltip_text ) . '">(+' . $percent_increase . '%)</span>';
+										echo ' <span class="metermaid-deficit" title="' . esc_attr( $tooltip_text ) . '">(+' . number_format( $percent_increase, 0 ) . '%)</span>';
 									}
 								}
 
