@@ -276,6 +276,39 @@ class METERMAID_METER {
 
 		$readings = array_reverse( $readings );
 
+		$readings_simple = array();
+
+		$last_year = null;
+
+		$readings_to_add = [];
+
+		// Add in estimated readings at the beginning and end of each year.
+		foreach ( $readings as $reading ) {
+			$year = date( 'Y', strtotime( $reading->reading_date ) );
+
+			if ( $year != $last_year ) {
+				$january_reading = new METERMAID_READING();
+				$january_reading->reading_date = $year . '-01-01';
+				$january_reading->real_reading = $this->estimate_real_reading_at_date( $year . '-01-01' );
+
+				$readings_to_add[] = $january_reading;
+
+				if ( ( $year . '-12-31' ) < date( 'Y-m-d' ) ) {
+					$december_reading = new METERMAID_READING();
+					$december_reading->reading_date = $year . '-12-31';
+					$december_reading->real_reading = $this->estimate_real_reading_at_date( $year . '-12-31' );
+
+					$readings_to_add[] = $december_reading;
+				}
+
+				$last_year = $year;
+			}
+		}
+
+		$readings = array_merge( $readings, $readings_to_add );
+		usort( $readings, array( 'METERMAID_METER', 'sort_readings' ) );
+		$readings = array_reverse( $readings );
+
 		$first_year = date( "Y", strtotime( $readings[1]->reading_date ) ); // The first date at which we can determine gpd.
 
 		$data = array();
@@ -312,17 +345,14 @@ class METERMAID_METER {
 				$previous_idx--;
 			} while ( $previous_idx >= 0 && $days_since_previous_reading < $trailing_average_duration );
 
-			$gallons = $reading->real_reading - $previous_reading->real_reading;
-			$gpd = round( $gallons / $days_since_previous_reading );
+			if ( $days_since_previous_reading > 0 ) { // We might have duplicated a January 1 or December 31 reading above.
+				$gallons = $reading->real_reading - $previous_reading->real_reading;
+				$gpd = round( $gallons / $days_since_previous_reading );
 
-			$row_key = date( "F j", strtotime( $reading->reading_date ) );
-			$col_key = date( "Y", strtotime( $reading->reading_date ) ) - $first_year + 1;
+				$row_key = date( "F j", strtotime( $reading->reading_date ) );
+				$col_key = date( "Y", strtotime( $reading->reading_date ) ) - $first_year + 1;
 
-			$data[ $row_key ][ $col_key ] = $gpd;
-
-			if ( $row_key == "January 1" && $col_key > 1 ) {
-				// Also treat this as December 31 from previous year so the chart lines go to the end.
-				$data[ "December 31" ][ $col_key - 1 ] = $gpd;
+				$data[ $row_key ][ $col_key ] = $gpd;
 			}
 		}
 

@@ -10,8 +10,12 @@ class METERMAID_READING {
 
 	private $_meter;
 
-	public function __construct( $reading_id_or_row ) {
+	public function __construct( $reading_id_or_row = null ) {
 		global $wpdb;
+
+		if ( is_null( $reading_id_or_row ) ) {
+			return;
+		}
 
 		if ( is_numeric( $reading_id_or_row ) ) {
 			$reading_id_or_row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM " . $wpdb->prefix . "metermaid_readings WHERE metermaid_reading_id=%s LIMIT 1", $reading_id_or_row ) );
