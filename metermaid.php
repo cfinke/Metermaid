@@ -670,10 +670,10 @@ class METERMAID {
 	public static function enqueue_scripts() {
 		wp_enqueue_script( 'metermaid-google-charts', 'https://www.gstatic.com/charts/loader.js' );
 
-		wp_register_style( 'metermaid-css', plugin_dir_url( __FILE__ ) . '/css/metermaid.css', array(), time() );
+		wp_register_style( 'metermaid-css', plugin_dir_url( __FILE__ ) . 'css/metermaid.css', array(), time() );
 		wp_enqueue_style( 'metermaid-css' );
 
-		wp_register_script( 'metermaid-admin.js', plugin_dir_url( __FILE__ ) . '/js/metermaid-admin.js', array( 'jquery' ), time() );
+		wp_register_script( 'metermaid-admin.js', plugin_dir_url( __FILE__ ) . 'js/metermaid-admin.js', array( 'jquery' ), time() );
 
 		$metermaid_i18n = array(
 			'meter_delete_confirm' => __( 'Are you sure you want to delete this meter?', 'metermaid' ),
@@ -688,7 +688,7 @@ class METERMAID {
 	}
 
 	public static function login_enqueue_scripts() {
-		wp_register_style( 'metermaid-login-css', plugin_dir_url( __FILE__ ) . '/css/metermaid-login.css', array(), time() );
+		wp_register_style( 'metermaid-login-css', plugin_dir_url( __FILE__ ) . 'css/metermaid-login.css', array(), time() );
 		wp_enqueue_style( 'metermaid-login-css' );
 	}
 
