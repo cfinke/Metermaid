@@ -478,7 +478,7 @@ class METERMAID {
 	public static function sql() {
 		global $wpdb;
 
-		$METERMAID_DB_SCHEMA_VERSION = 2;
+		$METERMAID_DB_SCHEMA_VERSION = 1;
 
 		$existing_schema_version = get_option( 'metermaid_db_schema_version', 0 );
 
@@ -571,32 +571,12 @@ class METERMAID {
 							added datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
 							added_by bigint NOT NULL,
 							PRIMARY KEY (metermaid_personnel_id),
-							UNIQUE KEY user_rights_on_meter (email,metermaid_system_id,metermaid_meter_id,manage,added_by) USING BTREE,
+							UNIQUE KEY user_rights_on_meter (email,metermaid_system_id,metermaid_meter_id,manage,added_by),
 							KEY email (email),
 							KEY metermaid_system_and_meter (metermaid_system_id,metermaid_meter_id),
 							KEY added (added)
 						) ENGINE=InnoDB DEFAULT CHARSET utf8mb4"
 					);
-				case 1:
-					$wpdb->query( "ALTER TABLE " . $wpdb->prefix . "metermaid_relationships ADD metermaid_system_id BIGINT NOT NULL AFTER metermaid_relationship_id" );
-					$wpdb->query( "CREATE INDEX metermaid_system_id ON " . $wpdb->prefix . "metermaid_relationships (metermaid_system_id)" );
-
-					// Add the system ID to any existing rows.
-					$existing_rows = $wpdb->get_results( "SELECT * FROM " . $wpdb->prefix . "metermaid_relationships WHERE metermaid_system_id=0 GROUP BY parent_meter_id" );
-
-					foreach ( $existing_rows as $row ) {
-						$meter = new METERMAID_METER( $row->parent_meter_id );
-
-						if ( ! $meter() ) {
-							error_log( "Missing meter: " . $row->metermaid_meter_id );
-						} else {
-							$wpdb->query( $wpdb->prepare(
-								"UPDATE " . $wpdb->prefix . "metermaid_relationships SET metermaid_system_id=%d WHERE parent_meter_id=%d",
-								$meter->system_id,
-								$meter->id
-							) );
-						}
-					}
 				break;
 			}
 
