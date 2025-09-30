@@ -606,13 +606,13 @@ class METERMAID {
 
 	public static function add_options_menu() {
 		add_menu_page(
-			'Metermaid',                        // Page title
-			'Metermaid',                        // Menu title
-			'metermaid',                        // capability
-			'metermaid',	                    // menu slug
-			array( 'METERMAID', 'admin_page' ), // Callback
+			'Metermaid',                                           // Page title
+			'Metermaid',                                           // Menu title
+			'metermaid',                                           // capability
+			'metermaid',                                           // menu slug
+			array( 'METERMAID', 'admin_page' ),                    // Callback
 			plugins_url( 'metermaid/images/admin-menu-icon.png' ),
-			4                                   // Position
+			4                                                      // Position
 		);
 
 		add_submenu_page(
