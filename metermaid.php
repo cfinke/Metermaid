@@ -489,12 +489,13 @@ class METERMAID {
 						(
 							metermaid_system_id bigint NOT NULL AUTO_INCREMENT,
 							name varchar(100) NOT NULL,
+							location varchar(100) NOT NULL,
 							unit varchar(32) NOT NULL,
 							rate_interval int NOT NULL,
-							added datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+							added datetime NOT NULL,
 							added_by bigint NOT NULL,
 							PRIMARY KEY (metermaid_system_id),
-							INDEX name (name)
+							KEY name (name)
 						) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
 					);
 
@@ -503,24 +504,30 @@ class METERMAID {
 							metermaid_meter_id bigint NOT NULL AUTO_INCREMENT,
 							metermaid_system_id bigint NOT NULL,
 							name varchar(100) NOT NULL,
+							location varchar(100) NOT NULL,
+							contact_name varchar(100) NOT NULL,
+							contact_email varchar(100) NOT NULL,
+							contact_phone varchar(100) NOT NULL,
 							status int NOT NULL,
 							added datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
 							added_by bigint NOT NULL,
 							PRIMARY KEY (metermaid_meter_id),
-							INDEX name (name)
+							KEY name (name)
 						) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
 					);
 
 					$wpdb->query( "CREATE TABLE IF NOT EXISTS " . $wpdb->prefix . "metermaid_relationships
 						(
 							metermaid_relationship_id bigint NOT NULL AUTO_INCREMENT,
+							metermaid_system_id bigint NOT NULL,
 							parent_meter_id bigint NOT NULL,
 							child_meter_id bigint NOT NULL,
 							added datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
 							added_by bigint NOT NULL,
 							PRIMARY KEY (metermaid_relationship_id),
 							UNIQUE KEY relationship (parent_meter_id,child_meter_id),
-							KEY child_meter_id (child_meter_id)
+							KEY child_meter_id (child_meter_id),
+							KEY metermaid_system_id (metermaid_system_id)
 						) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
 					);
 
@@ -531,11 +538,11 @@ class METERMAID {
 							reading int NOT NULL,
 							real_reading int NOT NULL,
 							reading_date date NOT NULL,
-							added datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+							added datetime DEFAULT CURRENT_TIMESTAMP,
 							added_by bigint NOT NULL,
 							PRIMARY KEY (metermaid_reading_id),
-							INDEX metermaid_meter_id (metermaid_meter_id),
-							UNIQUE KEY reading_date (reading_date, metermaid_meter_id)
+							UNIQUE KEY reading_date (reading_date,metermaid_meter_id),
+							KEY meter_id (metermaid_meter_id)
 						) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
 					);
 
@@ -545,12 +552,12 @@ class METERMAID {
 							metermaid_meter_id bigint NOT NULL,
 							amount int NOT NULL,
 							supplement_date date NOT NULL,
-							note TEXT,
-							added datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
-							added_by bigint NOT NULL,
+							note text,
+							added datetime DEFAULT NULL,
+							added_by varchar(100) DEFAULT NULL,
 							PRIMARY KEY (metermaid_supplement_id),
-							INDEX metermaid_meter_id (metermaid_meter_id),
-							UNIQUE KEY supplement_date (supplement_date, metermaid_meter_id)
+							UNIQUE KEY supplement_date (supplement_date,metermaid_meter_id),
+							KEY meter_id (metermaid_meter_id)
 						) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
 					);
 
@@ -560,12 +567,14 @@ class METERMAID {
 							email varchar(100) NOT NULL,
 							metermaid_system_id bigint NOT NULL,
 							metermaid_meter_id bigint NOT NULL,
+							manage tinyint NOT NULL,
 							added datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
 							added_by bigint NOT NULL,
 							PRIMARY KEY (metermaid_personnel_id),
-							INDEX email (email),
-							INDEX metermaid_system_and_meter (metermaid_system_id, metermaid_meter_id),
-							INDEX added (added)
+							UNIQUE KEY user_rights_on_meter (email,metermaid_system_id,metermaid_meter_id,manage,added_by) USING BTREE,
+							KEY email (email),
+							KEY metermaid_system_and_meter (metermaid_system_id,metermaid_meter_id),
+							KEY added (added)
 						) ENGINE=InnoDB DEFAULT CHARSET utf8mb4"
 					);
 				case 1:
