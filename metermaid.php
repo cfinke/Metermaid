@@ -3,7 +3,7 @@
 /*
 Plugin Name: Metermaid
 Description: A WordPress plugin to manage tracking water usage for community wells.
-Version: 1.0
+Version: 1.1a1
 Author: Christopher Finke
 */
 
@@ -244,7 +244,7 @@ class METERMAID {
 			$_GET['metermaid_system_id'] = $meter->system_id;
 		}
 
-		if ( ! in_array( 'administrator', wp_get_current_user()->roles ) ) {
+		if ( is_admin() && ! in_array( 'administrator', wp_get_current_user()->roles ) ) {
 			if ( in_array(
 				$pagenow,
 				array( 'profile.php', )
