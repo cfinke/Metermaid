@@ -33,10 +33,6 @@ class METERMAID {
 
 		add_action( 'user_register', array( 'METERMAID', 'set_default_user_role' ), 10, 2 );
 
-		add_filter( 'not_a_blog_default_page', function ( $url ) {
-			return 'wp-admin/admin.php?page=metermaid-home';
-		} );
-
 		add_filter( 'user_has_cap', array( 'METERMAID', 'user_has_cap' ), 10, 4 );
 
 		$role = get_role( 'administrator' );
@@ -245,22 +241,14 @@ class METERMAID {
 		}
 
 		if ( is_admin() && ! in_array( 'administrator', wp_get_current_user()->roles ) ) {
-			if ( in_array(
-				$pagenow,
-				array( 'profile.php', )
-			) ) {
-				wp_safe_redirect( site_url( 'wp-admin/admin.php?page=metermaid-home#tab-profile' ) );
+			if ( 'index.php' == $pagenow ) {
+				// If the current user is not an admin and has a Metermaid role, assume that
+				// they are only in the admin for Metermaid purposes.
+				if ( current_user_can( 'metermaid' ) ) {
+					wp_safe_redirect( site_url( 'wp-admin/admin.php?page=metermaid-home' ) );
 
-				exit;
-			}
-
-			if ( in_array(
-				$pagenow,
-				array( 'about.php', 'index.php', )
-			) ) {
-				wp_safe_redirect( site_url( 'wp-admin/admin.php?page=metermaid-home' ) );
-
-				exit;
+					exit;
+				}
 			}
 		}
 
