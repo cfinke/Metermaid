@@ -3,7 +3,7 @@
 /*
 Plugin Name: Metermaid
 Description: A WordPress plugin to manage tracking water usage for community wells.
-Version: 1.1a1
+Version: 1.0.1
 Author: Christopher Finke
 */
 
