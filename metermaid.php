@@ -19,6 +19,8 @@ define( 'METERMAID_DEFAULT_RATE_INTERVAL', 7 );
 class METERMAID {
 	public static $pending_notices = [];
 
+	public static $repopulate = false;
+
 	public static function init() {
 		global $wpdb;
 		global $pagenow;
@@ -727,23 +729,28 @@ class METERMAID {
 
 				METERMAID::save_pending_notice( 'success', __( 'The system has been added.', 'metermaid' ) );
 			} else if ( 'add_reading' == $_POST['metermaid_action'] ) {
-				if ( ! wp_verify_nonce( $_POST['metermaid_nonce'], 'metermaid-add-reading' ) ) {
-					echo 'You are not authorized to add a reading.';
-					wp_die();
-				}
-
-				if ( ! current_user_can( 'metermaid-add-reading', $_POST['metermaid_meter_id'] ) ) {
-					echo 'You are not authorized to add a reading for this meter.';
-					wp_die();
-				}
-
-				$meter = new METERMAID_METER( $_POST['metermaid_meter_id'] );
-				$success = $meter->add_reading( $_POST['metermaid_reading'], $_POST['metermaid_reading_date'] );
-
-				if ( $success ) {
-					METERMAID::save_pending_notice( 'success', __( 'The reading has been added.', 'metermaid' ) );
+				if ( empty( $_POST['metermaid_meter_id'] ) ) {
+					METERMAID::$repopulate = true;
+					METERMAID::save_pending_notice( 'error', __( 'No meter was selected.', 'metermaid' ) );
 				} else {
-					METERMAID::save_pending_notice( 'error', __( 'The reading could not be added because another person already saved a reading for that date.', 'metermaid' ) );
+					if ( ! wp_verify_nonce( $_POST['metermaid_nonce'], 'metermaid-add-reading' ) ) {
+						echo 'You are not authorized to add a reading.';
+						wp_die();
+					}
+
+					if ( ! current_user_can( 'metermaid-add-reading', $_POST['metermaid_meter_id'] ) ) {
+						echo 'You are not authorized to add a reading for this meter.';
+						wp_die();
+					}
+
+					$meter = new METERMAID_METER( $_POST['metermaid_meter_id'] );
+					$success = $meter->add_reading( $_POST['metermaid_reading'], $_POST['metermaid_reading_date'] );
+
+					if ( $success ) {
+						METERMAID::save_pending_notice( 'success', __( 'The reading has been added.', 'metermaid' ) );
+					} else {
+						METERMAID::save_pending_notice( 'error', __( 'The reading could not be added because another person already saved a reading for that date.', 'metermaid' ) );
+					}
 				}
 			} else if ( 'add_meter' == $_POST['metermaid_action'] ) {
 				if ( ! wp_verify_nonce( $_POST['metermaid_nonce'], 'metermaid-add-meter' ) ) {
@@ -2138,7 +2145,7 @@ class METERMAID {
 						<?php echo esc_html( __( 'Reading', 'metermaid' ) ); ?>
 					</th>
 					<td>
-						<input type="text" inputmode="numeric" pattern="[0-9,.]*" name="metermaid_reading" value="" />
+						<input type="text" inputmode="numeric" pattern="[0-9,.]*" name="metermaid_reading" value="<?php echo ( METERMAID::$repopulate ? esc_attr( $_POST['metermaid_reading'] ?? '' ) : '' ); ?>" />
 					</td>
 				</tr>
 				<tr>
