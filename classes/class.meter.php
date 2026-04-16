@@ -359,37 +359,150 @@ class METERMAID_METER {
 		?>
 		<script type="text/javascript">
 			google.charts.load( 'current', { 'packages' : [ 'corechart' ] } );
-			google.charts.setOnLoadCallback( drawChart );
+			google.charts.setOnLoadCallback( drawChart_<?php echo $this->id; ?> );
 			metermaid.registerTabBlocker( 'year_chart' );
 
-			function drawChart() {
-				// Create the data table.
-				var data = google.visualization.arrayToDataTable( <?php echo json_encode( array_values( $data ) ); ?> );
+			var metermaidYearChart_<?php echo $this->id; ?> = {
+				fullData: <?php echo json_encode( array_values( $data ) ); ?>,
+				chartId: <?php echo json_encode( $chart_id ); ?>,
+				firstYear: <?php echo json_encode( (int) $first_year ); ?>,
+				currentYear: <?php echo json_encode( (int) date( 'Y' ) ); ?>,
+				title: <?php echo json_encode(
+						sprintf(
+							__( '%1$s Per Day (over at least %2$d days)', 'metermaid' ),
+							$this->system->measurement()['plural'],
+							intval( $this->system->rate_interval )
+						)
+					); ?>,
 
-				var options = {
-					title: <?php echo json_encode(
-							sprintf(
-								__( '%1$s Per Day (over at least %2$d days)', 'metermaid' ),
-								$this->system->measurement()['plural'],
-								intval( $this->system->rate_interval )
-							)
-						); ?>,
-					legend: { position: 'bottom' },
-					interpolateNulls : true,
-					vAxis : {
-						viewWindow : {
-							min: 0
+				draw: function() {
+					var self = this;
+					var totalYears = self.currentYear - self.firstYear + 1;
+
+					// Determine which columns are visible based on checkboxes.
+					var visibleCols = [0]; // Always include the date column.
+					var colIndexMap = [];
+
+					for ( var i = 0; i < totalYears; i++ ) {
+						var year = self.firstYear + i;
+						var checkbox = document.getElementById( self.chartId + '-checkbox-' + year );
+
+						if ( checkbox && checkbox.checked ) {
+							visibleCols.push( i + 1 );
+							colIndexMap.push( i );
 						}
 					}
-				};
 
-				var chart = new google.visualization.LineChart( document.getElementById( <?php echo json_encode( $chart_id ); ?> ) );
-				chart.draw( data, options );
+					// Build filtered data.
+					var filteredData = [];
 
+					for ( var r = 0; r < self.fullData.length; r++ ) {
+						var row = [];
+
+						for ( var c = 0; c < visibleCols.length; c++ ) {
+							row.push( self.fullData[r][ visibleCols[c] ] );
+						}
+
+						filteredData.push( row );
+					}
+
+					var data = google.visualization.arrayToDataTable( filteredData );
+
+					// Build series options: dim older years by 10% each.
+					var series = {};
+					var visibleCount = colIndexMap.length;
+
+					for ( var i = 0; i < visibleCount; i++ ) {
+						var yearsAgo = self.currentYear - ( self.firstYear + colIndexMap[i] );
+						var opacity = Math.max( 0, 1 - ( yearsAgo * 0.1 ) );
+
+						series[i] = { lineWidth: 2, color: null };
+
+						// Use default color but with adjusted opacity via areaOpacity workaround.
+						// Google Charts doesn't support per-series line opacity directly,
+						// so we adjust the color to simulate it by blending with white.
+						var defaultColors = [
+							'#3366cc', '#dc3912', '#ff9900', '#109618', '#990099',
+							'#0099c6', '#dd4477', '#66aa00', '#b82e2e', '#316395',
+							'#994499', '#22aa99', '#aaaa11', '#6633cc', '#e67300',
+							'#8b0707', '#651067', '#329262', '#5574a6', '#3b3eac'
+						];
+
+						var baseColor = defaultColors[ colIndexMap[i] % defaultColors.length ];
+
+						// Parse hex color and blend with white based on opacity.
+						var r = parseInt( baseColor.substring(1, 3), 16 );
+						var g = parseInt( baseColor.substring(3, 5), 16 );
+						var b = parseInt( baseColor.substring(5, 7), 16 );
+
+						r = Math.round( r + ( 255 - r ) * ( 1 - opacity ) );
+						g = Math.round( g + ( 255 - g ) * ( 1 - opacity ) );
+						b = Math.round( b + ( 255 - b ) * ( 1 - opacity ) );
+
+						var blendedColor = '#' +
+							( '0' + r.toString(16) ).slice(-2) +
+							( '0' + g.toString(16) ).slice(-2) +
+							( '0' + b.toString(16) ).slice(-2);
+
+						series[i] = { color: blendedColor };
+					}
+
+					var options = {
+						title: self.title,
+						legend: { position: 'bottom' },
+						interpolateNulls: true,
+						vAxis: {
+							viewWindow: {
+								min: 0
+							}
+						},
+						series: series
+					};
+
+					var chart = new google.visualization.LineChart( document.getElementById( self.chartId ) );
+					chart.draw( data, options );
+				},
+
+				setAll: function( checked, onlyYears ) {
+					var self = this;
+
+					for ( var year = self.firstYear; year <= self.currentYear; year++ ) {
+						var checkbox = document.getElementById( self.chartId + '-checkbox-' + year );
+
+						if ( checkbox ) {
+							if ( onlyYears ) {
+								checkbox.checked = onlyYears.indexOf( year ) !== -1;
+							} else {
+								checkbox.checked = checked;
+							}
+						}
+					}
+
+					self.draw();
+				}
+			};
+
+			function drawChart_<?php echo $this->id; ?>() {
+				metermaidYearChart_<?php echo $this->id; ?>.draw();
 				metermaid.clearTabBlocker( 'year_chart' );
-			  }
+			}
 		</script>
 		<div id="<?php echo esc_attr( $chart_id ); ?>" style="height: 500px;"></div>
+		<div id="<?php echo esc_attr( $chart_id ); ?>-checkboxes" style="text-align: center; padding: 5px 0;">
+			<?php for ( $year = $first_year; $year <= date( 'Y' ); $year++ ) : ?>
+				<label style="margin-right: 10px; white-space: nowrap;">
+					<input
+						type="checkbox"
+						id="<?php echo esc_attr( $chart_id . '-checkbox-' . $year ); ?>"
+						<?php echo ( $year >= date( 'Y' ) - 4 ) ? 'checked' : ''; ?>
+						onchange="metermaidYearChart_<?php echo $this->id; ?>.draw()"
+					/>
+					<?php echo esc_html( $year ); ?>
+				</label>
+			<?php endfor; ?>
+			<button type="button" onclick="metermaidYearChart_<?php echo $this->id; ?>.setAll(true)">Show All</button>
+			<button type="button" onclick="metermaidYearChart_<?php echo $this->id; ?>.setAll(false, [<?php echo date( 'Y' ); ?>])">Just This Year</button>
+		</div>
 		<?php
 	}
 
@@ -652,36 +765,141 @@ class METERMAID_METER {
 		?>
 		<script type="text/javascript">
 			google.charts.load( 'current', { 'packages' : [ 'corechart' ] } );
-			google.charts.setOnLoadCallback( drawChart );
+			google.charts.setOnLoadCallback( drawYtdChart_<?php echo $this->id; ?> );
 			metermaid.registerTabBlocker( 'ytd_chart' );
 
-			function drawChart() {
-				// Create the data table.
-				var data = google.visualization.arrayToDataTable( <?php echo json_encode( array_values( $data ) ); ?> );
+			var metermaidYtdChart_<?php echo $this->id; ?> = {
+				fullData: <?php echo json_encode( array_values( $data ) ); ?>,
+				chartId: <?php echo json_encode( $chart_id ); ?>,
+				firstYear: <?php echo json_encode( (int) $first_year ); ?>,
+				currentYear: <?php echo json_encode( (int) date( 'Y' ) ); ?>,
+				title: <?php echo json_encode(
+						sprintf(
+							__( '%1$s YTD', 'metermaid' ),
+							$this->system->measurement()['plural']
+						)
+					); ?>,
 
-				var options = {
-					title: <?php echo json_encode(
-							sprintf(
-								__( '%1$s YTD', 'metermaid' ),
-								$this->system->measurement()['plural']
-							)
-						); ?>,
-					legend: { position: 'bottom' },
-					interpolateNulls : true,
-					vAxis : {
-						viewWindow : {
-							min: 0
+				draw: function() {
+					var self = this;
+					var totalYears = self.currentYear - self.firstYear + 1;
+
+					// Determine which columns are visible based on checkboxes.
+					var visibleCols = [0]; // Always include the date column.
+					var colIndexMap = [];
+
+					for ( var i = 0; i < totalYears; i++ ) {
+						var year = self.firstYear + i;
+						var checkbox = document.getElementById( self.chartId + '-checkbox-' + year );
+
+						if ( checkbox && checkbox.checked ) {
+							visibleCols.push( i + 1 );
+							colIndexMap.push( i );
 						}
 					}
-				};
 
-				var chart = new google.visualization.LineChart( document.getElementById( <?php echo json_encode( $chart_id ); ?> ) );
-				chart.draw( data, options );
+					// Build filtered data.
+					var filteredData = [];
 
+					for ( var r = 0; r < self.fullData.length; r++ ) {
+						var row = [];
+
+						for ( var c = 0; c < visibleCols.length; c++ ) {
+							row.push( self.fullData[r][ visibleCols[c] ] );
+						}
+
+						filteredData.push( row );
+					}
+
+					var data = google.visualization.arrayToDataTable( filteredData );
+
+					// Build series options: dim older years by 10% each.
+					var series = {};
+					var defaultColors = [
+						'#3366cc', '#dc3912', '#ff9900', '#109618', '#990099',
+						'#0099c6', '#dd4477', '#66aa00', '#b82e2e', '#316395',
+						'#994499', '#22aa99', '#aaaa11', '#6633cc', '#e67300',
+						'#8b0707', '#651067', '#329262', '#5574a6', '#3b3eac'
+					];
+
+					for ( var i = 0; i < colIndexMap.length; i++ ) {
+						var yearsAgo = self.currentYear - ( self.firstYear + colIndexMap[i] );
+						var opacity = Math.max( 0, 1 - ( yearsAgo * 0.1 ) );
+
+						var baseColor = defaultColors[ colIndexMap[i] % defaultColors.length ];
+
+						var r = parseInt( baseColor.substring(1, 3), 16 );
+						var g = parseInt( baseColor.substring(3, 5), 16 );
+						var b = parseInt( baseColor.substring(5, 7), 16 );
+
+						r = Math.round( r + ( 255 - r ) * ( 1 - opacity ) );
+						g = Math.round( g + ( 255 - g ) * ( 1 - opacity ) );
+						b = Math.round( b + ( 255 - b ) * ( 1 - opacity ) );
+
+						var blendedColor = '#' +
+							( '0' + r.toString(16) ).slice(-2) +
+							( '0' + g.toString(16) ).slice(-2) +
+							( '0' + b.toString(16) ).slice(-2);
+
+						series[i] = { color: blendedColor };
+					}
+
+					var options = {
+						title: self.title,
+						legend: { position: 'bottom' },
+						interpolateNulls: true,
+						vAxis: {
+							viewWindow: {
+								min: 0
+							}
+						},
+						series: series
+					};
+
+					var chart = new google.visualization.LineChart( document.getElementById( self.chartId ) );
+					chart.draw( data, options );
+				},
+
+				setAll: function( checked, onlyYears ) {
+					var self = this;
+
+					for ( var year = self.firstYear; year <= self.currentYear; year++ ) {
+						var checkbox = document.getElementById( self.chartId + '-checkbox-' + year );
+
+						if ( checkbox ) {
+							if ( onlyYears ) {
+								checkbox.checked = onlyYears.indexOf( year ) !== -1;
+							} else {
+								checkbox.checked = checked;
+							}
+						}
+					}
+
+					self.draw();
+				}
+			};
+
+			function drawYtdChart_<?php echo $this->id; ?>() {
+				metermaidYtdChart_<?php echo $this->id; ?>.draw();
 				metermaid.clearTabBlocker( 'ytd_chart' );
-			  }
+			}
 		</script>
 		<div id="<?php echo esc_attr( $chart_id ); ?>" style="height: 500px;"></div>
+		<div id="<?php echo esc_attr( $chart_id ); ?>-checkboxes" style="text-align: center; padding: 5px 0;">
+			<?php for ( $year = $first_year; $year <= date( 'Y' ); $year++ ) : ?>
+				<label style="margin-right: 10px; white-space: nowrap;">
+					<input
+						type="checkbox"
+						id="<?php echo esc_attr( $chart_id . '-checkbox-' . $year ); ?>"
+						<?php echo ( $year >= date( 'Y' ) - 4 ) ? 'checked' : ''; ?>
+						onchange="metermaidYtdChart_<?php echo $this->id; ?>.draw()"
+					/>
+					<?php echo esc_html( $year ); ?>
+				</label>
+			<?php endfor; ?>
+			<button type="button" onclick="metermaidYtdChart_<?php echo $this->id; ?>.setAll(true)">Show All</button>
+			<button type="button" onclick="metermaidYtdChart_<?php echo $this->id; ?>.setAll(false, [<?php echo date( 'Y' ); ?>])">Just This Year</button>
+		</div>
 		<?php
 	}
 
