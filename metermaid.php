@@ -937,12 +937,11 @@ class METERMAID {
 				}
 
 				$wpdb->query( $wpdb->prepare(
-					"UPDATE " . $wpdb->prefix . "metermaid_meters SET name=%s, status=%d, contact_name=%s, contact_email=%s, contact_phone=%s WHERE metermaid_meter_id=%d LIMIT 1",
+					"UPDATE " . $wpdb->prefix . "metermaid_meters SET name=%s, status=%d, contact_name=%s, contact_email=%s WHERE metermaid_meter_id=%d LIMIT 1",
 					$_POST['metermaid_meter_name'],
 					$_POST['metermaid_meter_status'],
 					$_POST['metermaid_meter_contact_name'],
 					$_POST['metermaid_meter_contact_email'],
-					$_POST['metermaid_meter_contact_phone'],
 					$_POST['metermaid_meter_id']
 				) );
 
