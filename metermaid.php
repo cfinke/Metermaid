@@ -1110,7 +1110,7 @@ class METERMAID {
 					$_POST['metermaid_invite_email']
 				);
 				$new_user_email_body .= "\n\n";
-				$new_user_email_body .= __( 'If you have any questions, email me at help@metermaid.org!' );
+				$new_user_email_body .= __( 'If you have any questions, email me at help@metermaid.org!', 'metermaid' );
 				$new_user_email_body .= "\n\n";
 				$new_user_email_body .= 'Chris at Metermaid';
 
@@ -1120,7 +1120,7 @@ class METERMAID {
 					$_POST['metermaid_invite_email']
 				);
 				$existing_user_email_body .= "\n\n";
-				$existing_user_email_body .= __( 'If you have any questions, email me at help@metermaid.org!' );
+				$existing_user_email_body .= __( 'If you have any questions, email me at help@metermaid.org!', 'metermaid' );
 				$existing_user_email_body .= "\n\n";
 				$existing_user_email_body .= 'Chris at Metermaid';
 
@@ -2055,7 +2055,7 @@ class METERMAID {
 					</th>
 					<td>
 						<input type="text" inputmode="numeric" pattern="[0-9,.]*" name="metermaid_system_rate_interval" value="<?php echo esc_attr( $system() ? $system->rate_interval : METERMAID_DEFAULT_RATE_INTERVAL ); ?>" />
-						<p class="description"><?php echo esc_html( __( 'What is the least number of days between which Metermaid should calculate average usage rates? A higher number means a more accurate result, but it will also be more likely to hide short-term trends.' ) ); ?></p>
+						<p class="description"><?php echo esc_html( __( 'What is the least number of days between which Metermaid should calculate average usage rates? A higher number means a more accurate result, but it will also be more likely to hide short-term trends.', 'metermaid' ) ); ?></p>
 					</td>
 				</tr>
 				<tr>
@@ -2072,7 +2072,7 @@ class METERMAID {
 				<tr>
 					<th scope="row"><?php echo esc_html( __( 'Delete This System', 'metermaid' ) ); ?></th>
 					<td>
-						<p><?php echo esc_html( __( 'Deleting this system will remove all of its meters and its readings.' ) ); ?></p>
+						<p><?php echo esc_html( __( 'Deleting this system will remove all of its meters and its readings.', 'metermaid' ) ); ?></p>
 
 						<form method="post" action="<?php echo esc_attr( site_url( 'wp-admin/admin.php?page=metermaid-home' ) ); ?>" onsubmit="return confirm( metermaid_i18n.system_delete_confirm );">
 							<input type="hidden" name="metermaid_action" value="delete_system" />
