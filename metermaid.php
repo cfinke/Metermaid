@@ -918,7 +918,7 @@ class METERMAID {
 					get_current_user_id()
 				) );
 
-				METERMAID::save_pending_notice( 'success', __( 'The suppplement has been added.', 'metermaid' ) );
+				METERMAID::save_pending_notice( 'success', __( 'The supplement has been added.', 'metermaid' ) );
 			} else if ( 'edit_meter' == $_POST['metermaid_action'] ) {
 				if ( ! wp_verify_nonce( $_POST['metermaid_nonce'], 'metermaid-edit-meter' ) ) {
 					echo 'You are not authorized to edit a meter.';
