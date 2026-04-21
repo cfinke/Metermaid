@@ -859,7 +859,7 @@ class METERMAID {
 				wp_cache_delete( $_POST['metermaid_system_id'], 'metermaid-system' );
 
 				METERMAID::save_pending_notice( 'success', __( 'The system has been updated.', 'metermaid' ) );
-			} if ( 'delete_reading' == $_POST['metermaid_action'] ) {
+			} else if ( 'delete_reading' == $_POST['metermaid_action'] ) {
 				if ( ! wp_verify_nonce( $_POST['metermaid_nonce'], 'metermaid-delete-reading' ) ) {
 					echo 'You are not authorized to delete a reading.';
 					wp_die();
